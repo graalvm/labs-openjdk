@@ -127,8 +127,8 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         downloads+: {
             BOOT_JDK: {
                 name : "jpg-jdk",
-                version : "20",
-                build_id: "32",
+                version : "22",
+                build_id: "8",
                 release: true,
                 platformspecific: true
             }
