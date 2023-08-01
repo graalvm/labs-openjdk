@@ -139,7 +139,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         downloads+: {
             BOOT_JDK: {
                 name: "labsjdk",
-                version: "ee-21+19-jvmci-23.1-b01-musl-boot",
+                version: "ee-22+8-jvmci-b01-musl-boot",
                 platformspecific: true
             }
         },
