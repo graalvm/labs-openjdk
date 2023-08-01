@@ -954,6 +954,7 @@ var getJibProfilesProfiles = function (input, common, data) {
     profiles = concatObjects(profiles, testOnlyProfiles);
 
     // Profiles used to run tests using Jib for internal dependencies.
+    var graalvm = input.graalvm;
     var testedProfile = input.testedProfile;
     if (testedProfile == null) {
         testedProfile = input.build_os + "-" + input.build_cpu;
@@ -961,14 +962,21 @@ var getJibProfilesProfiles = function (input, common, data) {
     var testedProfileJdk = testedProfile + ".jdk";
     // Make it possible to use the test image from a different profile
     var testImageProfile;
-    if (input.testImageProfile != null) {
-        testImageProfile = input.testImageProfile;
-    } else if (testedProfile.endsWith("-jcov")) {
-        testImageProfile = testedProfile.substring(0, testedProfile.length - "-jcov".length);
+    var testedProfileTest;
+    if (graalvm == null) {
+        if (input.testImageProfile != null) {
+            testImageProfile = input.testImageProfile;
+        } else if (testedProfile.endsWith("-jcov")) {
+            testImageProfile = testedProfile.substring(0, testedProfile.length - "-jcov".length);
+        } else {
+            testImageProfile = testedProfile;
+        }
+        testedProfileTest = testImageProfile + ".test";
     } else {
-        testImageProfile = testedProfile;
+        testedProfileJdk = "graalvm_jdk";
+        testedProfileTest = "graalvm_tests";
     }
-    var testedProfileTest = testImageProfile + ".test"
+
     var testOnlyMake = [ "test-prebuilt", "LOG_CMDLINES=true", "JTREG_VERBOSE=fail,error,time" ];
     if (testedProfile.endsWith("-gcov")) {
         testOnlyMake = concat(testOnlyMake, "GCOV_ENABLED=true")
@@ -986,7 +994,8 @@ var getJibProfilesProfiles = function (input, common, data) {
             environment: {
                 "BOOT_JDK": common.boot_jdk_home,
                 "JT_HOME": input.get("jtreg", "home_path"),
-                "JDK_IMAGE_DIR": input.get(testedProfileJdk, "home_path"),
+                "JDK_IMAGE_DIR": input.get(testedProfileJdk, "home_path")
+                    + (input.build_os == "macosx" && graalvm != null ? "/Contents/Home" : ""),
                 "TEST_IMAGE_DIR": input.get(testedProfileTest, "home_path"),
                 "SYMBOLS_IMAGE_DIR": input.get(testedProfile + ".jdk_symbols", "home_path")
             },
@@ -1151,6 +1160,10 @@ var getJibProfilesDependencies = function (input, common) {
 
     var dependencies = {
         boot_jdk: boot_jdk,
+
+        graalvm_jdk: graalvm_dependency(input, ""),
+        graalvm_tests: graalvm_dependency(input, "tests"),
+        graalvm_symbols: graalvm_dependency(input, "symbols"),
 
         devkit: {
             organization: common.organization,
@@ -1526,4 +1539,193 @@ var isWsl = function (input) {
 var error = function (s) {
     java.lang.System.err.println("[ERROR] " + s);
     exit(1);
+};
+
+/**
+ * Parses the value of the graalvm property into an object. The value has the
+ * format <name>:<value>[,<name>:<value>]+. The required names and their meaning are:
+ *   version: The version number. This can be a release (e.g., "20.3.0"), latest snapshot for a release
+ *            (e.g., "20.3.0-SNAPSHOT") or a specific snapshot (e.g., "20.3.0-SNAPSHOT-20201105.124931-93").
+ *   edition: The GraalVM edition (i.e. "ce" or "ee")
+ *   labsjdk: The labsjdk from which the GraalVM binary was built (e.g., "ee-11.0.9+7-jvmci-20.3-b06").
+ *            This field is not required for GraalVM binaries that include GR-27197.
+ *
+ * The property is used to run tests against a GraalVM binary. The tests can either
+ * be run locally or remotely (via mach5). Examples of both are below.
+ * All examples are run from the local clone of labsjdk-ee-11.
+ *
+ * -- Local testing --
+ *
+ * Example: Run JCK runtime tests matching "api/java_lang" against GraalVM EE 20.3.0.
+
+    bash jib.sh make -p run-test-prebuilt-jck \
+        -Dgraalvm=version:20.3.0,edition:ee,labsjdk:ee-11.0.9+7-jvmci-20.3-b06 -- \
+        TEST="jck:api/java_lang" \
+        JCK_OPTIONS="-timeout:5 -nosound -headless"
+
+ * Example: Same as above but test latest GraalVM EE 21.0.0 snapshot:
+
+    bash jib.sh make -p run-test-prebuilt-jck \
+        -Dgraalvm=version:21.0.0,edition:ee,labsjdk:ee-11.0.9+7-jvmci-21.0-b01 -- \
+        TEST="jck:api/java_lang" \
+        JCK_OPTIONS="-timeout:5 -nosound -headless"
+
+* -- Remote testing via mach5 --
+*
+* Example: Submit to mach5 the task labeled "graalvm-jck-runtime" in labsjdk-ee-11/closed/task-definitions/jobs/graalvm-jck.js
+*          such that it runs against GraalVM EE 20.3.0.
+
+    bash jib.sh mach5 -- remote-test --job graalvm-jck \
+        --test-label-filters graalvm-jck-runtime \
+        --test-jib-args -Dgraalvm=version:20.3.0,edition:ee,labsjdk:ee-11.0.9+7-jvmci-20.3-b06 \
+        --skip-builds-check \
+        --project graalvm \
+        --email first.last@oracle.com
+
+ * The --skip-builds-check prevents mach5 from trying to find a build produced by mach5 (GraalVM binaries are
+ * not built by mach5). The --project option ensures the job identifier will include "graalvm" making it easier
+ * to find the job results at https://mach5.us.oracle.com/mdash.
+ *
+ *
+ * @param value value of property passed via `-Dgraalvm=<value>` to jib
+            Example: "version:20.2.0,edition:ee,labsjdk:ee-11.0.8.0.2+1-jvmci-20.3-b02"
+ * @returns {@code value} as a JS object
+ *          Example: {
+ *              version: "20.2.0",
+ *              edition: "ee",
+ *              labsjdk: "labsjdk-ee-11.0.8.0.2+1-jvmci-20.3-b02"
+ *          }
+ */
+var parse_graalvm = function (s) {
+    try {
+        var graalvm_def = "({" + s.split(',').map(function(s) { parts = s.split(':'); return parts[0] + ':"' + parts.slice(1) + '"'; }) + "})";
+        var graalvm = eval(graalvm_def);
+        var fields = ["version", "edition", "labsjdk"];
+        fields.forEach(function(name) {
+            if (!(name in graalvm) && name != "labsjdk") {
+                error("The field '" + name + "' is missing from the graalvm property (" + s + ")");
+            }
+        });
+        for (name in graalvm) {
+            if (fields.indexOf(name) == -1) {
+                error("The field '" + name + "' is not supported by the graalvm property (" + s + ")");
+            }
+        }
+        return graalvm;
+    } catch (e) {
+        error("Error parsing graalvm property (" + s + ") as JSON:\n" + e);
+    }
+};
+
+/**
+ * Constructs a URL to a directory on the nexus server containing GraalVM artifacts.
+ *
+ * @param snapshot true if requesting a URL for a snapshot artifact, false for a release artifact
+ * @param name base name of the artifact (e.g., "graalvm-ee-java19-linux-amd64")
+ * @param version version of the artifact without snapshot qualifiers (e.g., "21.0.0")
+ */
+var make_graalvm_nexus_base_url = function(snapshot, name, version) {
+    return "https://ol-graal-infra4.oraclecorp.com/nexus/content/repositories/" +
+        (snapshot ? "snapshots" : "releases") +
+        "/org/graalvm/" + name + "/" + version +
+        (snapshot ? "-SNAPSHOT/" : "/");
+}
+
+/**
+ * Downloads the content from `url` and returns it as a string.
+ */
+var download_url = function(url) {
+    stream = new java.net.URL(url).openStream();
+    content = new java.util.Scanner(stream, "UTF-8").useDelimiter("\\A").next();
+    stream.close();
+    return content;
+}
+
+/**
+ * Converts the value of the graalvm property (see parse_graalvm function) into a GraalVM dependency object.
+ *
+ * @param input object with "graalvm" property and others needed for resolving the dependency
+ * @param classifier the type of GraalVM dependency requested:
+ *                     - "" for primary JDK archive
+ *                     - "tests" for tests archive
+ *                     - "symbols" for symbols archive
+ *                     - "suite-revisions" for suite-revisions.xml
+ * @returns URL of the suite-revisions.xml file for the GraalVM release denoted by the graalvm property
+            if `classifier` == "suite-revisions" otherwise an object defining a dependency for the release
+ *          Example: {
+ *              organization: "org.graalvm",
+ *              module: "graalvm-ee-java19-linux-amd64",
+ *              revision: "21.0.0",
+ *              ext: "tar.gz"
+ *          }
+ */
+var graalvm_dependency = function (input, classifier) {
+    if (input.graalvm == null) {
+        return {};
+    }
+    graalvm = parse_graalvm(input.graalvm);
+    os = input.target_os.replace("macosx", "darwin");
+    arch = input.target_cpu.replace("x64", "amd64");
+    base_name = "graalvm-" + graalvm.edition + "-java19-" + os + "-" + arch;
+
+    if (classifier == "" || classifier == "suite-revisions") {
+        var result = {
+            organization: "org.graalvm",
+            module: base_name,
+            revision: graalvm.version,
+            ext: classifier == "suite-revisions" ? "xml" : os == "windows" ? "zip" : "tar.gz"
+        };
+
+        snapshot = new RegExp("(.*)-SNAPSHOT(?:-([\\d\\.]+)-(\\d+))?").exec(graalvm.version);
+        if (snapshot != null) {
+            base_version = snapshot[1];
+            timestamp = snapshot[2];
+            build_number = snapshot[3];
+            base_url = make_graalvm_nexus_base_url(true, base_name, base_version);
+            if (!(timestamp === undefined || build_number === undefined)) {
+                snapshot_revision = base_version + "-" + timestamp + "-" + build_number;
+                result.snapshot_revision = snapshot_revision;
+                result.revision = base_version + "-SNAPSHOT";
+            } else if (classifier == "suite-revisions") {
+                // If no specific snapshot is given and a URL is required, then use the most recent
+                // snapshot. This requires downloading and parsing maven-metadata.xml.
+                maven_metadata = download_url(base_url + "maven-metadata.xml");
+                matches = new RegExp(".*<timestamp>\\s*(.*)\\s*</timestamp>\\s*<buildNumber>\\s*(.*)\\s*</buildNumber>.*").exec(maven_metadata);
+                if (matches == null) {
+                    error("Could not find timestamp and build number in " + maven_metadata_url);
+                }
+                snapshot_revision = base_version + "-" + matches[1] + "-" + matches[2];
+            }
+            if (classifier == "suite-revisions") {
+                return base_url + base_name + "-" + snapshot_revision + "-suite-revisions.xml";
+            }
+        } else {
+            if (classifier == "suite-revisions") {
+                base_url = make_graalvm_nexus_base_url(false, base_name, graalvm.version);
+                return base_url + base_name + "-" + graalvm.version + "-suite-revisions.xml";
+            }
+            if (os == "darwin" || os == "windows") {
+                // Releases on macOS and Windows are signed
+                result.classifier = "signed";
+            }
+        }
+        return result;
+    } else {
+        tests_qualifier = classifier == "tests" ? "-tests-" : "-";
+        symbols_qualifier = classifier == "symbols" ? ".symbols" : "";
+
+        if (graalvm.labsjdk === undefined) {
+            suite_revisions = download_url(graalvm_dependency(input, "suite-revisions"));
+            matches = new RegExp(".*<basejdk\\s\\s*name=\"labsjdk\"\\s\\s*version=\"(.*)\"\\s*/>.*").exec(suite_revisions);
+            if (matches == null) {
+                error("Could not find labsjdk information in " + suite_revisions_url);
+            }
+            graalvm.labsjdk = matches[1];
+        }
+        result = {
+            server: "url",
+            url: "https://graalvm.oraclecorp.com/ci-downloads/labsjdk/labsjdk-" + graalvm.labsjdk + tests_qualifier + os + "-" + arch + symbols_qualifier + ".tar.gz"
+        };
+        return result;
+    }
 };
