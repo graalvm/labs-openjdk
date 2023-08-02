@@ -7,7 +7,7 @@ local labsjdk_builder_version = "8928c95fac6928559341b784233d0f1b985a3a4f";
 local contains(str, needle) = std.findSubstr(needle, str) != [];
 
 {
-    overlay: "9aaf850438f4551337c76b9133b700c23abfd739",
+    overlay: "8793ce2f0b8e7fd92b51ff1955a84b7bd5e55d23",
     specVersion: "3",
 
     mxDependencies:: {
