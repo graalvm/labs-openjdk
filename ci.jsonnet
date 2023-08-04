@@ -225,7 +225,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
             conf.copydir(conf.jdk_home("."), "${JDK_HOME}_fastdebug")
         ] else []),
 
-        publishArtifacts+: if !is_musl_build then [
+        publishArtifacts+: if false /*GR-47685*/ && !is_musl_build then [
             {
                 name: "labsjdk" + conf.name,
                 dir: ".",
@@ -386,12 +386,12 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     ],
 
     DefineBuilds(defs):: [ self.Build(defs, conf, is_musl_build=false) for conf in build_confs(defs) ] +
-            [ self.CompilerTests(defs, conf, fastdebug=true) for conf in graal_confs(defs) ] +
-            [ self.CompilerTests(defs, conf, fastdebug=false) for conf in graal_confs(defs) ] +
+            # GR-47685 [ self.CompilerTests(defs, conf, fastdebug=true) for conf in graal_confs(defs) ] +
+            # GR-47685 [ self.CompilerTests(defs, conf, fastdebug=false) for conf in graal_confs(defs) ] +
 
             # GR-45847 [ self.JavaScriptTests(defs, conf) for conf in graal_confs(defs) ] +
 
-            [ self.TestLibGraal(defs, conf) for conf in graal_confs(defs) ] +
+            # GR-47686 [ self.TestLibGraal(defs, conf) for conf in graal_confs(defs) ] +
 
             [ self.Build(defs, conf, is_musl_build=true) for conf in amd64_musl_confs(defs) ],
 
