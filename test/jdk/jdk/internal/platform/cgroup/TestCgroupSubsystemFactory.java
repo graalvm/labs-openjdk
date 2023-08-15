@@ -87,7 +87,7 @@ public class TestCgroupSubsystemFactory {
     private Path cgroupv2SelfNoZeroHierarchyOnlyFreezer;
     private String mntInfoEmpty = "";
     private String cgroupsNonZeroJoinControllers =
-            "#subsys_name hierarchy num_cgroups enabled\n" +
+            "#subsys_name\thierarchy\tnum_cgroups\tenabled\n" +
             "cpuset\t3\t1\t1\n" +
             "cpu\t4\t153\t1\n" +
             "cpuacct\t4\t153\t1\n" +
@@ -102,7 +102,7 @@ public class TestCgroupSubsystemFactory {
             "pids\t5\t95\t1\n" +
             "rdma\t8\t1\t1\n";
     private String cgroupsNonZeroCpuControllerOnly =
-            "#subsys_name hierarchy num_cgroups enabled\n" +
+            "#subsys_name\thierarchy\tnum_cgroups\tenabled\n" +
             "cpu\t4\t153\t1\n" +
             "cpuacct\t4\t153\t1\n";
     private String selfCgroupNonZeroCpuControllerOnly =
@@ -119,19 +119,19 @@ public class TestCgroupSubsystemFactory {
             "1:name=systemd:/user.slice/user-1000.slice/session-3.scope\n" +
             "0::/user.slice/user-1000.slice/session-3.scope\n";
     private String cgroupsZeroHierarchy =
-            "#subsys_name hierarchy num_cgroups enabled\n" +
-            "cpuset 0 1 1\n" +
-            "cpu 0 1 1\n" +
-            "cpuacct 0 1 1\n" +
-            "memory 0 1 1\n" +
-            "devices 0 1 1\n" +
-            "freezer 0 1 1\n" +
-            "net_cls 0 1 1\n" +
-            "blkio 0 1 1\n" +
-            "perf_event 0 1 1 ";
+            "#subsys_name\thierarchy\tnum_cgroups\tenabled\n" +
+            "cpuset\t0\t1\t1\n" +
+            "cpu\t0\t1\t1\n" +
+            "cpuacct\t0\t1\t1\n" +
+            "memory\t0\t1\t1\n" +
+            "devices\t0\t1\t1\n" +
+            "freezer\t0\t1\t1\n" +
+            "net_cls\t0\t1\t1\n" +
+            "blkio\t0\t1\t1\n" +
+            "perf_event\t0\t1\t1\n";
     private String cgroupsZeroHierarchyMinimal =
-            "#subsys_name hierarchy num_cgroups enabled\n" +
-            "cpu 0 1 1\n";
+            "#subsys_name\thierarchy\tnum_cgroups\tenabled\n" +
+            "cpu\t0\t1\t1\n";
     private String mntInfoHybrid =
             "30 23 0:26 / /sys/fs/cgroup ro,nosuid,nodev,noexec shared:4 - tmpfs tmpfs ro,seclabel,mode=755\n" +
             "31 30 0:27 / /sys/fs/cgroup/unified rw,nosuid,nodev,noexec,relatime shared:5 - cgroup2 none rw,seclabel,nsdelegate\n" +
@@ -176,19 +176,19 @@ public class TestCgroupSubsystemFactory {
             "43 30 0:39 / /sys/fs/cgroup/blkio rw,nosuid,nodev,noexec,relatime shared:15 - cgroup none rw,seclabel,blkio\n" +
             "44 30 0:40 / /sys/fs/cgroup/freezer rw,nosuid,nodev,noexec,relatime shared:16 - cgroup none rw,seclabel,freezer\n";
     private String cgroupsNonZeroHierarchy =
-            "#subsys_name hierarchy   num_cgroups enabled\n" +
-            "cpuset  9   1   1\n" +
-            "cpu 7   1   1\n" +
-            "cpuacct 7   1   1\n" +
-            "blkio   10  1   1\n" +
-            "memory  2   90  1\n" +
-            "devices 8   74  1\n" +
-            "freezer 11  1   1\n" +
-            "net_cls 5   1   1\n" +
-            "perf_event  4   1   1\n" +
-            "net_prio    5   1   1\n" +
-            "hugetlb 6   1   1\n" +
-            "pids    3   80  1";
+            "#subsys_name\thierarchy\tnum_cgroups\tenabled\n" +
+            "cpuset\t9\t1\t1\n" +
+            "cpu\t7\t1\t1\n" +
+            "cpuacct\t7\t1\t1\n" +
+            "blkio\t10\t1\t1\n" +
+            "memory\t2\t90\t1\n" +
+            "devices\t8\t74\t1\n" +
+            "freezer\t11\t1\t1\n" +
+            "net_cls\t5\t1\t1\n" +
+            "perf_event\t4\t1\t1\n" +
+            "net_prio\t5\t1\t1\n" +
+            "hugetlb\t6\t1\t1\n" +
+            "pids\t3\t80\t1\n";
     private String mntInfoCgroupsV2Only =
             "28 21 0:25 / /sys/fs/cgroup rw,nosuid,nodev,noexec,relatime shared:4 - cgroup2 none rw,seclabel,nsdelegate";
     private String mntInfoCgroupsV1SystemdOnly =
@@ -235,21 +235,21 @@ public class TestCgroupSubsystemFactory {
     // We have a mix of V1 and V2 controllers, but none of the V1 controllers
     // are used by Java, so the JDK should start in V2 mode.
     private String cgroupsNonZeroHierarchyOnlyFreezer =
-            "#subsys_name hierarchy  num_cgroups  enabled\n" +
-            "cpuset  0  171  1\n" +
-            "cpu  0  171  1\n" +
-            "cpuacct  0  171  1\n" +
-            "blkio  0  171  1\n" +
-            "memory  0  171  1\n" +
-            "devices  0  171  1\n" +
-            "freezer  1  1  1\n" +
-            "net_cls  0  171  1\n" +
-            "perf_event  0  171  1\n" +
-            "net_prio  0  171  1\n" +
-            "hugetlb  0  171  1\n" +
-            "pids  0  171  1\n" +
-            "rdma  0  171  1\n" +
-            "misc  0  171  1\n";
+            "#subsys_name\thierarchy\tnum_cgroups\tenabled\n" +
+            "cpuset\t0\t171\t1\n" +
+            "cpu\t0\t171\t1\n" +
+            "cpuacct\t0\t171\t1\n" +
+            "blkio\t0\t171\t1\n" +
+            "memory\t0\t171\t1\n" +
+            "devices\t0\t171\t1\n" +
+            "freezer\t1\t1\t1\n" +
+            "net_cls\t0\t171\t1\n" +
+            "perf_event\t0\t171\t1\n" +
+            "net_prio\t0\t171\t1\n" +
+            "hugetlb\t0\t171\t1\n" +
+            "pids\t0\t171\t1\n" +
+            "rdma\t0\t171\t1\n" +
+            "misc\t0\t171\t1\n";
     private String cgroupv1SelfOnlyFreezerContent = "1:freezer:/\n" +
             "0::/user.slice/user-1000.slice/session-2.scope";
     private String mntInfoOnlyFreezerInV1 =
