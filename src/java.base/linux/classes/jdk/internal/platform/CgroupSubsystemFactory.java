@@ -26,7 +26,6 @@
 package jdk.internal.platform;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
@@ -38,9 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import jdk.internal.platform.cgroupv1.CgroupV1Subsystem;
 import jdk.internal.platform.cgroupv2.CgroupV2Subsystem;
@@ -54,36 +50,11 @@ public class CgroupSubsystemFactory {
     private static final String MEMORY_CTRL = "memory";
     private static final String PIDS_CTRL = "pids";
 
-    /*
-     * From https://www.kernel.org/doc/Documentation/filesystems/proc.txt
-     *
-     *  36 35 98:0 /mnt1 /mnt2 rw,noatime master:1 - ext3 /dev/root rw,errors=continue
-     *  (1)(2)(3)   (4)   (5)      (6)      (7)   (8) (9)   (10)         (11)
-     *
-     *  (1) mount ID:  unique identifier of the mount (may be reused after umount)
-     *  (2) parent ID:  ID of parent (or of self for the top of the mount tree)
-     *  (3) major:minor:  value of st_dev for files on filesystem
-     *  (4) root:  root of the mount within the filesystem
-     *  (5) mount point:  mount point relative to the process's root
-     *  (6) mount options:  per mount options
-     *  (7) optional fields:  zero or more fields of the form "tag[:value]"
-     *  (8) separator:  marks the end of the optional fields
-     *  (9) filesystem type:  name of filesystem of the form "type[.subtype]"
-     *  (10) mount source:  filesystem specific information or "none"
-     *  (11) super options:  per super block options
-     */
-    private static final Pattern MOUNTINFO_PATTERN = Pattern.compile(
-        "^[^\\s]+\\s+[^\\s]+\\s+[^\\s]+\\s+" + // (1), (2), (3)
-        "([^\\s]+)\\s+([^\\s]+)\\s+" +         // (4), (5)     - group 1, 2: root, mount point
-        "[^-]+-\\s+" +                         // (6), (7), (8)
-        "([^\\s]+)\\s+" +                      // (9)          - group 3: filesystem type
-        ".*$");                                // (10), (11)
-
     static CgroupMetrics create() {
         Optional<CgroupTypeResult> optResult = null;
         try {
             optResult = determineType("/proc/self/mountinfo", "/proc/cgroups", "/proc/self/cgroup");
-        } catch (IOException | UncheckedIOException e) {
+        } catch (IOException e) {
             return null;
         }
         return create(optResult);
@@ -104,8 +75,7 @@ public class CgroupSubsystemFactory {
         // not ready to deal with that on a per-controller basis. Return no metrics
         // in that case
         if (result.isAnyCgroupV1Controllers() && result.isAnyCgroupV2Controllers()) {
-            Logger logger = System.getLogger("jdk.internal.platform");
-            logger.log(Level.DEBUG, "Mixed cgroupv1 and cgroupv2 not supported. Metrics disabled.");
+            warn("Mixed cgroupv1 and cgroupv2 not supported. Metrics disabled.");
             return null;
         }
 
@@ -119,6 +89,11 @@ public class CgroupSubsystemFactory {
             CgroupV1Subsystem subsystem = CgroupV1Subsystem.getInstance(infos);
             return subsystem != null ? new CgroupV1MetricsImpl(subsystem) : null;
         }
+    }
+
+    private static void warn(String msg) {
+        Logger logger = System.getLogger("jdk.internal.platform");
+        logger.log(Level.DEBUG, msg);
     }
 
     /*
@@ -196,16 +171,15 @@ public class CgroupSubsystemFactory {
         // See:
         //   setCgroupV1Path() for the action run for cgroups v1 systems
         //   setCgroupV2Path() for the action run for cgroups v2 systems
-        try (Stream<String> selfCgroupLines =
-             CgroupUtil.readFilePrivileged(Paths.get(selfCgroup))) {
-            Consumer<String[]> action = (tokens -> setCgroupV1Path(infos, tokens));
-            if (isCgroupsV2) {
-                action = (tokens -> setCgroupV2Path(infos, tokens));
-            }
+        Consumer<String[]> action = (tokens -> setCgroupV1Path(infos, tokens));
+        if (isCgroupsV2) {
+            action = (tokens -> setCgroupV2Path(infos, tokens));
+        }
+        for (String line : CgroupUtil.readAllLinesPrivileged(Paths.get(selfCgroup))) {
             // The limit value of 3 is because /proc/self/cgroup contains three
             // colon-separated tokens per line. The last token, cgroup path, might
             // contain a ':'.
-            selfCgroupLines.map(line -> line.split(":", 3)).forEach(action);
+            action.accept(line.split(":", 3));
         }
 
         CgroupTypeResult result = new CgroupTypeResult(isCgroupsV2,
@@ -281,8 +255,8 @@ public class CgroupSubsystemFactory {
     /**
      * Amends cgroup infos with mount path and mount root. The passed in
      * 'mntInfoLine' represents a single line in, for example,
-     * /proc/self/mountinfo. Each line is matched with MOUNTINFO_PATTERN
-     * (see above), so as to extract the relevant tokens from the line.
+     * /proc/self/mountinfo. Each line is parsed with {@link MountInfo#parse},
+     * so as to extract the relevant tokens from the line.
      *
      * Host example cgroups v1:
      *
@@ -303,13 +277,13 @@ public class CgroupSubsystemFactory {
     private static boolean amendCgroupInfos(String mntInfoLine,
                                             Map<String, CgroupInfo> infos,
                                             boolean isCgroupsV2) {
-        Matcher lineMatcher = MOUNTINFO_PATTERN.matcher(mntInfoLine.trim());
+        MountInfo mountInfo = MountInfo.parse(mntInfoLine);
         boolean cgroupv1ControllerFound = false;
         boolean cgroupv2ControllerFound = false;
-        if (lineMatcher.matches()) {
-            String mountRoot = lineMatcher.group(1);
-            String mountPath = lineMatcher.group(2);
-            String fsType = lineMatcher.group(3);
+        if (mountInfo != null) {
+            String mountRoot = mountInfo.mountRoot;
+            String mountPath = mountInfo.mountPath;
+            String fsType = mountInfo.fsType;
             if (fsType.equals("cgroup")) {
                 Path p = Paths.get(mountPath);
                 String[] controllerNames = p.getFileName().toString().split(",");
@@ -343,6 +317,59 @@ public class CgroupSubsystemFactory {
             }
         }
         return cgroupv1ControllerFound || cgroupv2ControllerFound;
+    }
+
+    private record MountInfo(String mountRoot, String mountPath, String fsType) {
+        /*
+         * From https://www.kernel.org/doc/Documentation/filesystems/proc.txt
+         *
+         *  36 35 98:0 /mnt1 /mnt2 rw,noatime master:1 - ext3 /dev/root rw,errors=continue
+         *  (1)(2)(3)   (4)   (5)      (6)      (7)   (8) (9)   (10)         (11)
+         *
+         *  (1) mount ID:  unique identifier of the mount (may be reused after umount)
+         *  (2) parent ID:  ID of parent (or of self for the top of the mount tree)
+         *  (3) major:minor:  value of st_dev for files on filesystem
+         *  (4) root:  root of the mount within the filesystem
+         *  (5) mount point:  mount point relative to the process's root
+         *  (6) mount options:  per mount options
+         *  (7) optional fields:  zero or more fields of the form "tag[:value]"
+         *  (8) separator:  marks the end of the optional fields
+         *  (9) filesystem type:  name of filesystem of the form "type[.subtype]"
+         *  (10) mount source:  filesystem specific information or "none"
+         *  (11) super options:  per super block options
+         */
+        static MountInfo parse(String line) {
+            String mountRoot = null;
+            String mountPath = null;
+
+            int separatorOrdinal = -1;
+            // loop over space-separated tokens
+            for (int tOrdinal = 1, tStart = 0, tEnd = line.indexOf(' '); tEnd != -1; tOrdinal++, tStart = tEnd + 1, tEnd = line.indexOf(' ', tStart)) {
+                if (tStart == tEnd) {
+                    break; // unexpected empty token
+                }
+                switch (tOrdinal) {
+                    case 1, 2, 3, 6 -> {} // skip token
+                    case 4 -> mountRoot = line.substring(tStart, tEnd); // root token
+                    case 5 -> mountPath = line.substring(tStart, tEnd); // mount point token
+                    default -> {
+                        assert tOrdinal >= 7;
+                        if (separatorOrdinal == -1) {
+                            // check if we found a separator token
+                            if (tEnd - tStart == 1 && line.charAt(tStart) == '-') {
+                                separatorOrdinal = tOrdinal;
+                            }
+                            continue; // skip token
+                        }
+                        if (tOrdinal == separatorOrdinal + 1) { // filesystem type token
+                            String fsType = line.substring(tStart, tEnd);
+                            return new MountInfo(mountRoot, mountPath, fsType);
+                        }
+                    }
+                }
+            }
+            return null; // parsing failed
+        }
     }
 
     private static void setMountPoints(CgroupInfo info, String mountPath, String mountRoot) {
