@@ -719,7 +719,15 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
 
     @Override
     public JavaMethod lookupMethod(int rawIndex, int opcode, ResolvedJavaMethod caller) {
-        final int cpci = rawIndexToConstantPoolCacheIndex(rawIndex, opcode);
+        final int cpci;
+        if (opcode == jdk.vm.ci.hotspot.HotSpotConstantPool.Bytecodes.INVOKEDYNAMIC) {
+            if (!isInvokedynamicIndex(rawIndex)) {
+                throw new IllegalArgumentException("expected a raw index for INVOKEDYNAMIC but got " + rawIndex);
+            }
+            cpci = rawIndex;
+        } else {
+            cpci = rawIndexToConstantPoolCacheIndex(rawIndex, opcode);
+        }
         final HotSpotResolvedJavaMethod method = compilerToVM().lookupMethodInPool(this, cpci, (byte) opcode, (HotSpotResolvedJavaMethodImpl) caller);
         if (method != null) {
             return method;
