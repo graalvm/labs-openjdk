@@ -225,7 +225,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
             conf.copydir(conf.jdk_home("."), "${JDK_HOME}_fastdebug")
         ] else []),
 
-        publishArtifacts+: if false /*GR-47685*/ && !is_musl_build then [
+        publishArtifacts+: if !is_musl_build then [
             {
                 name: "labsjdk" + conf.name,
                 dir: ".",
