@@ -291,6 +291,10 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         timelimit: "1:30:00",
         logs: ["*.log"],
         targets: ["gate"],
+        environment+: {
+            # Disable JVMCI version check
+            JVMCI_VERSION_CHECK: "ignore"
+        },
         run+: if !fastdebug then [
             ["mx", "--java-home=${JAVA_HOME}", "-p", "graal-enterprise/graal-enterprise", "gate", "--tags", "build,test,bootstraplite"]
         ] else [
@@ -311,6 +315,10 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         timelimit: "1:30:00",
         logs: ["*.log"],
         targets: ["gate"],
+        environment+: {
+            # Disable JVMCI version check
+            JVMCI_VERSION_CHECK: "ignore"
+        },
         run+: [
             # Build and test JavaScript on GraalVM
             jsvm + ["build"],
@@ -357,6 +365,9 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         ],
 
         environment+: {
+            # Disable JVMCI version check
+            JVMCI_VERSION_CHECK: "ignore",
+
             # The Truffle TCK tests run as a part of the Truffle TCK gate in the graal repo
             TEST_LIBGRAAL_EXCLUDE: "com.oracle.truffle.tck.tests.* com.oracle.truffle.tools.* " +
 
