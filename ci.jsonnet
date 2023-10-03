@@ -176,7 +176,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
 
     Build(defs, conf, is_musl_build):: conf + setupJDKSources(conf) + (if is_musl_build then self.MuslBootJDK else self.BootJDK) + {
         name: "build-jdk" + conf.name,
-        timelimit: "2:10:00", # Windows is the long pole
+        timelimit: "2:30:00", # Windows is the long pole
         diskspace_required: "10G",
         logs: ["*.log"],
         targets: ["gate"],
@@ -243,7 +243,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # Downstream Graal branch to test against. If you change this value to anything but
     # "master", you must create an ol-jira issue to change it back to master once the
     # next JVMCI release has been made. Add the issue id as a comment here.
-    local downstream_branch = "me/GR-48881_1",
+    local downstream_branch = "master",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
