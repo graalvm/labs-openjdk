@@ -111,11 +111,6 @@ bool JVMCIGlobals::check_jvmci_flags_are_consistent() {
     if (EagerJVMCI) {
       FLAG_SET_DEFAULT(EagerJVMCI, false);
     }
-  } else {
-    // Temporarily disable leightweight locking until implemented.
-    if (FLAG_IS_DEFAULT(LockingMode)) {
-      FLAG_SET_DEFAULT(LockingMode, LM_LEGACY);
-    }
   }
   JVMCI_FLAG_CHECKED(EagerJVMCI)
 
