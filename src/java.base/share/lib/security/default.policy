@@ -171,10 +171,6 @@ grant codeBase "jrt:/jdk.graal.compiler" {
     permission java.security.AllPermission;
 };
 
-grant codeBase "jrt:/jdk.compiler.graal" {
-    permission java.security.AllPermission;
-};
-
 grant codeBase "jrt:/jdk.jsobject" {
     permission java.security.AllPermission;
 };
