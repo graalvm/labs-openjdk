@@ -106,7 +106,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         capabilities+: ["darwin_test"]
     },
     DarwinAArch64:: self.Darwin + self.AArch64 + {
-        capabilities+: ["darwin_test"],
+        capabilities+: ["darwin_ventura"],
     },
 
     AMD64:: {
