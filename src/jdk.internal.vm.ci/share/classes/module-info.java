@@ -26,6 +26,7 @@
 module jdk.internal.vm.ci {
     exports jdk.vm.ci.services to
         jdk.graal.compiler,
+<<<<<<< HEAD
         jdk.graal.compiler.management,
         jdk.compiler.graal,
         jdk.compiler.graal.management;
@@ -37,6 +38,15 @@ module jdk.internal.vm.ci {
     exports jdk.vm.ci.meta to jdk.graal.compiler, jdk.compiler.graal;
     exports jdk.vm.ci.code to jdk.graal.compiler, jdk.compiler.graal;
     exports jdk.vm.ci.hotspot to jdk.graal.compiler, jdk.compiler.graal;
+=======
+        jdk.graal.compiler.management;
+    exports jdk.vm.ci.runtime to
+        jdk.graal.compiler,
+        jdk.graal.compiler.management;
+    exports jdk.vm.ci.meta to jdk.graal.compiler;
+    exports jdk.vm.ci.code to jdk.graal.compiler;
+    exports jdk.vm.ci.hotspot to jdk.graal.compiler;
+>>>>>>> jdk-22+22
 
     uses jdk.vm.ci.services.JVMCIServiceLocator;
     uses jdk.vm.ci.hotspot.HotSpotJVMCIBackendFactory;
