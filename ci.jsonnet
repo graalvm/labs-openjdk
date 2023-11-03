@@ -103,7 +103,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     DarwinAMD64:: self.Darwin + self.AMD64 + {
         # JDK 17 switched to Xcode 12.4 which requires 10.15.4
         # at a minimum (GR-32439)
-        capabilities+: ["darwin_test"]
+        capabilities+: ["darwin_ventura"]
     },
     DarwinAArch64:: self.Darwin + self.AArch64 + {
         capabilities+: ["darwin_ventura"],
