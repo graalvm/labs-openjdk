@@ -103,7 +103,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     DarwinAMD64:: self.Darwin + self.AMD64 + {
         # JDK 17 switched to Xcode 12.4 which requires 10.15.4
         # at a minimum (GR-32439)
-        capabilities+: ["darwin_test"]
+        capabilities+: ["darwin_ventura"]
     },
     DarwinAArch64:: self.Darwin + self.AArch64 + {
         capabilities+: ["darwin_ventura"],
@@ -243,7 +243,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # Downstream Graal branch to test against. If you change this value to anything but
     # "master", you must create an ol-jira issue to change it back to master once the
     # next JVMCI release has been made. Add the issue id as a comment here.
-    local downstream_branch = "labsjdk/automation-10-24-2023-6492",
+    local downstream_branch = "labsjdk/automation-11-3-2023-8273",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the

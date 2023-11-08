@@ -163,15 +163,7 @@ grant codeBase "jrt:/jdk.internal.le" {
     permission java.security.AllPermission;
 };
 
-grant codeBase "jrt:/jdk.internal.vm.compiler" {
-    permission java.security.AllPermission;
-};
-
 grant codeBase "jrt:/jdk.graal.compiler" {
-    permission java.security.AllPermission;
-};
-
-grant codeBase "jrt:/jdk.compiler.graal" {
     permission java.security.AllPermission;
 };
 
