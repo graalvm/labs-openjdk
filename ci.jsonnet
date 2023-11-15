@@ -44,7 +44,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         },
         packages+: {
             # devkit_platform_revisions in make/conf/jib-profiles.js
-            "devkit:VS2022-17.1.0+1" : "==1"
+            "devkit:VS2022-17.6.5+1" : "==0"
         },
         capabilities+: ["windows"],
         name+: "-windows-cygwin",
@@ -243,7 +243,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # Downstream Graal branch to test against. If you change this value to anything but
     # "master", you must create an ol-jira issue to change it back to master once the
     # next JVMCI release has been made. Add the issue id as a comment here.
-    local downstream_branch = "labsjdk/automation-11-3-2023-8273",
+    local downstream_branch = "labsjdk/automation-11-9-2023-7858",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
