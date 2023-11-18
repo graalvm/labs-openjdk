@@ -74,7 +74,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         },
         packages+: if for_jdk_build then {
             # devkit_platform_revisions in make/conf/jib-profiles.js
-            "devkit:gcc11.2.0-OL6.4+1" : "==0"
+            "devkit:gcc13.2.0-OL6.4+1" : "==0"
         } else {
             # When building/testing GraalVM, do not use a devkit as it is known not to
             # work well when dynamically linking libstdc++.
@@ -84,7 +84,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     LinuxAArch64(for_jdk_build):: self.Linux + self.AArch64 {
         packages+: if for_jdk_build then {
             # devkit_platform_revisions in make/conf/jib-profiles.js
-            "devkit:gcc11.2.0-OL7.6+1" : "==0"
+            "devkit:gcc13.2.0-OL7.6+1" : "==0"
         } else {
             # See GR-26071 as well as comment in self.LinuxAMD64
             devtoolset: "==7"
@@ -243,7 +243,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # Downstream Graal branch to test against. If you change this value to anything but
     # "master", you must create an ol-jira issue to change it back to master once the
     # next JVMCI release has been made. Add the issue id as a comment here.
-    local downstream_branch = "labsjdk/automation-11-9-2023-7858",
+    local downstream_branch = "labsjdk/automation-11-16-2023-5271",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
