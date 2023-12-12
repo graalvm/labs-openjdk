@@ -31,6 +31,9 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
             ZLIB_BUNDLING: "system",
             MX_PYTHON: "python3.8"
         },
+        packages+: {
+            cmake: "==3.22.2",
+        },
     },
 
     Windows:: self.OSBase + {
@@ -337,9 +340,6 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         timelimit: "1:30:00",
         logs: ["*.log"],
         targets: ["gate"],
-        packages+: {
-                cmake: "==3.22.2",
-        },
         run+: [
             ["mx", "-p", "graal-enterprise/vm-enterprise",
                 "--env", "libgraal-enterprise",
