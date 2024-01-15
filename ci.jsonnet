@@ -246,13 +246,15 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # Downstream Graal branch to test against. If you change this value to anything but
     # "master", you must create an ol-jira issue to change it back to master once the
     # next JVMCI release has been made. Add the issue id as a comment here.
-    local downstream_branch = "labsjdk/automation-1-8-2024-1624",
+    # You might want to point this to the merge commit of a Graal PR, i.e., include
+    # the "_gate" suffix.
+    local downstream_branch = "labsjdk/automation-1-12-2024-940_gate_0",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
         # named downstream branch. This ensures the graal-enterprise and
         # graal repos will be in sync.
-        local branch = if downstream_branch == "master" then "master" else downstream_branch + "_gate",
+        local branch = downstream_branch,
 
         run+: [
             ["git", "clone", defs.graal_enterprise_url],
@@ -291,7 +293,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
 
     CompilerTests(defs, conf, fastdebug):: conf + requireLabsJDK(conf) + clone_graal(defs) + {
         name: "test-compiler" + (if fastdebug then "-fastdebug" else "") + conf.name,
-        timelimit: "1:30:00",
+        timelimit: "1:45:00",
         logs: ["*.log"],
         targets: ["gate"],
         environment+: {
