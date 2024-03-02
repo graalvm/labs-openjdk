@@ -339,7 +339,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # Build and test LibGraal
     TestLibGraal(defs, conf):: conf + requireLabsJDK(conf) + clone_graal(defs) {
         name: "test-libgraal" + conf.name,
-        timelimit: "1:30:00",
+        timelimit: "1:45:00",
         logs: ["*.log"],
         targets: ["gate"],
         run+: [
