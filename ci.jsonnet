@@ -248,7 +248,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # next JVMCI release has been made. Add the issue id as a comment here.
     # You might want to point this to the merge commit of a Graal PR, i.e., include
     # the "_gate" suffix.
-    local downstream_branch = "labsjdk/automation-2-22-2024-3494_gate",
+    local downstream_branch = "labsjdk/automation-3-1-2024-8400_gate",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
@@ -339,7 +339,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # Build and test LibGraal
     TestLibGraal(defs, conf):: conf + requireLabsJDK(conf) + clone_graal(defs) {
         name: "test-libgraal" + conf.name,
-        timelimit: "1:30:00",
+        timelimit: "1:45:00",
         logs: ["*.log"],
         targets: ["gate"],
         run+: [
