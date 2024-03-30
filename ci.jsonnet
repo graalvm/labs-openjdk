@@ -386,13 +386,15 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         self.LinuxAArch64(true),
         self.DarwinAMD64,
         self.DarwinAArch64,
+        self.Windows + self.AMD64
     ],
 
     local graal_confs(defs) = [
         self.LinuxAMD64(defs, false),
         self.LinuxAArch64(false),
         self.DarwinAMD64,
-        self.DarwinAArch64
+        self.DarwinAArch64,
+        self.Windows + self.AMD64
     ],
 
     local amd64_musl_confs(defs) = [
