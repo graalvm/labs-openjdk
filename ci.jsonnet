@@ -374,7 +374,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
             JVMCI_VERSION_CHECK: "ignore",
 
             # The Truffle TCK tests run as a part of the Truffle TCK gate in the graal repo
-            TEST_LIBGRAAL_EXCLUDE: "com.oracle.truffle.tck.tests.* com.oracle.truffle.tools.* " +
+            TEST_LIBGRAAL_EXCLUDE: "com.oracle.truffle.tck.tests.* com.oracle.truffle.tools.* com.oracle.truffle.regex.* " +
 
             # Skip the longest running Truffle tests
             std.join(" ", truffle_long_running)
