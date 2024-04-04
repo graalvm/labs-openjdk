@@ -179,7 +179,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
 
     Build(defs, conf, is_musl_build):: conf + setupJDKSources(conf) + (if is_musl_build then self.MuslBootJDK else self.BootJDK) + {
         name: "build-jdk" + conf.name,
-        timelimit: "2:30:00", # Windows is the long pole
+        timelimit: "3:00:00", # Windows is the long pole
         diskspace_required: "10G",
         logs: ["*.log"],
         targets: ["gate"],
@@ -248,7 +248,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # next JVMCI release has been made. Add the issue id as a comment here.
     # You might want to point this to the merge commit of a Graal PR, i.e., include
     # the "_gate" suffix.
-    local downstream_branch = "labsjdk/automation-3-22-2024-5040_gate",
+    local downstream_branch = "labsjdk/automation-3-29-2024-97_gate",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
@@ -386,13 +386,15 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         self.LinuxAArch64(true),
         self.DarwinAMD64,
         self.DarwinAArch64,
+        self.Windows + self.AMD64
     ],
 
     local graal_confs(defs) = [
         self.LinuxAMD64(defs, false),
         self.LinuxAArch64(false),
         self.DarwinAMD64,
-        self.DarwinAArch64
+        self.DarwinAArch64,
+        self.Windows + self.AMD64
     ],
 
     local amd64_musl_confs(defs) = [
@@ -403,7 +405,6 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
             [ self.CompilerTests(defs, conf, fastdebug=true) for conf in graal_confs(defs) ] +
             [ self.CompilerTests(defs, conf, fastdebug=false) for conf in graal_confs(defs) ] +
             [ self.JavaScriptTests(defs, conf) for conf in graal_confs(defs) ] +
-            [ self.TestLibGraal(defs, conf) for conf in graal_confs(defs) ] +
             [ self.Build(defs, conf, is_musl_build=true) for conf in amd64_musl_confs(defs) ],
 
     local defs = {
