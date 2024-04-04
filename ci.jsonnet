@@ -179,7 +179,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
 
     Build(defs, conf, is_musl_build):: conf + setupJDKSources(conf) + (if is_musl_build then self.MuslBootJDK else self.BootJDK) + {
         name: "build-jdk" + conf.name,
-        timelimit: "2:30:00", # Windows is the long pole
+        timelimit: "3:00:00", # Windows is the long pole
         diskspace_required: "10G",
         logs: ["*.log"],
         targets: ["gate"],
