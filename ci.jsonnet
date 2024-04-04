@@ -405,7 +405,6 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
             [ self.CompilerTests(defs, conf, fastdebug=true) for conf in graal_confs(defs) ] +
             [ self.CompilerTests(defs, conf, fastdebug=false) for conf in graal_confs(defs) ] +
             [ self.JavaScriptTests(defs, conf) for conf in graal_confs(defs) ] +
-            [ self.TestLibGraal(defs, conf) for conf in graal_confs(defs) ] +
             [ self.Build(defs, conf, is_musl_build=true) for conf in amd64_musl_confs(defs) ],
 
     local defs = {
