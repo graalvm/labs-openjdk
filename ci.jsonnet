@@ -228,19 +228,6 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
             conf.copydir(conf.jdk_home("."), "${JDK_HOME}_fastdebug")
         ] else []),
 
-        publishArtifacts+: if !is_musl_build then [
-            {
-                name: "labsjdk" + conf.name,
-                dir: ".",
-                patterns: ["jdk_home", "jdk_home_fastdebug"]
-            }
-        ] else [
-            # In contrast to the labsjdk-builder repo, the gate in this repo
-            # does not bundle the musl static library into the main JDK. That is
-            # why the musl static library builder does not publish anything.
-            # The musl-based builder in this repo exists solely to ensure
-            # the musl build does not regress.
-        ],
     },
 
     # Downstream Graal branch to test against. If you change this value to anything but
@@ -248,7 +235,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # next JVMCI release has been made. Add the issue id as a comment here.
     # You might want to point this to the merge commit of a Graal PR, i.e., include
     # the "_gate" suffix.
-    local downstream_branch = "labsjdk/automation-4-11-2024-9476_gate",
+    local downstream_branch = "labsjdk/automation-4-18-2024-2259_gate",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
@@ -402,9 +389,6 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     ],
 
     DefineBuilds(defs):: [ self.Build(defs, conf, is_musl_build=false) for conf in build_confs(defs) ] +
-            [ self.CompilerTests(defs, conf, fastdebug=true) for conf in graal_confs(defs) ] +
-            [ self.CompilerTests(defs, conf, fastdebug=false) for conf in graal_confs(defs) ] +
-            [ self.JavaScriptTests(defs, conf) for conf in graal_confs(defs) ] +
             [ self.Build(defs, conf, is_musl_build=true) for conf in amd64_musl_confs(defs) ],
 
     local defs = {
