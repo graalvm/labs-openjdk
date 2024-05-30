@@ -142,8 +142,8 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         downloads+: {
             BOOT_JDK: {
                 name: "labsjdk",
-                version: "ee-22+8-jvmci-b01-musl-boot",
-                platformspecific: true
+                version: "ee-22+36-jvmci-b02-linux-amd64_musl",
+                platformspecific: false
             }
         },
         environment+: {
@@ -235,7 +235,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
     # next JVMCI release has been made. Add the issue id as a comment here.
     # You might want to point this to the merge commit of a Graal PR, i.e., include
     # the "_gate" suffix.
-    local downstream_branch = "labsjdk/automation-4-18-2024-2259_gate",
+    local downstream_branch = "master",
 
     local clone_graal(defs) = {
         # Checkout the graal-enterprise repo to the "_gate" version of the
