@@ -26,9 +26,11 @@
 package jdk.internal.platform.cgroupv2;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import jdk.internal.platform.CgroupInfo;
 import jdk.internal.platform.CgroupSubsystem;
@@ -141,7 +143,7 @@ public class CgroupV2Subsystem implements CgroupSubsystem {
             return CgroupSubsystem.LONG_RETVAL_UNLIMITED;
         }
         // $MAX $PERIOD
-        String[] tokens = cpuMaxRaw.split(" ");
+        String[] tokens = cpuMaxRaw.split("\\s+");
         if (tokens.length != 2) {
             return CgroupSubsystem.LONG_RETVAL_UNLIMITED;
         }
@@ -327,12 +329,10 @@ public class CgroupV2Subsystem implements CgroupSubsystem {
 
     private long sumTokensIOStat(Function<String, Long> mapFunc) {
         try {
-            long sum = 0L;
-            for (String line : CgroupUtil.readAllLinesPrivileged(Paths.get(unified.path(), "io.stat"))) {
-                sum += mapFunc.apply(line);
-            }
-            return sum;
-        } catch (IOException e) {
+            return CgroupUtil.readFilePrivileged(Paths.get(unified.path(), "io.stat"))
+                                .map(mapFunc)
+                                .collect(Collectors.summingLong(e -> e));
+        } catch (UncheckedIOException | IOException e) {
             return CgroupSubsystem.LONG_RETVAL_UNLIMITED;
         }
     }
@@ -359,7 +359,7 @@ public class CgroupV2Subsystem implements CgroupSubsystem {
         if (line == null || EMPTY_STR.equals(line)) {
             return Long.valueOf(0);
         }
-        String[] tokens = line.split(" ");
+        String[] tokens = line.split("\\s+");
         long retval = 0;
         for (String t: tokens) {
             String[] valKeys = t.split("=");
