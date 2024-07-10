@@ -107,7 +107,7 @@ public class CgroupInfo {
      *
      */
     static CgroupInfo fromCgroupsLine(String line) {
-        String[] tokens = line.split("\t");
+        String[] tokens = line.split("\\s+");
         if (tokens.length != 4) {
             return null;
         }
