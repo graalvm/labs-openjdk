@@ -58,7 +58,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         },
     },
     Linux:: self.OSBase + {
-        capabilities+: ["linux"],
+        capabilities+: ["linux", "!e3"],
         name+: "-linux",
         os:: "linux",
     },
