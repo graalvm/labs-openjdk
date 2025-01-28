@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2024, Red Hat, Inc.
+ * Copyright (c) 2024, 2025, Red Hat, Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -124,39 +126,25 @@ public class JimageDiffGenerator {
     private boolean compareStreams(InputStream is1, InputStream is2) {
         byte[] buf1 = new byte[1024];
         byte[] buf2 = new byte[1024];
-        int bytesRead1, bytesRead2 = 0;
-        try {
-            try (is1; is2) {
-                while ((bytesRead1 = is1.read(buf1)) != -1 &&
-                       (bytesRead2 = is2.read(buf2)) != -1) {
-                    if (bytesRead1 != bytesRead2) {
-                        return false;
-                    }
-                    if (bytesRead1 == buf1.length) {
-                        if (!Arrays.equals(buf1, buf2)) {
-                            return false;
-                        }
-                    } else {
-                        for (int i = 0; i < bytesRead1; i++) {
-                            if (buf1[i] != buf2[i]) {
-                                return false;
-                            }
-                        }
-                    }
+        int bytesRead1, bytesRead2;
+        try (is1; is2) {
+            while (true) {
+                bytesRead1 = is1.readNBytes(buf1, 0, buf1.length);
+                bytesRead2 = is2.readNBytes(buf2, 0, buf2.length);
+                if (!Arrays.equals(buf1, 0, bytesRead1,
+                                   buf2, 0, bytesRead2)) {
+                    return false;
                 }
-                // ensure we read both to the end
-                if (bytesRead1 == -1) {
-                    bytesRead2 = is2.read(buf2);
-                    if (bytesRead2 != -1) {
-                        return false;
-                    }
+                if (bytesRead1 == 0) {
+                    // If we reach here, bytesRead2 must be 0 as well, otherwise
+                    // we return false on the !Arrays.equals() check above.
+                    assert bytesRead2 == 0 : "Arrays must have been read to the end";
                     return true;
                 }
             }
         } catch (IOException e) {
             throw new UncheckedIOException("IO exception when comparing bytes", e);
         }
-        return false;
     }
 
 }
