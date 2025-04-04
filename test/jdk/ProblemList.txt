@@ -825,3 +825,4 @@ jdk/internal/platform/docker/TestDockerMemoryMetricsSubgroup.java 8352926 linux-
 jdk/jfr/api/consumer/streaming/TestJVMExit.java 8344671 macosx-aarch64
 jdk/jfr/api/consumer/streaming/TestJVMCrash.java 8344671 macosx-aarch64
 jdk/jfr/api/consumer/streaming/TestOutOfProcessMigration.java 8344671 macosx-aarch64
+javax/sound/midi/Sequencer/MetaCallback.java 8299218 macosx-aarch64
