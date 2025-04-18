@@ -7,7 +7,7 @@ local labsjdk_builder_version = "181ae3a6077f9bf0a117cc34562c33e871cd4ede";
 local contains(str, needle) = std.findSubstr(needle, str) != [];
 
 {
-    overlay: "616937561244a0b2c6ff8e001b11b4e304a85a8a",
+    overlay: "71bd3aa4622661dda0587fdf9000de4bb1029438",
     specVersion: "3",
 
     mxDependencies:: {
@@ -77,20 +77,24 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         },
         packages+: if for_jdk_build then {
             # devkit_platform_revisions in make/conf/jib-profiles.js
-            "devkit:gcc13.2.0-OL6.4+1" : "==0"
+            "devkit:gcc14.2.0-OL6.4+1" : "==0"
         } else {
             # When building/testing GraalVM, do not use a devkit as it is known not to
             # work well when dynamically linking libstdc++.
             devtoolset: "==7"
         },
     },
-    LinuxAArch64(for_jdk_build):: self.Linux + self.AArch64 {
+    LinuxAArch64(defs, for_jdk_build):: self.Linux + self.AArch64 {
         packages+: if for_jdk_build then {
             # devkit_platform_revisions in make/conf/jib-profiles.js
-            "devkit:gcc13.2.0-OL7.6+1" : "==0"
+            "devkit:gcc14.2.0-OL7.6+1" : "==0"
         } else {
             # See GR-26071 as well as comment in self.LinuxAMD64
             devtoolset: "==7"
+        },
+        docker:{
+            image: defs.linux_docker_image_amd64,
+            mount_modules: true
         },
     },
     Darwin:: self.OSBase + {
@@ -370,7 +374,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
 
     local build_confs(defs) = [
         self.LinuxAMD64(defs, true),
-        self.LinuxAArch64(true),
+        self.LinuxAArch64(defs, true),
         self.DarwinAMD64,
         self.DarwinAArch64,
         self.Windows + self.AMD64
@@ -378,7 +382,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
 
     local graal_confs(defs) = [
         self.LinuxAMD64(defs, false),
-        self.LinuxAArch64(false),
+        self.LinuxAArch64(defs, false),
         self.DarwinAMD64,
         self.DarwinAArch64,
         self.Windows + self.AMD64
