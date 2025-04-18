@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,8 +41,6 @@ import sun.net.www.ParseUtil;
 import sun.net.www.protocol.http.AuthCacheImpl;
 import sun.net.www.protocol.http.HttpURLConnection;
 import sun.util.logging.PlatformLogger;
-
-import static sun.net.util.ProxyUtil.copyProxy;
 import static sun.net.www.protocol.http.HttpURLConnection.TunnelState.*;
 
 /**
@@ -263,7 +261,7 @@ public class HttpClient extends NetworkClient {
     }
 
     protected HttpClient(URL url, Proxy p, int to) throws IOException {
-        proxy = p == null ? Proxy.NO_PROXY : copyProxy(p);
+        proxy = (p == null) ? Proxy.NO_PROXY : p;
         this.host = url.getHost();
         this.url = url;
         port = url.getPort();
@@ -328,7 +326,9 @@ public class HttpClient extends NetworkClient {
     public static HttpClient New(URL url, Proxy p, int to, boolean useCache,
         HttpURLConnection httpuc) throws IOException
     {
-        p = p == null ? Proxy.NO_PROXY : copyProxy(p);
+        if (p == null) {
+            p = Proxy.NO_PROXY;
+        }
         HttpClient ret = null;
         /* see if one's already around */
         if (useCache) {
@@ -1142,3 +1142,4 @@ public class HttpClient extends NetworkClient {
         clientLock.unlock();
     }
 }
+
