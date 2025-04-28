@@ -659,3 +659,4 @@ public class FtpURLConnection extends URLConnection {
         return readTimeout < 0 ? 0 : readTimeout;
     }
 }
+
