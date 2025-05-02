@@ -47,7 +47,7 @@ local contains(str, needle) = std.findSubstr(needle, str) != [];
         },
         packages+: {
             # devkit_platform_revisions in make/conf/jib-profiles.js
-            "devkit:VS2022-17.6.5+1" : "==0"
+            "devkit:VS2022-17.13.2+1" : "==0"
         },
         capabilities+: ["windows"],
         name+: "-windows-cygwin",
