@@ -248,6 +248,42 @@ public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated
     ResolvedJavaType getArrayClass();
 
     /**
+     * Returns an unmodifiable list of {@link JavaType} objects representing the subclasses or
+     * subinterfaces that are explicitly permitted to extend or implement this sealed class or
+     * interface, as declared in its <em>PermittedSubclasses</em> class file attribute. Only direct
+     * subtypes listed by the sealing declaration are included.
+     * <p>
+     * For each subtype, if it is resolved, the entry will be a {@link ResolvedJavaType}; otherwise
+     * it will be an {@link UnresolvedJavaType}. For unresolved subtypes, callers must not assume
+     * whether a type is a direct or indirect permitted subtype. The order of the results matches
+     * that of {@link Class#getPermittedSubclasses()}.
+     * <p>
+     * If the type is not sealed, returns {@code null}.
+     *
+     * @return unmodifiable list of permitted subtypes, or {@code null} if this type is not sealed
+     * @see Class#getPermittedSubclasses()
+     */
+    List<JavaType> getPermittedSubclasses();
+
+    /**
+     * Returns {@code true} if and only if this type represents a sealed class or
+     * interface. If this type represents a primitive type, {@code void}, or an array
+     * type, this method returns {@code false}. A sealed class or interface has
+     * (possibly zero) permitted subclasses; {@link #getPermittedSubclasses()} returns
+     * a non-null but possibly empty value for a sealed class or interface.
+     *
+     * @return {@code true} if and only if this type represents a sealed class
+     * or interface.
+     * @see Class#isSealed()
+     */
+    default boolean isSealed() {
+        if (isArray() || isPrimitive()) {
+            return false;
+        }
+        return getPermittedSubclasses() != null;
+    }
+
+    /**
      * Resolves the method implementation for virtual dispatches on objects of this dynamic type.
      * This resolution process only searches "up" the class hierarchy of this type. A broader search
      * that also walks "down" the hierarchy is implemented by

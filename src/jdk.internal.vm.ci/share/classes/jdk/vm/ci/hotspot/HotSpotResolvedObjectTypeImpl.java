@@ -34,6 +34,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -100,7 +102,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
 
     /**
      * Gets the JVMCI mirror from a HotSpot type.
-     *
+     * <p>
      * Called from the VM.
      *
      * @param klassPointer a native pointer to the Klass*
@@ -181,6 +183,67 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
             }
         }
         return this.equals(componentType) ? null : componentType;
+    }
+
+    @Override
+    public List<JavaType> getPermittedSubclasses() {
+        if (isArray() || isPrimitive()) {
+            return null;
+        }
+        HotSpotVMConfig config = config();
+        final long metaspacePermittedSubclasses = UNSAFE.getAddress(getKlassPointer() + config.instanceKlassPermittedSubclassesOffset);
+        if (metaspacePermittedSubclasses == 0) {
+            return null;
+        }
+        final int length = UNSAFE.getInt(metaspacePermittedSubclasses + config.arrayJUShortLengthOffset);
+        if (length == 0) {
+            return null;
+        }
+        // is_sealed
+        ArrayList<JavaType> permittedSubclasses = new ArrayList<>(length);
+        for (long i = 0; i < length; i++) {
+            int cpIndex = UNSAFE.getShort(metaspacePermittedSubclasses + config.arrayJUShortDataOffset + compilerToVM().ARRAY_SHORT_INDEX_SCALE * i);
+            Object cpEntry = getConstantPool().lookupConstant(cpIndex);
+            if (cpEntry instanceof ResolvedJavaType rjt) {
+                if (isDirectSubType(rjt)) {
+                    // only adding direct subtypes
+                    permittedSubclasses.add(rjt);
+                }
+            } else if (cpEntry instanceof UnresolvedJavaType ujr) {
+                // Unresolved - cannot tell if it is a direct or indirect subtype
+                permittedSubclasses.add(ujr);
+            } else {
+                throw new InternalError("Unexpected ConstantPool entry: " + cpEntry);
+            }
+        }
+        return Collections.unmodifiableList(permittedSubclasses);
+    }
+
+    @Override
+    public boolean isSealed() {
+        if (isArray()) {
+            return false;
+        }
+        HotSpotVMConfig config = config();
+        final long metaspacePermittedSubclasses = UNSAFE.getAddress(getKlassPointer() + config.instanceKlassPermittedSubclassesOffset);
+        if (metaspacePermittedSubclasses == 0) {
+            return false;
+        }
+        final int length = UNSAFE.getInt(metaspacePermittedSubclasses + config.arrayJUShortLengthOffset);
+        return length != 0;
+    }
+
+    private boolean isDirectSubType(ResolvedJavaType c) {
+        if (isInterface()) {
+            for (ResolvedJavaType i : c.getInterfaces()) {
+                if (i == this) {
+                    return true;
+                }
+            }
+        } else {
+            return c.getSuperclass() == this;
+        }
+        return false;
     }
 
     @Override
@@ -694,11 +757,11 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         /**
          * Creates a field info with the provided indices.
          *
-         * @param nameIndex index of field's name in the constant pool
-         * @param signatureIndex index of field's signature in the constant pool
-         * @param offset field's offset
-         * @param classfileFlags field's access flags (from the class file)
-         * @param internalFlags field's internal flags (from the VM)
+         * @param nameIndex        index of field's name in the constant pool
+         * @param signatureIndex   index of field's signature in the constant pool
+         * @param offset           field's offset
+         * @param classfileFlags   field's access flags (from the class file)
+         * @param internalFlags    field's internal flags (from the VM)
          * @param initializerIndex field's initial value index in the constant pool
          */
         FieldInfo(int nameIndex, int signatureIndex, int offset, int classfileFlags, int internalFlags, int initializerIndex) {
@@ -737,6 +800,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         /**
          * Returns the name of this field as a {@link String}. If the field is an internal field the
          * name index is pointing into the vmSymbols table.
+         *
          * @param klass field's holder class
          */
         public String getName(HotSpotResolvedObjectTypeImpl klass) {
@@ -746,6 +810,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         /**
          * Returns the signature of this field as {@link String}. If the field is an internal field
          * the signature index is pointing into the vmSymbols table.
+         *
          * @param klass field's holder class
          */
         public String getSignature(HotSpotResolvedObjectTypeImpl klass) {
@@ -828,7 +893,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
      * Gets the instance or static fields of this class.
      *
      * @param retrieveStaticFields specifies whether to return instance or static fields
-     * @param prepend an array to be prepended to the returned result
+     * @param prepend              an array to be prepended to the returned result
      */
     private HotSpotResolvedJavaField[] getFields(boolean retrieveStaticFields, HotSpotResolvedJavaField[] prepend) {
         HotSpotVMConfig config = config();
@@ -954,7 +1019,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
 
     private boolean hasSameClassLoader(HotSpotResolvedObjectTypeImpl otherMirror) {
         return UnsafeAccess.UNSAFE.getAddress(getKlassPointer() + config().classLoaderDataOffset) == UnsafeAccess.UNSAFE.getAddress(
-                        otherMirror.getKlassPointer() + config().classLoaderDataOffset);
+                otherMirror.getKlassPointer() + config().classLoaderDataOffset);
     }
 
     @Override
