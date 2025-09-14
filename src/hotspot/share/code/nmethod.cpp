@@ -1942,6 +1942,11 @@ bool nmethod::is_maybe_on_stack() {
 void nmethod::inc_decompile_count() {
   if (!is_compiled_by_c2() && !is_compiled_by_jvmci()) return;
   // Could be gated by ProfileTraps, but do not bother...
+#if INCLUDE_JVMCI
+  if (jvmci_skip_profile_deopt()) {
+    return;
+  }
+#endif
   Method* m = method();
   if (m == nullptr)  return;
   MethodData* mdo = m->method_data();
@@ -4063,5 +4068,9 @@ const char* nmethod::jvmci_name() {
     return jvmci_nmethod_data()->name();
   }
   return nullptr;
+}
+
+bool nmethod::jvmci_skip_profile_deopt() const {
+  return jvmci_nmethod_data() != nullptr && !jvmci_nmethod_data()->profile_deopt();
 }
 #endif
