@@ -42,8 +42,6 @@ import jdk.vm.ci.meta.SpeculationLog;
 import jdk.vm.ci.meta.SpeculationLog.NoSpeculationReason;
 import jdk.vm.ci.meta.SpeculationLog.Speculation;
 
-// JaCoCo Exclude
-
 /**
  * HotSpot implementation of {@link MetaAccessProvider}.
  */
@@ -84,7 +82,6 @@ public class HotSpotMetaAccessProvider implements MetaAccessProvider {
     @Override
     public ResolvedJavaField lookupJavaField(Field reflectionField) {
         Class<?> fieldHolder = reflectionField.getDeclaringClass();
-
         HotSpotResolvedJavaType holder = runtime.fromClass(fieldHolder);
         assert holder != null : fieldHolder;
         ResolvedJavaField[] fields;

@@ -49,6 +49,7 @@
 #include "oops/instanceMirrorKlass.hpp"
 #include "oops/method.inline.hpp"
 #include "oops/objArrayKlass.inline.hpp"
+#include "oops/recordComponent.hpp"
 #include "oops/trainingData.hpp"
 #include "oops/typeArrayOop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
@@ -400,7 +401,7 @@ C2V_VMENTRY_NULL(jobject, asResolvedJavaMethod, (JNIEnv* env, jobject, jobject e
   methodHandle method (THREAD, InstanceKlass::cast(holder)->method_with_idnum(slot));
   JVMCIObject result = JVMCIENV->get_jvmci_method(method, JVMCI_CHECK_NULL);
   return JVMCIENV->get_jobject(result);
-}
+C2V_END
 
 C2V_VMENTRY_PREFIX(jboolean, updateCompilerThreadCanCallJava, (JNIEnv* env, jobject, jboolean newState))
   return CompilerThreadCanCallJava::update(thread, newState) != nullptr;
@@ -2283,6 +2284,28 @@ C2V_VMENTRY_NULL(jobjectArray, getDeclaredMethods, (JNIEnv* env, jobject, ARGUME
   return JVMCIENV->get_jobjectArray(methods);
 C2V_END
 
+C2V_VMENTRY_NULL(jobjectArray, getRecordComponents, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass)))
+  Klass* klass = UNPACK_PAIR(Klass, klass);
+  if (klass == nullptr) {
+    JVMCI_THROW_NULL(NullPointerException);
+  }
+  if (!klass->is_instance_klass()) {
+    return nullptr;
+  }
+
+  InstanceKlass* iklass = InstanceKlass::cast(klass);
+  Array<RecordComponent*>* components = iklass->record_components();
+  if (components == nullptr) {
+    return nullptr;
+  }
+  JVMCIObjectArray res = JVMCIENV->new_ResolvedJavaRecordComponent_array(components->length(), JVMCI_CHECK_NULL);
+  for (int i = 0; i < components->length(); i++) {
+    JVMCIObject component = JVMCIENV->new_HotSpotResolvedJavaRecordComponent(JVMCIENV->wrap(klass_obj), i, components->at(i), JVMCI_CHECK_NULL);
+    JVMCIENV->put_object_at(res, i, component);
+  }
+  return JVMCIENV->get_jobjectArray(res);
+C2V_END
+
 C2V_VMENTRY_NULL(jobjectArray, getAllMethods, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass)))
   Klass* klass = UNPACK_PAIR(Klass, klass);
   if (klass == nullptr) {
@@ -3051,89 +3074,93 @@ C2V_VMENTRY_NULL(jobject, asReflectionField, (JNIEnv* env, jobject, ARGUMENT_PAI
   return JNIHandles::make_local(THREAD, reflected);
 C2V_END
 
-static jbyteArray get_encoded_annotation_data(InstanceKlass* holder, AnnotationArray* annotations_array, bool for_class,
-                                              jint filter_length, jlong filter_klass_pointers,
-                                              JavaThread* THREAD, JVMCI_TRAPS) {
-  // Get a ConstantPool object for annotation parsing
-  Handle jcp = reflect_ConstantPool::create(CHECK_NULL);
-  reflect_ConstantPool::set_cp(jcp(), holder->constants());
+C2V_VMENTRY_NULL(jbyteArray, getRawAnnotationBytes, (JNIEnv* env, jobject, jchar containerTag, ARGUMENT_PAIR(container), jint fieldOrRecordComponentIndex, jint category))
+  AnnotationArray* raw_annotations = nullptr;
+  bool illegal_category = false;
+  const char* illegal_category_container_title = nullptr;
+  switch (containerTag) {
+    case 't': {
+      InstanceKlass* holder = InstanceKlass::cast(UNPACK_PAIR(Klass, container));
+      if (category == CompilerToVM::DECLARED_ANNOTATIONS) {
+        raw_annotations = holder->class_annotations();
+      } else if (category == CompilerToVM::TYPE_ANNOTATIONS) {
+        raw_annotations = holder->class_type_annotations();
+      } else {
+        illegal_category = true;
+      }
+      break;
+    }
+    case 'm': {
+      methodHandle method(THREAD, UNPACK_PAIR(Method, container));
+      if (category == CompilerToVM::DECLARED_ANNOTATIONS) {
+        raw_annotations = method->annotations();
+      } else if (category == CompilerToVM::PARAMETER_ANNOTATIONS) {
+        raw_annotations = method->parameter_annotations();
+      } else if (category == CompilerToVM::TYPE_ANNOTATIONS) {
+        raw_annotations = method->type_annotations();
+      } else if (category == CompilerToVM::ANNOTATION_MEMBER_VALUE) {
+        raw_annotations = method->annotation_default();
+      } else {
+        illegal_category = true;
+      }
+      break;
+    }
+    case 'f': {
+      InstanceKlass* holder = check_field(InstanceKlass::cast(UNPACK_PAIR(Klass, container)), fieldOrRecordComponentIndex, JVMCI_CHECK_NULL);
+      fieldDescriptor fd(holder, fieldOrRecordComponentIndex);
+      if (category == CompilerToVM::DECLARED_ANNOTATIONS) {
+        raw_annotations = fd.annotations();
+      } else if (category == CompilerToVM::TYPE_ANNOTATIONS) {
+        raw_annotations = fd.type_annotations();
+      } else {
+        illegal_category = true;
+      }
+      break;
+    }
+    case 'r': {
+      InstanceKlass* holder = InstanceKlass::cast(UNPACK_PAIR(Klass, container));
+      Array<RecordComponent*>* components = holder->record_components();
+      if (components == nullptr) {
+        THROW_MSG_NULL(vmSymbols::java_lang_IllegalArgumentException(),
+                      err_msg("%s has no record components", holder->name()->as_C_string()));
+      }
+      if (fieldOrRecordComponentIndex < 0 || fieldOrRecordComponentIndex >= components->length()) {
+        THROW_MSG_NULL(vmSymbols::java_lang_IllegalArgumentException(),
+                      err_msg("%d is out of bounds for record components of %s",
+                              fieldOrRecordComponentIndex,
+                              holder->name()->as_C_string()));
+      }
+      RecordComponent* rc = components->at(fieldOrRecordComponentIndex);
+      if (category == CompilerToVM::DECLARED_ANNOTATIONS) {
+        raw_annotations = rc->annotations();
+      } else if (category == CompilerToVM::TYPE_ANNOTATIONS) {
+        raw_annotations = rc->type_annotations();
+      } else {
+        illegal_category = true;
+      }
+      break;
+    }
+    default: {
+      THROW_MSG_NULL(vmSymbols::java_lang_IllegalArgumentException(),
+                    err_msg("illegal tag %c", containerTag));
 
-  // load VMSupport
-  Symbol* klass = vmSymbols::jdk_internal_vm_VMSupport();
-  Klass* k = SystemDictionary::resolve_or_fail(klass, true, CHECK_NULL);
-
-  InstanceKlass* vm_support = InstanceKlass::cast(k);
-  if (vm_support->should_be_initialized()) {
-    vm_support->initialize(CHECK_NULL);
+    }
   }
-
-  typeArrayOop annotations_oop = Annotations::make_java_array(annotations_array, CHECK_NULL);
-  typeArrayHandle annotations = typeArrayHandle(THREAD, annotations_oop);
-
-  InstanceKlass** filter = filter_length == 1 ?
-      (InstanceKlass**) &filter_klass_pointers:
-      (InstanceKlass**) filter_klass_pointers;
-  objArrayOop filter_oop = oopFactory::new_objArray(vmClasses::Class_klass(), filter_length, CHECK_NULL);
-  objArrayHandle filter_classes(THREAD, filter_oop);
-  for (int i = 0; i < filter_length; i++) {
-    filter_classes->obj_at_put(i, filter[i]->java_mirror());
+  if (illegal_category) {
+    THROW_MSG_NULL(vmSymbols::java_lang_IllegalArgumentException(),
+                  err_msg("Illegal category for a %s: %d",
+                    containerTag == 't' ? "type" :
+                    containerTag == 'm' ? "method" :
+                    containerTag == 'f' ? "field" : "record component",
+                    category));
   }
-
-  // invoke VMSupport.encodeAnnotations
-  JavaValue result(T_OBJECT);
-  JavaCallArguments args;
-  args.push_oop(annotations);
-  args.push_oop(Handle(THREAD, holder->java_mirror()));
-  args.push_oop(jcp);
-  args.push_int(for_class);
-  args.push_oop(filter_classes);
-  Symbol* signature = vmSymbols::encodeAnnotations_signature();
-  JavaCalls::call_static(&result,
-                         vm_support,
-                         vmSymbols::encodeAnnotations_name(),
-                         signature,
-                         &args,
-                         CHECK_NULL);
-
-  oop res = result.get_oop();
-  if (JVMCIENV->is_hotspot()) {
-    return (jbyteArray) JNIHandles::make_local(THREAD, res);
+  if (raw_annotations == nullptr) {
+    return nullptr;
   }
-
-  typeArrayOop ba = typeArrayOop(res);
-  int ba_len = ba->length();
-  jbyte* ba_buf = NEW_RESOURCE_ARRAY_IN_THREAD_RETURN_NULL(THREAD, jbyte, ba_len);
-  if (ba_buf == nullptr) {
-    JVMCI_THROW_MSG_NULL(InternalError,
-              err_msg("could not allocate %d bytes", ba_len));
-
-  }
-  memcpy(ba_buf, ba->byte_at_addr(0), ba_len);
-  JVMCIPrimitiveArray ba_dest = JVMCIENV->new_byteArray(ba_len, JVMCI_CHECK_NULL);
-  JVMCIENV->copy_bytes_from(ba_buf, ba_dest, 0, ba_len);
-  return JVMCIENV->get_jbyteArray(ba_dest);
-}
-
-C2V_VMENTRY_NULL(jbyteArray, getEncodedClassAnnotationData, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass),
-                 jobject filter, jint filter_length, jlong filter_klass_pointers))
-  CompilerThreadCanCallJava canCallJava(thread, true); // Requires Java support
-  InstanceKlass* holder = InstanceKlass::cast(UNPACK_PAIR(Klass, klass));
-  return get_encoded_annotation_data(holder, holder->class_annotations(), true, filter_length, filter_klass_pointers, THREAD, JVMCIENV);
-C2V_END
-
-C2V_VMENTRY_NULL(jbyteArray, getEncodedExecutableAnnotationData, (JNIEnv* env, jobject, ARGUMENT_PAIR(method),
-                 jobject filter, jint filter_length, jlong filter_klass_pointers))
-  CompilerThreadCanCallJava canCallJava(thread, true); // Requires Java support
-  methodHandle method(THREAD, UNPACK_PAIR(Method, method));
-  return get_encoded_annotation_data(method->method_holder(), method->annotations(), false, filter_length, filter_klass_pointers, THREAD, JVMCIENV);
-C2V_END
-
-C2V_VMENTRY_NULL(jbyteArray, getEncodedFieldAnnotationData, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass), jint index,
-                 jobject filter, jint filter_length, jlong filter_klass_pointers))
-  CompilerThreadCanCallJava canCallJava(thread, true); // Requires Java support
-  InstanceKlass* holder = check_field(InstanceKlass::cast(UNPACK_PAIR(Klass, klass)), index, JVMCI_CHECK_NULL);
-  fieldDescriptor fd(holder, index);
-  return get_encoded_annotation_data(holder, fd.annotations(), false, filter_length, filter_klass_pointers, THREAD, JVMCIENV);
+  int length = raw_annotations->length();
+  JVMCIPrimitiveArray result = JVMCIENV->new_byteArray(length, JVMCI_CHECK_NULL);
+  JVMCIENV->copy_bytes_from((jbyte*) raw_annotations->data(), result, 0, length);
+  return JVMCIENV->get_jbyteArray(result);
 C2V_END
 
 C2V_VMENTRY_NULL(jobjectArray, getFailedSpeculations, (JNIEnv* env, jobject, jlong failed_speculations_address, jobjectArray current))
@@ -3337,13 +3364,13 @@ C2V_END
 #define OBJECT                  "Ljava/lang/Object;"
 #define CLASS                   "Ljava/lang/Class;"
 #define OBJECTCONSTANT          "Ljdk/vm/ci/hotspot/HotSpotObjectConstantImpl;"
-#define EXECUTABLE              "Ljava/lang/reflect/Executable;"
 #define STACK_TRACE_ELEMENT     "Ljava/lang/StackTraceElement;"
 #define INSTALLED_CODE          "Ljdk/vm/ci/code/InstalledCode;"
 #define BYTECODE_FRAME          "Ljdk/vm/ci/code/BytecodeFrame;"
 #define JAVACONSTANT            "Ljdk/vm/ci/meta/JavaConstant;"
 #define INSPECTED_FRAME_VISITOR "Ljdk/vm/ci/code/stack/InspectedFrameVisitor;"
 #define RESOLVED_METHOD         "Ljdk/vm/ci/meta/ResolvedJavaMethod;"
+#define RESOLVED_RECORD_COMPONENT "Ljdk/vm/ci/meta/ResolvedJavaRecordComponent;"
 #define FIELDINFO               "Ljdk/vm/ci/hotspot/HotSpotResolvedObjectTypeImpl$FieldInfo;"
 #define HS_RESOLVED_TYPE        "Ljdk/vm/ci/hotspot/HotSpotResolvedJavaType;"
 #define HS_INSTALLED_CODE       "Ljdk/vm/ci/hotspot/HotSpotInstalledCode;"
@@ -3352,8 +3379,8 @@ C2V_END
 #define HS_CONFIG               "Ljdk/vm/ci/hotspot/HotSpotVMConfig;"
 #define HS_STACK_FRAME_REF      "Ljdk/vm/ci/hotspot/HotSpotStackFrameReference;"
 #define HS_SPECULATION_LOG      "Ljdk/vm/ci/hotspot/HotSpotSpeculationLog;"
-#define REFLECTION_EXECUTABLE   "Ljava/lang/reflect/Executable;"
-#define REFLECTION_FIELD        "Ljava/lang/reflect/Field;"
+#define EXECUTABLE              "Ljava/lang/reflect/Executable;"
+#define FIELD                   "Ljava/lang/reflect/Field;"
 
 // Types wrapping VM pointers. The ...2 macro is for a pair: (wrapper, pointer)
 #define HS_METHOD               "Ljdk/vm/ci/hotspot/HotSpotResolvedJavaMethodImpl;"
@@ -3370,8 +3397,8 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "arrayBaseOffset",                              CC "(C)I",                                                                            FN_PTR(arrayBaseOffset)},
   {CC "arrayIndexScale",                              CC "(C)I",                                                                            FN_PTR(arrayIndexScale)},
   {CC "asJavaType",                                   CC "(" OBJECTCONSTANT ")" HS_RESOLVED_TYPE,                                           FN_PTR(asJavaType)},
-  {CC "asReflectionExecutable",                       CC "(" HS_METHOD2 ")" REFLECTION_EXECUTABLE,                                          FN_PTR(asReflectionExecutable)},
-  {CC "asReflectionField",                            CC "(" HS_KLASS2 "I)" REFLECTION_FIELD,                                               FN_PTR(asReflectionField)},
+  {CC "asReflectionExecutable",                       CC "(" HS_METHOD2 ")" EXECUTABLE,                                                     FN_PTR(asReflectionExecutable)},
+  {CC "asReflectionField",                            CC "(" HS_KLASS2 "I)" FIELD,                                                          FN_PTR(asReflectionField)},
   {CC "asResolvedJavaMethod",                         CC "(" EXECUTABLE ")" HS_METHOD,                                                      FN_PTR(asResolvedJavaMethod)},
   {CC "asString",                                     CC "(" OBJECTCONSTANT ")" STRING,                                                     FN_PTR(asString)},
   {CC "attachCurrentThread",                          CC "([BZ[J)Z",                                                                        FN_PTR(attachCurrentThread)},
@@ -3407,9 +3434,6 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "getDeclaredFieldsInfo",                        CC "(" HS_KLASS2 ")[" FIELDINFO,                                                      FN_PTR(getDeclaredFieldsInfo)},
   {CC "getDeclaredMethods",                           CC "(" HS_KLASS2 ")[" RESOLVED_METHOD,                                                FN_PTR(getDeclaredMethods)},
   {CC "getDeclaredTypes",                             CC "(" HS_KLASS2 ")[" HS_KLASS,                                                       FN_PTR(getDeclaredTypes)},
-  {CC "getEncodedClassAnnotationData",                CC "(" HS_KLASS2 OBJECT "IJ)[B",                                                      FN_PTR(getEncodedClassAnnotationData)},
-  {CC "getEncodedExecutableAnnotationData",           CC "(" HS_METHOD2 OBJECT "IJ)[B",                                                     FN_PTR(getEncodedExecutableAnnotationData)},
-  {CC "getEncodedFieldAnnotationData",                CC "(" HS_KLASS2 "I" OBJECT "IJ)[B",                                                  FN_PTR(getEncodedFieldAnnotationData)},
   {CC "getExceptionTableLength",                      CC "(" HS_METHOD2 ")I",                                                               FN_PTR(getExceptionTableLength)},
   {CC "getExceptionTableStart",                       CC "(" HS_METHOD2 ")J",                                                               FN_PTR(getExceptionTableStart)},
   {CC "getFailedSpeculations",                        CC "(J[[B)[[B",                                                                       FN_PTR(getFailedSpeculations)},
@@ -3427,6 +3451,8 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "getMaxCallTargetOffset",                       CC "(J)J",                                                                            FN_PTR(getMaxCallTargetOffset)},
   {CC "getNumIndyEntries",                            CC "(" HS_CONSTANT_POOL2 ")I",                                                        FN_PTR(getNumIndyEntries)},
   {CC "getOopMapAt",                                  CC "(" HS_METHOD2 "I[J)V",                                                            FN_PTR(getOopMapAt)},
+  {CC "getRawAnnotationBytes",                        CC "(C" OBJECT "JII)[B",                                                              FN_PTR(getRawAnnotationBytes)},
+  {CC "getRecordComponents",                          CC "(" HS_KLASS2 ")[" RESOLVED_RECORD_COMPONENT,                                      FN_PTR(getRecordComponents)},
   {CC "getResolvedJavaMethod",                        CC "(" OBJECTCONSTANT "J)" HS_METHOD,                                                 FN_PTR(getResolvedJavaMethod)},
   {CC "getResolvedJavaType0",                         CC "(Ljava/lang/Object;JZ)" HS_KLASS,                                                 FN_PTR(getResolvedJavaType0)},
   {CC "getSignatureName",                             CC "(J)" STRING,                                                                      FN_PTR(getSignatureName)},
