@@ -333,8 +333,22 @@ public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated
 
     /**
      * Returns {@code true} if the type is a member type.
+     *
+     * @see Class#isMemberClass()
      */
     boolean isMember();
+
+    /**
+     * Gets the classes and interfaces declared as members of this type.
+     * This includes public, protected, default
+     * (package) access, and private classes and interfaces declared by the
+     * class, but excludes inherited classes and interfaces. This method
+     * returns an array of length 0 if this type declares no classes or
+     * interfaces as members, or if it is a primitive type, an array class, or void.
+     *
+     * @see Class#getDeclaredClasses()
+     */
+    ResolvedJavaType[] getDeclaredTypes();
 
     /**
      * Returns the enclosing type of this type, if it exists, or {@code null}.

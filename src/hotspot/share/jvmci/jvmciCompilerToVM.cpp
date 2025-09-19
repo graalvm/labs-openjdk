@@ -2033,6 +2033,57 @@ C2V_VMENTRY_NULL(jobject, getComponentType, (JNIEnv* env, jobject, ARGUMENT_PAIR
   return JVMCIENV->get_jobject(result);
 C2V_END
 
+// Iterates over the inner classes of `k` and adds them to `inner_types` if it is non-null.
+// Returns the number of inner classes.
+static int iterate_inner_classes(InstanceKlass* k, JVMCIObjectArray& inner_types, JavaThread* THREAD, JVMCIEnv* JVMCIENV) {
+  InnerClassesIterator iter(k);
+  constantPoolHandle cp(THREAD, k->constants());
+  int length = iter.length();
+  int members = 0;
+  for (; !iter.done(); iter.next()) {
+    int ioff = iter.inner_class_info_index();
+    int ooff = iter.outer_class_info_index();
+
+    if (ioff != 0 && ooff != 0) {
+      // Check to see if the name matches the class we're looking for
+      // before attempting to find the class.
+      if (cp->klass_name_at_matches(k, ooff)) {
+        Klass* outer_klass = cp->klass_at(ooff, CHECK_0);
+        if (outer_klass == k) {
+          Klass* ik = cp->klass_at(ioff, CHECK_0);
+          InstanceKlass* inner_klass = InstanceKlass::cast(ik);
+          if (inner_types.is_null()) {
+            // Throws an exception if outer klass has not declared k as
+            // an inner klass
+            Reflection::check_for_inner_class(k, inner_klass, true, CHECK_0);
+          } else {
+            JVMCIObject inner_type = JVMCIENV->get_jvmci_type(JVMCIKlassHandle(THREAD, inner_klass), JVMCI_CHECK_0);
+            JVMCIENV->put_object_at(inner_types, members, inner_type);
+          }
+          members++;
+        }
+      }
+    }
+  }
+  return members;
+}
+
+C2V_VMENTRY_NULL(jobject, getDeclaredTypes, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass)))
+  Klass* klass = UNPACK_PAIR(Klass, klass);
+  if (klass == nullptr) {
+    JVMCI_THROW_NULL(NullPointerException);
+  }
+  if (!klass->is_instance_klass()) {
+    JVMCI_THROW_MSG_NULL(InternalError, err_msg("Class %s must be instance klass", klass->external_name()));
+  }
+  InstanceKlass* k = InstanceKlass::cast(klass);
+  JVMCIObjectArray inner_types;
+  int length = iterate_inner_classes(k, inner_types, thread, JVMCIENV);
+  inner_types = JVMCIENV->new_HotSpotResolvedObjectTypeImpl_array(length, JVMCI_CHECK_NULL);
+  iterate_inner_classes(k, inner_types, thread, JVMCIENV);
+  return JVMCIENV->get_jobject(inner_types);
+C2V_END
+
 C2V_VMENTRY(void, ensureInitialized, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass)))
   Klass* klass = UNPACK_PAIR(Klass, klass);
   if (klass == nullptr) {
@@ -3445,6 +3496,7 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "updateCompilerThreadCanCallJava",              CC "(Z)Z",                                                                            FN_PTR(updateCompilerThreadCanCallJava)},
   {CC "getCompilationActivityMode",                   CC "()I",                                                                             FN_PTR(getCompilationActivityMode)},
   {CC "isCompilerThread",                             CC "()Z",                                                                             FN_PTR(isCompilerThread)},
+  {CC "getDeclaredTypes",                             CC "(" HS_KLASS2 ")[" HS_KLASS,                                                       FN_PTR(getDeclaredTypes)},
 };
 
 int CompilerToVM::methods_count() {

@@ -34,9 +34,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -1073,6 +1070,14 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
             link();
         }
         return List.of(runtime().compilerToVm.getAllMethods(this));
+    }
+
+    @Override
+    public ResolvedJavaType[] getDeclaredTypes() {
+        if (isArray()) {
+            return new ResolvedJavaType[0];
+        }
+        return compilerToVM().getDeclaredTypes(this);
     }
 
     @Override

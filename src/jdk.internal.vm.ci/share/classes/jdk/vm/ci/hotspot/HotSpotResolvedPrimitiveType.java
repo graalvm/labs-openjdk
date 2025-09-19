@@ -308,6 +308,11 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     }
 
     @Override
+    public ResolvedJavaType[] getDeclaredTypes() {
+        return new ResolvedJavaType[0];
+    }
+
+    @Override
     public ResolvedJavaMethod[] getDeclaredMethods() {
         return new ResolvedJavaMethod[0];
     }

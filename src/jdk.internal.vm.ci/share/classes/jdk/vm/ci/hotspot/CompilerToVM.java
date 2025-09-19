@@ -1183,6 +1183,15 @@ final class CompilerToVM {
     native HotSpotResolvedObjectTypeImpl.FieldInfo[] getDeclaredFieldsInfo(HotSpotResolvedObjectTypeImpl klass, long klassPointer);
 
     /**
+     * @see ResolvedJavaType#getDeclaredTypes()
+     */
+    HotSpotResolvedObjectTypeImpl[] getDeclaredTypes(HotSpotResolvedObjectTypeImpl klass) {
+        return getDeclaredTypes(klass, klass.getKlassPointer());
+    }
+
+    native HotSpotResolvedObjectTypeImpl[] getDeclaredTypes(HotSpotResolvedObjectTypeImpl klass, long klassPointer);
+
+    /**
      * Reads the current value of a static field of {@code declaringKlass}. Extra sanity checking is
      * performed on the offset and kind of the read being performed.
      *
