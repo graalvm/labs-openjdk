@@ -75,7 +75,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.HashMap;
@@ -1081,6 +1080,25 @@ public class TestResolvedJavaType extends TypeUniverse {
             allKnownMethods = Stream.concat(allKnownMethods, Stream.ofNullable(type.getClassInitializer()));
             List<ResolvedJavaMethod> missingMethods = allKnownMethods.filter(m -> !allMethods.contains(m)).toList();
             assertTrue(missingMethods.toString(), missingMethods.isEmpty());
+        }
+    }
+
+    @Test
+    public void getDeclaredTypesTest() {
+        for (Class<?> c : classes) {
+            ResolvedJavaType type = metaAccess.lookupJavaType(c);
+            Class<?>[] raw = c.getDeclaredClasses();
+            Set<ResolvedJavaType> expected = new HashSet<>();
+            for (Class<?> e : raw) {
+                ResolvedJavaType resolvedType = metaAccess.lookupJavaType(e);
+                assertNotNull(resolvedType);
+                expected.add(resolvedType);
+            }
+            Set<ResolvedJavaType> actual = new HashSet<>(Arrays.asList(type.getDeclaredTypes()));
+            for (ResolvedJavaType t : actual) {
+                assertNotNull(t.toString(), runtime.getMirror(t));
+            }
+            assertEquals(expected, actual);
         }
     }
 
