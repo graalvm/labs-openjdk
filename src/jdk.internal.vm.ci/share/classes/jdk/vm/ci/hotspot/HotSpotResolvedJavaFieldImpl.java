@@ -155,7 +155,7 @@ class HotSpotResolvedJavaFieldImpl implements HotSpotResolvedJavaField {
     }
 
     /**
-     * Gets the value of this field's index (i.e. {@code fieldDescriptor::index()} in the encoded
+     * Gets the value of this field's index (i.e. {@code fieldDescriptor::index()}) in the encoded
      * fields of the declaring class.
      */
     int getIndex() {

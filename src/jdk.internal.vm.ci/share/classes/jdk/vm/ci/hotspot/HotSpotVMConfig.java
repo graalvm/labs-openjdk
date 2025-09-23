@@ -29,6 +29,8 @@ import jdk.vm.ci.common.JVMCIError;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.util.Architecture;
 
+import java.util.Objects;
+
 /**
  * Used to access native configuration details.
  * <p>
@@ -56,13 +58,11 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
      */
     static String getHostArchitectureName() {
         Architecture arch = Architecture.current();
-        switch (arch) {
-            case X64: return "amd64";
-            default:  return arch.name().toLowerCase();
+        if (Objects.requireNonNull(arch) == Architecture.X64) {
+            return "amd64";
         }
+        return arch.name().toLowerCase();
     }
-
-    final boolean useDeferredInitBarriers = getFlag("ReduceInitialCardMarks", Boolean.class);
 
     final boolean useCompressedOops = getFlag("UseCompressedOops", Boolean.class);
 

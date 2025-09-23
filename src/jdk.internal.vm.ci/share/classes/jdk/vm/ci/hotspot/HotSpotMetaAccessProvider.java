@@ -122,16 +122,14 @@ public class HotSpotMetaAccessProvider implements MetaAccessProvider {
     public DeoptimizationReason decodeDeoptReason(JavaConstant constant) {
         HotSpotVMConfig config = runtime.getConfig();
         int reasonValue = ((~constant.asInt()) >> config.deoptimizationReasonShift) & intMaskRight(config.deoptimizationReasonBits);
-        DeoptimizationReason reason = convertDeoptReason(reasonValue);
-        return reason;
+        return convertDeoptReason(reasonValue);
     }
 
     @Override
     public DeoptimizationAction decodeDeoptAction(JavaConstant constant) {
         HotSpotVMConfig config = runtime.getConfig();
         int actionValue = ((~constant.asInt()) >> config.deoptimizationActionShift) & intMaskRight(config.deoptimizationActionBits);
-        DeoptimizationAction action = convertDeoptAction(actionValue);
-        return action;
+        return convertDeoptAction(actionValue);
     }
 
     @Override
@@ -161,20 +159,13 @@ public class HotSpotMetaAccessProvider implements MetaAccessProvider {
 
     public int convertDeoptAction(DeoptimizationAction action) {
         HotSpotVMConfig config = runtime.getConfig();
-        switch (action) {
-            case None:
-                return config.deoptActionNone;
-            case RecompileIfTooManyDeopts:
-                return config.deoptActionMaybeRecompile;
-            case InvalidateReprofile:
-                return config.deoptActionReinterpret;
-            case InvalidateRecompile:
-                return config.deoptActionMakeNotEntrant;
-            case InvalidateStopCompiling:
-                return config.deoptActionMakeNotCompilable;
-            default:
-                throw new JVMCIError("%s", action);
-        }
+        return switch (action) {
+            case None -> config.deoptActionNone;
+            case RecompileIfTooManyDeopts -> config.deoptActionMaybeRecompile;
+            case InvalidateReprofile -> config.deoptActionReinterpret;
+            case InvalidateRecompile -> config.deoptActionMakeNotEntrant;
+            case InvalidateStopCompiling -> config.deoptActionMakeNotCompilable;
+        };
     }
 
     public DeoptimizationAction convertDeoptAction(int action) {
@@ -199,42 +190,24 @@ public class HotSpotMetaAccessProvider implements MetaAccessProvider {
 
     public int convertDeoptReason(DeoptimizationReason reason) {
         HotSpotVMConfig config = runtime.getConfig();
-        switch (reason) {
-            case None:
-                return config.deoptReasonNone;
-            case NullCheckException:
-                return config.deoptReasonNullCheck;
-            case BoundsCheckException:
-                return config.deoptReasonRangeCheck;
-            case ClassCastException:
-                return config.deoptReasonClassCheck;
-            case ArrayStoreException:
-                return config.deoptReasonArrayCheck;
-            case UnreachedCode:
-                return config.deoptReasonUnreached0;
-            case TypeCheckedInliningViolated:
-                return config.deoptReasonTypeCheckInlining;
-            case OptimizedTypeCheckViolated:
-                return config.deoptReasonOptimizedTypeCheck;
-            case NotCompiledExceptionHandler:
-                return config.deoptReasonNotCompiledExceptionHandler;
-            case Unresolved:
-                return config.deoptReasonUnresolved;
-            case JavaSubroutineMismatch:
-                return config.deoptReasonJsrMismatch;
-            case ArithmeticException:
-                return config.deoptReasonDiv0Check;
-            case RuntimeConstraint:
-                return config.deoptReasonConstraint;
-            case LoopLimitCheck:
-                return config.deoptReasonLoopLimitCheck;
-            case Aliasing:
-                return config.deoptReasonAliasing;
-            case TransferToInterpreter:
-                return config.deoptReasonTransferToInterpreter;
-            default:
-                throw new JVMCIError("%s", reason);
-        }
+        return switch (reason) {
+            case None -> config.deoptReasonNone;
+            case NullCheckException -> config.deoptReasonNullCheck;
+            case BoundsCheckException -> config.deoptReasonRangeCheck;
+            case ClassCastException -> config.deoptReasonClassCheck;
+            case ArrayStoreException -> config.deoptReasonArrayCheck;
+            case UnreachedCode -> config.deoptReasonUnreached0;
+            case TypeCheckedInliningViolated -> config.deoptReasonTypeCheckInlining;
+            case OptimizedTypeCheckViolated -> config.deoptReasonOptimizedTypeCheck;
+            case NotCompiledExceptionHandler -> config.deoptReasonNotCompiledExceptionHandler;
+            case Unresolved -> config.deoptReasonUnresolved;
+            case JavaSubroutineMismatch -> config.deoptReasonJsrMismatch;
+            case ArithmeticException -> config.deoptReasonDiv0Check;
+            case RuntimeConstraint -> config.deoptReasonConstraint;
+            case LoopLimitCheck -> config.deoptReasonLoopLimitCheck;
+            case Aliasing -> config.deoptReasonAliasing;
+            case TransferToInterpreter -> config.deoptReasonTransferToInterpreter;
+        };
     }
 
     public DeoptimizationReason convertDeoptReason(int reason) {

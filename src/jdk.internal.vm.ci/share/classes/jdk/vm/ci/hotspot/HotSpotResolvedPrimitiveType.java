@@ -354,10 +354,9 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof HotSpotResolvedPrimitiveType)) {
+        if (!(obj instanceof HotSpotResolvedPrimitiveType that)) {
             return false;
         }
-        HotSpotResolvedPrimitiveType that = (HotSpotResolvedPrimitiveType) obj;
         return that.kind == kind;
     }
 

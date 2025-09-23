@@ -25,7 +25,6 @@ package jdk.vm.ci.hotspot;
 import static jdk.vm.ci.common.InitTimer.timer;
 import static jdk.vm.ci.services.Services.IS_IN_NATIVE_IMAGE;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -90,7 +89,6 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     private HotSpotResolvedObjectTypeImpl constantCallSiteType;
     private HotSpotResolvedObjectTypeImpl callSiteType;
     private HotSpotResolvedObjectTypeImpl javaLangString;
-    private HotSpotResolvedObjectTypeImpl javaLangClass;
     private HotSpotResolvedObjectTypeImpl throwableType;
     private HotSpotResolvedObjectTypeImpl serializableType;
     private HotSpotResolvedObjectTypeImpl cloneableType;
@@ -116,13 +114,6 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
             javaLangString = (HotSpotResolvedObjectTypeImpl) fromClass(String.class);
         }
         return javaLangString;
-    }
-
-    HotSpotResolvedObjectTypeImpl getJavaLangClass() {
-        if (javaLangClass == null) {
-            javaLangClass = (HotSpotResolvedObjectTypeImpl) fromClass(Class.class);
-        }
-        return javaLangClass;
     }
 
     HotSpotResolvedObjectTypeImpl getJavaLangCloneable() {
@@ -188,7 +179,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
             synchronized (JVMCI.class) {
                 result = instance;
                 if (result == null) {
-                    try (InitTimer t = timer("HotSpotJVMCIRuntime.<init>")) {
+                    try (InitTimer _ = timer("HotSpotJVMCIRuntime.<init>")) {
                         instance = result = new HotSpotJVMCIRuntime();
 
                         // Can only do eager initialization of the JVMCI compiler
@@ -426,8 +417,6 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         /**
          * Parses all system properties starting with {@value #JVMCI_OPTION_PROPERTY_PREFIX} and
          * initializes the options based on their values.
-         *
-         * @param runtime
          */
         static void parse(HotSpotJVMCIRuntime runtime) {
             Map<String, String> savedProps = jdk.vm.ci.services.Services.getSavedProperties();
@@ -452,9 +441,8 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
                             }
                         }
                         msg.format("%nError: A fatal exception has occurred. Program will exit.%n");
-                        runtime.exitHotSpotWithMessage(1, msg.toString());
-                    } else if (value instanceof Option) {
-                        Option option = (Option) value;
+                        throw runtime.exitHotSpotWithMessage(1, msg.toString());
+                    } else if (value instanceof Option option) {
                         option.init(e.getValue());
                     }
                 }
@@ -491,15 +479,15 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         return runtime().getHostJVMCIBackend().getCodeCache().getTarget().wordJavaKind;
     }
 
-    protected final CompilerToVM compilerToVm;
+    final CompilerToVM compilerToVm;
 
-    protected final HotSpotVMConfigStore configStore;
-    protected final HotSpotVMConfig config;
+    final HotSpotVMConfigStore configStore;
+    final HotSpotVMConfig config;
     private final JVMCIBackend hostBackend;
 
     private final JVMCICompilerFactory compilerFactory;
     private volatile JVMCICompiler compiler;
-    protected final HotSpotJVMCIReflection reflection;
+    final HotSpotJVMCIReflection reflection;
 
     private volatile boolean creatingCompiler;
 
@@ -571,7 +559,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
     private HotSpotJVMCIRuntime() {
         compilerToVm = new CompilerToVM();
 
-        try (InitTimer t = timer("HotSpotVMConfig<init>")) {
+        try (InitTimer _ = timer("HotSpotVMConfig<init>")) {
             configStore = new HotSpotVMConfigStore(compilerToVm);
             config = new HotSpotVMConfig(configStore);
         }
@@ -589,7 +577,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         // Initialize the Option values.
         Option.parse(this);
 
-        try (InitTimer t = timer("create JVMCI backend:", backendFactory.getArchitecture())) {
+        try (InitTimer _ = timer("create JVMCI backend:", backendFactory.getArchitecture())) {
             hostBackend = registerBackend(backendFactory.createJVMCIBackend(this, null));
         }
 
@@ -744,11 +732,11 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         return configStore;
     }
 
-    public HotSpotVMConfig getConfig() {
+    HotSpotVMConfig getConfig() {
         return config;
     }
 
-    public CompilerToVM getCompilerToVM() {
+    CompilerToVM getCompilerToVM() {
         return compilerToVm;
     }
 
@@ -764,15 +752,11 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      *            compiler.
      */
     public Predicate<ResolvedJavaType> getIntrinsificationTrustPredicate(Class<?>... compilerLeafClasses) {
-        return new Predicate<>() {
-            @Override
-            public boolean test(ResolvedJavaType type) {
-                if (type instanceof HotSpotResolvedObjectTypeImpl) {
-                    HotSpotResolvedObjectTypeImpl hsType = (HotSpotResolvedObjectTypeImpl) type;
-                    return compilerToVm.isTrustedForIntrinsics(hsType);
-                } else {
-                    return false;
-                }
+        return type -> {
+            if (type instanceof HotSpotResolvedObjectTypeImpl hsType) {
+                return compilerToVm.isTrustedForIntrinsics(hsType);
+            } else {
+                return false;
             }
         };
     }
@@ -822,23 +806,18 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         return null;
     }
 
-    static class ErrorCreatingCompiler implements JVMCICompiler {
-        private final RuntimeException t;
-
-        ErrorCreatingCompiler(RuntimeException t) {
-            this.t = t;
-        }
+    record ErrorCreatingCompiler(RuntimeException t) implements JVMCICompiler {
 
         @Override
         public CompilationRequestResult compileMethod(CompilationRequest request) {
-            throw t;
-        }
+                throw t;
+            }
 
         @Override
         public boolean isGCSupported(int gcIdentifier) {
-            return false;
+                return false;
+            }
         }
-    }
 
     @Override
     public JVMCICompiler getCompiler() {
@@ -867,7 +846,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      * Converts a name to a Java type. This method attempts to resolve {@code name} to a
      * {@link ResolvedJavaType}.
      *
-     * @param name a well formed Java type in {@linkplain JavaType#getName() internal} format
+     * @param name a well-formed Java type in {@linkplain JavaType#getName() internal} format
      * @param accessingType the context of resolution which must be non-null
      * @param resolve specifies whether resolution failure results in an unresolved type being
      *            return or a {@link LinkageError} being thrown
@@ -913,7 +892,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         final HotSpotResolvedJavaType klass = compilerToVm.lookupType(name, hsAccessingType, resolve);
 
         if (klass == null) {
-            assert resolve == false : name;
+            assert !resolve : name;
             return UnresolvedJavaType.create(name);
         }
         return klass;
@@ -994,7 +973,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      * Shuts down the runtime.
      */
     @VMEntryPoint
-    private void shutdown() throws Exception {
+    private void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
             // Cleaners are normally only processed when a new Cleaner is
             // instantiated so process all remaining cleaners now.
@@ -1010,18 +989,14 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      * Notify on completion of a bootstrap.
      */
     @VMEntryPoint
-    private void bootstrapFinished() throws Exception {
+    private void bootstrapFinished() {
         for (HotSpotVMEventListener vmEventListener : vmEventListeners) {
             vmEventListener.notifyBootstrapFinished();
         }
     }
 
     /**
-     * Notify on successful install into the CodeCache.
-     *
-     * @param hotSpotCodeCacheProvider
-     * @param installedCode
-     * @param compiledCode
+     * Notify on successful installation into the CodeCache.
      */
     void notifyInstall(HotSpotCodeCacheProvider hotSpotCodeCacheProvider, InstalledCode installedCode, CompiledCode compiledCode) {
         for (HotSpotVMEventListener vmEventListener : vmEventListeners) {
@@ -1092,7 +1067,7 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         return new OutputStream() {
 
             @Override
-            public void write(byte[] b, int off, int len) throws IOException {
+            public void write(byte[] b, int off, int len) {
                 if (b == null) {
                     throw new NullPointerException();
                 } else if (off < 0 || off > b.length || len < 0 || (off + len) > b.length || (off + len) < 0) {
@@ -1104,12 +1079,12 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
             }
 
             @Override
-            public void write(int b) throws IOException {
+            public void write(int b) {
                 write(new byte[]{(byte) b}, 0, 1);
             }
 
             @Override
-            public void flush() throws IOException {
+            public void flush() {
                 compilerToVm.flushDebugOutput();
             }
         };
@@ -1135,7 +1110,6 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      * Attempt to enlarge the number of per thread counters available. Requires a safepoint so
      * resizing should be rare to avoid performance effects.
      *
-     * @param newSize
      * @return false if the resizing failed
      */
     public boolean setCountersSize(int newSize) {
@@ -1148,28 +1122,18 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      * @return the offset in bytes
      */
     public int getArrayBaseOffset(JavaKind kind) {
-        switch (kind) {
-            case Boolean:
-                return compilerToVm.ARRAY_BOOLEAN_BASE_OFFSET;
-            case Byte:
-                return compilerToVm.ARRAY_BYTE_BASE_OFFSET;
-            case Char:
-                return compilerToVm.ARRAY_CHAR_BASE_OFFSET;
-            case Short:
-                return compilerToVm.ARRAY_SHORT_BASE_OFFSET;
-            case Int:
-                return compilerToVm.ARRAY_INT_BASE_OFFSET;
-            case Long:
-                return compilerToVm.ARRAY_LONG_BASE_OFFSET;
-            case Float:
-                return compilerToVm.ARRAY_FLOAT_BASE_OFFSET;
-            case Double:
-                return compilerToVm.ARRAY_DOUBLE_BASE_OFFSET;
-            case Object:
-                return compilerToVm.ARRAY_OBJECT_BASE_OFFSET;
-            default:
-                throw new JVMCIError("%s", kind);
-        }
+        return switch (kind) {
+            case Boolean -> compilerToVm.ARRAY_BOOLEAN_BASE_OFFSET;
+            case Byte -> compilerToVm.ARRAY_BYTE_BASE_OFFSET;
+            case Char -> compilerToVm.ARRAY_CHAR_BASE_OFFSET;
+            case Short -> compilerToVm.ARRAY_SHORT_BASE_OFFSET;
+            case Int -> compilerToVm.ARRAY_INT_BASE_OFFSET;
+            case Long -> compilerToVm.ARRAY_LONG_BASE_OFFSET;
+            case Float -> compilerToVm.ARRAY_FLOAT_BASE_OFFSET;
+            case Double -> compilerToVm.ARRAY_DOUBLE_BASE_OFFSET;
+            case Object -> compilerToVm.ARRAY_OBJECT_BASE_OFFSET;
+            default -> throw new JVMCIError("%s", kind);
+        };
 
     }
 
@@ -1179,29 +1143,18 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
      * @return the scale in order to convert the index into a byte offset
      */
     public int getArrayIndexScale(JavaKind kind) {
-        switch (kind) {
-            case Boolean:
-                return compilerToVm.ARRAY_BOOLEAN_INDEX_SCALE;
-            case Byte:
-                return compilerToVm.ARRAY_BYTE_INDEX_SCALE;
-            case Char:
-                return compilerToVm.ARRAY_CHAR_INDEX_SCALE;
-            case Short:
-                return compilerToVm.ARRAY_SHORT_INDEX_SCALE;
-            case Int:
-                return compilerToVm.ARRAY_INT_INDEX_SCALE;
-            case Long:
-                return compilerToVm.ARRAY_LONG_INDEX_SCALE;
-            case Float:
-                return compilerToVm.ARRAY_FLOAT_INDEX_SCALE;
-            case Double:
-                return compilerToVm.ARRAY_DOUBLE_INDEX_SCALE;
-            case Object:
-                return compilerToVm.ARRAY_OBJECT_INDEX_SCALE;
-            default:
-                throw new JVMCIError("%s", kind);
-
-        }
+        return switch (kind) {
+            case Boolean -> compilerToVm.ARRAY_BOOLEAN_INDEX_SCALE;
+            case Byte -> compilerToVm.ARRAY_BYTE_INDEX_SCALE;
+            case Char -> compilerToVm.ARRAY_CHAR_INDEX_SCALE;
+            case Short -> compilerToVm.ARRAY_SHORT_INDEX_SCALE;
+            case Int -> compilerToVm.ARRAY_INT_INDEX_SCALE;
+            case Long -> compilerToVm.ARRAY_LONG_INDEX_SCALE;
+            case Float -> compilerToVm.ARRAY_FLOAT_INDEX_SCALE;
+            case Double -> compilerToVm.ARRAY_DOUBLE_INDEX_SCALE;
+            case Object -> compilerToVm.ARRAY_OBJECT_INDEX_SCALE;
+            default -> throw new JVMCIError("%s", kind);
+        };
     }
 
     /**
@@ -1334,22 +1287,26 @@ public final class HotSpotJVMCIRuntime implements JVMCIRuntime {
         String value = Option.ForceTranslateFailure.getString();
         String toMatch;
         String type;
-        if (translatedObject instanceof HotSpotResolvedJavaMethodImpl) {
-            toMatch = ((HotSpotResolvedJavaMethodImpl) translatedObject).format("%H.%n");
-            type = "method";
-        } else if (translatedObject instanceof HotSpotResolvedObjectTypeImpl) {
-            toMatch = ((HotSpotResolvedObjectTypeImpl) translatedObject).toJavaName();
-            type = "type";
-        } else if (translatedObject instanceof HotSpotNmethod) {
-            HotSpotNmethod nmethod = (HotSpotNmethod) translatedObject;
-            if (nmethod.getMethod() != null) {
-                toMatch = nmethod.getMethod().format("%H.%n");
-            } else {
-                toMatch = String.valueOf(nmethod.getName());
+        switch (translatedObject) {
+            case HotSpotResolvedJavaMethodImpl hotSpotResolvedJavaMethod -> {
+                toMatch = hotSpotResolvedJavaMethod.format("%H.%n");
+                type = "method";
             }
-            type = "nmethod";
-        } else {
-            return;
+            case HotSpotResolvedObjectTypeImpl hotSpotResolvedObjectType -> {
+                toMatch = hotSpotResolvedObjectType.toJavaName();
+                type = "type";
+            }
+            case HotSpotNmethod nmethod -> {
+                if (nmethod.getMethod() != null) {
+                    toMatch = nmethod.getMethod().format("%H.%n");
+                } else {
+                    toMatch = String.valueOf(nmethod.getName());
+                }
+                type = "nmethod";
+            }
+            case null, default -> {
+                return;
+            }
         }
         String[] filters = value.split(",");
         for (String filter : filters) {
