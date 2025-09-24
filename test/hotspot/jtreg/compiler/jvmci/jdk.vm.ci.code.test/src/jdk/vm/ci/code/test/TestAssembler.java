@@ -301,6 +301,10 @@ public abstract class TestAssembler {
         sites.add(new Call(target, code.position(), size, direct, debugInfo));
     }
 
+    protected void recordCall(CallInfo callInfo, InvokeTarget target, boolean direct, DebugInfo debugInfo) {
+        sites.add(new Call(target, callInfo.callStart(), callInfo.callEnd() - callInfo.callStart(), direct, debugInfo));
+    }
+
     protected void recordMark(Object id) {
         sites.add(new Mark(code.position(), id));
     }
@@ -470,6 +474,17 @@ public abstract class TestAssembler {
      * Emit a call to a fixed address <code>addr</code>.
      */
     public abstract void emitCall(long addr);
+
+    /**
+     * @param callStart position of first byte of emitted call instruction
+     * @param callEnd   position of first byte after emitted call instruction
+     */
+    public record CallInfo(int callStart, int callEnd) {
+    }
+
+    public CallInfo emitJavaCall(DebugInfo info) {
+        throw new UnsupportedOperationException("Java calls are not supported.");
+    }
 
     /**
      * Emit code which is necessary to call a method with {@link CallingConvention} <code>cc</code>
