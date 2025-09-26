@@ -107,6 +107,9 @@
 
 // Default and minimum StringTable and SymbolTable size values
 // Must be powers of 2
+
+namespace svm_gc {
+
 const size_t defaultStringTableSize = NOT_LP64(1024) LP64_ONLY(65536);
 const size_t minimumStringTableSize = 128;
 const size_t defaultSymbolTableSize = 32768; // 2^15
@@ -2028,5 +2031,8 @@ DECLARE_FLAGS(LP64_RUNTIME_FLAGS)
 DECLARE_ARCH_FLAGS(ARCH_FLAGS)
 DECLARE_FLAGS(RUNTIME_FLAGS)
 DECLARE_FLAGS(RUNTIME_OS_FLAGS)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_GLOBALS_HPP

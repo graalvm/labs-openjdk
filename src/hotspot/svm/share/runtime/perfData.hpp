@@ -190,6 +190,9 @@
  *   }
  * }
  */
+
+namespace svm_gc {
+
 class PerfData {
 };
 
@@ -336,4 +339,7 @@ class PerfTraceTimedEvent : public PerfTraceTime {
     }
 
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_RUNTIME_PERFDATA_HPP

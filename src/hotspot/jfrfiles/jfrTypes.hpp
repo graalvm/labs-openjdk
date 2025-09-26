@@ -33,6 +33,9 @@
 #include <string.h>
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 enum JfrTypeId {
   TYPE_VIRTUALSPACE = 172,
   TYPE_OBJECTSPACE = 173,
@@ -149,6 +152,9 @@ class JfrType : public AllStatic {
     return -1;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // INCLUDE_JFR
 #endif // JFRFILES_JFRTYPES_HPP

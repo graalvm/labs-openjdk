@@ -31,11 +31,17 @@
 // To reduce HotSpot build time, if you just need to declare a pointer to the
 // following types, include this file instead of perfData.hpp.
 
+
+namespace svm_gc {
+
 class PerfLongCounter;
 class PerfLongVariable;
 class PerfStringVariable;
 
 typedef PerfLongCounter PerfCounter;
 typedef PerfLongVariable PerfVariable;
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_PERFDATATYPES_HPP

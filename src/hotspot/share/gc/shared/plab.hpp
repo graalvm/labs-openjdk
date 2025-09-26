@@ -30,6 +30,9 @@
 #include "utilities/globalDefinitions.hpp"
 
 // Forward declarations.
+
+namespace svm_gc {
+
 class PLABStats;
 
 // A per-thread allocation buffer used during GC.
@@ -194,5 +197,8 @@ public:
 
   inline void add_undo_wasted(size_t v);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PLAB_HPP

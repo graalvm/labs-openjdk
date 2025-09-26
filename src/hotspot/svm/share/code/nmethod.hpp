@@ -56,6 +56,9 @@
 // Other differences to HotSpot:
 // - Code unloading is independent from the ClassUnloading/ClassUnloadingWithConcurrentMark setting.
 // - Unlike HotSpot, we don't start a GC if the code cache exceeds a threshold (see GCCause::_codecache_GC_aggressive).
+
+namespace svm_gc {
+
 class nmethod {
 #ifdef SVM
  public:
@@ -279,5 +282,8 @@ class nmethod {
  private:
   static void print(outputStream* st, const nmethod* nm, const char *msg);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CODE_NMETHOD_HPP

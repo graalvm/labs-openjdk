@@ -34,12 +34,21 @@
 #include "utilities/macros.hpp"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 class BarrierSetAssembler;
 class BarrierSetC1;
 class BarrierSetC2;
 class BarrierSetNMethod;
 class BarrierSetStackChunk;
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+namespace svm_gc {
+
 class JavaThread;
 
 // This class provides the interface between a barrier implementation and
@@ -331,5 +340,8 @@ inline T* barrier_set_cast(BarrierSet* bs) {
   assert(bs->is_a(BarrierSet::GetName<T>::value), "wrong type of barrier set");
   return static_cast<T*>(bs);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_BARRIERSET_HPP

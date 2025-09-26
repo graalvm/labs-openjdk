@@ -26,6 +26,9 @@
 #include "logging/logTagSet.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 static const char* DefaultExpressionString = "all";
 
 bool LogSelectionList::verify_selections(outputStream* out) const {
@@ -109,3 +112,6 @@ LogLevelType LogSelectionList::level_for(const LogTagSet& ts) const {
   }
   return level;
 }
+
+} // namespace svm_gc
+

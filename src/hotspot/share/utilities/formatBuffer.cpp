@@ -28,6 +28,9 @@
 
 #include <stdarg.h>
 
+
+namespace svm_gc {
+
 FormatBufferResource::FormatBufferResource(const char * format, ...)
   : FormatBufferBase((char*)resource_allocate_bytes(FormatBufferBase::BufferSize)) {
   va_list argp;
@@ -35,3 +38,6 @@ FormatBufferResource::FormatBufferResource(const char * format, ...)
   jio_vsnprintf(_buf, FormatBufferBase::BufferSize, format, argp);
   va_end(argp);
 }
+
+} // namespace svm_gc
+

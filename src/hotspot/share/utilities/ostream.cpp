@@ -40,6 +40,9 @@
 #include "utilities/xmlstream.hpp"
 
 // Declarations of jvm methods
+
+namespace svm_gc {
+
 NOT_EXTERN_C_IF_SVM void jio_print(const char* s, size_t len);
 #ifndef SVM
 extern "C" int jio_printf(const char *fmt, ...);
@@ -1099,6 +1102,9 @@ bufferedStream::~bufferedStream() {
   FREE_C_HEAP_ARRAY(char, buffer);
 }
 
+
+} // namespace svm_gc
+
 #ifndef PRODUCT
 
 #if defined(LINUX) || defined(AIX) || defined(_ALLBSD_SOURCE)
@@ -1113,6 +1119,9 @@ bufferedStream::~bufferedStream() {
 
 #ifndef SVM
 // Network access
+
+namespace svm_gc {
+
 networkStream::networkStream() : bufferedStream(1024*10, 1024*10) {
 
   _socket = -1;
@@ -1176,6 +1185,9 @@ bool networkStream::connect(const char *host, short port) {
   freeaddrinfo(addr_info);
   return (conn >= 0);
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 #endif

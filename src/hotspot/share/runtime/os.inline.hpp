@@ -35,29 +35,53 @@
 
 #ifndef SVM
 #ifndef HAVE_PLATFORM_PRINT_NATIVE_STACK
+
+namespace svm_gc {
+
 inline bool os::platform_print_native_stack(outputStream* st, const void* context,
                                      char *buf, int buf_size, address& lastpc) {
   return false;
 }
+
+} // namespace svm_gc
+
 #endif
 
 #ifndef HAVE_CDS_CORE_REGION_ALIGNMENT
+
+namespace svm_gc {
+
 inline size_t os::cds_core_region_alignment() {
   return (size_t)os::vm_allocation_granularity();
 }
+
+} // namespace svm_gc
+
 #endif
 
 #ifndef _WINDOWS
 // Currently used only on Windows.
+
+namespace svm_gc {
+
 inline bool os::register_code_area(char *low, char *high) {
   return true;
 }
+
+} // namespace svm_gc
+
 #endif
 
 #ifndef HAVE_FUNCTION_DESCRIPTORS
+
+namespace svm_gc {
+
 inline void* os::resolve_function_descriptor(void* p) {
   return nullptr;
 }
+
+} // namespace svm_gc
+
 #endif
 #endif // !SVM
 

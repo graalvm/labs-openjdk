@@ -35,6 +35,9 @@
 #endif // SVM
 
 // NOTE (chaeubl): unlike HotSpot, we inherit from arrayOopDesc.
+
+namespace svm_gc {
+
 class stackChunkOopDesc : public arrayOopDesc {
 public:
   static inline stackChunkOop cast(oop obj);
@@ -43,5 +46,8 @@ public:
 
   void iterate_stack(OopClosure* closure);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_STACKCHUNKOOP_HPP

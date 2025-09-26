@@ -42,6 +42,9 @@
 
 // List of all NonJavaThreads and safe iteration over that list.
 
+
+namespace svm_gc {
+
 class NonJavaThread::List {
 public:
   NonJavaThread* volatile _head;
@@ -346,4 +349,7 @@ void WatcherThread::print_on(outputStream* st) const {
   Thread::print_on(st);
   st->cr();
 }
+
+
+} // namespace svm_gc
 

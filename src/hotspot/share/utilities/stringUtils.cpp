@@ -30,6 +30,9 @@
 #include <ctype.h>
 #include <string.h>
 
+
+namespace svm_gc {
+
 int StringUtils::replace_no_expand(char* string, const char* from, const char* to) {
   int replace_count = 0;
   size_t from_len = strlen(from);
@@ -142,3 +145,6 @@ ccstrlist StringUtils::CommaSeparatedStringIterator::canonicalize(ccstrlist opti
   canonicalized_list[i] = '\0';
   return canonicalized_list;
 }
+
+} // namespace svm_gc
+

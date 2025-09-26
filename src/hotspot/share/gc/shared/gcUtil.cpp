@@ -26,6 +26,9 @@
 
 // Catch-all file for utility classes
 
+
+namespace svm_gc {
+
 float AdaptiveWeightedAverage::compute_adaptive_average(float new_sample,
                                                         float average) {
   // We smooth the samples by not using weight() directly until we've
@@ -166,3 +169,6 @@ bool LinearLeastSquareFit::decrement_will_decrease() {
 bool LinearLeastSquareFit::increment_will_decrease() {
   return (_slope <= 0.00);
 }
+
+} // namespace svm_gc
+

@@ -33,6 +33,9 @@
 
 // All GC dependencies against the trace framework is contained within this file.
 
+
+namespace svm_gc {
+
 typedef uintptr_t TraceAddress;
 
 bool GCTracer::should_send_cpu_time_event() const {
@@ -362,3 +365,6 @@ void GCTracer::send_phase_events(TimePartitions* time_partitions) const {
     phase->accept(&phase_reporter);
   }
 }
+
+} // namespace svm_gc
+

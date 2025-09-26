@@ -41,6 +41,9 @@
 // Closures used to scan dirty cards should take these
 // considerations into account.
 
+
+namespace svm_gc {
+
 class CardTableBarrierSet: public ModRefBarrierSet {
   // Some classes get to look at some private stuff.
   friend class VMStructs;
@@ -120,7 +123,10 @@ struct BarrierSet::GetName<CardTableBarrierSet> {
 
 template<>
 struct BarrierSet::GetType<BarrierSet::CardTableBarrierSet> {
-  typedef ::CardTableBarrierSet type;
+  typedef svm_gc::CardTableBarrierSet type;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_CARDTABLEBARRIERSET_HPP

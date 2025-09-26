@@ -30,6 +30,9 @@
 #include "runtime/atomic.hpp"
 
 // NOTE (chaeubl): based on objArrayOop::size(int)
+
+namespace svm_gc {
+
 static int array_object_size(int base_offset_in_bytes, int bytes_per_elem, int length) {
   // This returns the object size in HeapWords.
   size_t asz = (size_t)length * bytes_per_elem;
@@ -58,5 +61,8 @@ jint ArrayKlass::max_length() const {
   assert(log2_element_size() >= 0, "bad scale");
   return max_array_length(base_offset_in_bytes(), 1 << log2_element_size());
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ARRAYKLASS_INLINE_HPP

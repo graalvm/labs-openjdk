@@ -41,6 +41,9 @@
 #include "gc/shared/c2/cardTableBarrierSetC2.hpp"
 #endif
 
+
+namespace svm_gc {
+
 class CardTableBarrierSetC1;
 class CardTableBarrierSetC2;
 
@@ -200,3 +203,6 @@ void CardTableBarrierSet::on_thread_detach(Thread* thread) {
 bool CardTableBarrierSet::card_mark_must_follow_store() const {
   return false;
 }
+
+} // namespace svm_gc
+

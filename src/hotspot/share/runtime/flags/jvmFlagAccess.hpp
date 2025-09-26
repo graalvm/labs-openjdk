@@ -29,6 +29,9 @@
 #include "runtime/flags/jvmFlag.hpp"
 #include "utilities/vmEnums.hpp"
 
+
+namespace svm_gc {
+
 class FlagAccessImpl;
 class JVMFlagLimit;
 class outputStream;
@@ -139,5 +142,8 @@ public:
   static JVMFlag::Error set_size_t  (JVMFlag* f, size_t*   v, JVMFlagOrigin origin) { return set<JVM_FLAG_TYPE(size_t)>  (f, v, origin); }
   static JVMFlag::Error set_double  (JVMFlag* f, double*   v, JVMFlagOrigin origin) { return set<JVM_FLAG_TYPE(double)>  (f, v, origin); }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_JVMFLAGACCESS_HPP

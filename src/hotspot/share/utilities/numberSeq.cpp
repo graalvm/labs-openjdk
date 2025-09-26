@@ -27,6 +27,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/numberSeq.hpp"
 
+
+namespace svm_gc {
+
 AbsSeq::AbsSeq(double alpha) :
   _num(0), _sum(0.0), _sum_of_squares(0.0),
   _davg(0.0), _dvariance(0.0), _alpha(alpha) {
@@ -273,3 +276,6 @@ void TruncatedSeq::dump_on(outputStream* s) {
   }
   s->cr();
 }
+
+} // namespace svm_gc
+

@@ -38,6 +38,9 @@
 // only exist on the SVM-side. The GC may only access the code cache at a safepoint or during teardown because it
 // cannot use the mutual exclusion mechanism that lives on the SVM-side. This is a major difference to HotSpot,
 // where it is sufficient to hold the CodeCache_lock to guarantee mutual exclusion.
+
+namespace svm_gc {
+
 class CodeCache : AllStatic {
 public:
   static void nmethods_do(NMethodClosure* cl);             // iterates over all nmethods
@@ -49,5 +52,8 @@ public:
   static void on_gc_marking_cycle_finish() {}
   static void arm_all_nmethods()           {}
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CODE_CODECACHE_HPP

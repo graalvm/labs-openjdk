@@ -36,6 +36,9 @@
 #include "utilities/macros.hpp"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 class InFlightMutexRelease {
  private:
   Mutex* _in_flight_mutex;
@@ -49,9 +52,15 @@ class InFlightMutexRelease {
   }
   bool not_released() { return _in_flight_mutex != nullptr; }
 };
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 #ifdef ASSERT
+
+namespace svm_gc {
+
 void Mutex::check_block_state(Thread* thread) {
   if (!_allow_vm_block && thread->is_VM_thread()) {
     // JavaThreads are checked to make sure that they do not hold _allow_vm_block locks during operations
@@ -88,7 +97,13 @@ void Mutex::check_no_safepoint_state(Thread* thread) {
          "This lock should always have a safepoint check for Java threads: %s",
          name());
 }
+
+} // namespace svm_gc
+
 #endif // ASSERT
+
+
+namespace svm_gc {
 
 void Mutex::lock_contended(Thread* self) {
   DEBUG_ONLY(int retry_cnt = 0;)
@@ -440,7 +455,7 @@ void Mutex::print_on(outputStream* st) const {
 }
 
 void Mutex::print() const {
-  print_on(::tty);
+  print_on(svm_gc::tty);
 }
 #endif // PRODUCT
 
@@ -700,3 +715,6 @@ void RecursiveMutex::unlock(Thread* current) {
   }
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

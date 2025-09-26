@@ -30,6 +30,9 @@
 #include "runtime/os.hpp"
 #include "runtime/vm_version.hpp"
 
+
+namespace svm_gc {
+
 uint WorkerPolicy::_parallel_worker_threads = 0;
 bool WorkerPolicy::_parallel_worker_threads_initialized = false;
 
@@ -174,3 +177,6 @@ uint WorkerPolicy::calc_active_conc_workers(uintx total_workers,
     return no_of_gc_threads;
   }
 }
+
+} // namespace svm_gc
+

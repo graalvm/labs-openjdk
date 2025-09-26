@@ -30,6 +30,9 @@
 #include "runtime/handles.hpp"
 #include "utilities/exceptions.hpp"
 
+
+namespace svm_gc {
+
 class vmClasses : AllStatic {
 public:
   static Klass* _string_klass;
@@ -40,5 +43,8 @@ public:
   static Klass* System_klass() { return _system_klass; }
   static Klass* FillerObject_klass() { return _filler_object_klass; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CLASSFILE_VMCLASSES_HPP

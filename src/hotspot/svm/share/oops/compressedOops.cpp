@@ -36,6 +36,9 @@
 #include "gc/shared/gc_globals.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 MemRegion CompressedOops::_heap_address_range;
 
 void CompressedOops::initialize() {
@@ -58,3 +61,6 @@ bool CompressedOops::is_in(void* addr) {
 bool CompressedOops::is_in(MemRegion mr) {
   return _heap_address_range.contains(mr);
 }
+
+} // namespace svm_gc
+

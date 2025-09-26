@@ -30,6 +30,9 @@
 #include "oops/oop.hpp"
 #include "utilities/stack.hpp"
 
+
+namespace svm_gc {
+
 class WorkerTask;
 class PreservedMarksSet;
 class WorkerThreads;
@@ -127,5 +130,8 @@ public:
     assert(_stacks == nullptr && _num == 0, "stacks should have been reclaimed");
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PRESERVEDMARKS_HPP

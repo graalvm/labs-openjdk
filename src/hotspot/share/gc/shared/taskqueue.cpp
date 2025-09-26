@@ -32,6 +32,9 @@
 #include "utilities/stack.inline.hpp"
 
 #if TASKQUEUE_STATS
+
+namespace svm_gc {
+
 const char * const TaskQueueStats::_names[last_stat_id] = {
   "push", "pop", "pop-slow",
   "st-attempt", "st-empty", "st-ctdd", "st-success", "st-ctdd-max", "st-biasdrop",
@@ -112,11 +115,20 @@ void TaskQueueStats::verify() const
          get(overflow_max_len), get(overflow));
 }
 #endif // ASSERT
+
+} // namespace svm_gc
+
 #endif // TASKQUEUE_STATS
 
 #ifdef ASSERT
+
+namespace svm_gc {
+
 bool ObjArrayTask::is_valid() const {
   return _obj != nullptr && _obj->is_objArray() && _index >= 0 &&
       _index < objArrayOop(_obj)->length();
 }
+
+} // namespace svm_gc
+
 #endif // ASSERT

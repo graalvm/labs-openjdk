@@ -36,6 +36,9 @@
 #include "utilities/ostream.hpp"
 #include "utilities/permitForbiddenFunctions.hpp"
 
+
+namespace svm_gc {
+
 LogTagSet*  LogTagSet::_list      = nullptr;
 size_t      LogTagSet::_ntagsets  = 0;
 
@@ -217,3 +220,6 @@ void LogTagSet::list_all_tagsets(outputStream* out) {
   out->cr();
   FREE_C_HEAP_ARRAY(char*, tagset_labels);
 }
+
+} // namespace svm_gc
+

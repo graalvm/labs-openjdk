@@ -31,6 +31,9 @@
 #include "runtime/task.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 JVMFlag::Error AOTCacheConstraintFunc(ccstr value, bool verbose) {
   if (value == nullptr) {
     JVMFlag::printError(verbose, "AOTCache cannot be empty\n");
@@ -139,3 +142,6 @@ JVMFlag::Error NUMAInterleaveGranularityConstraintFunc(size_t value, bool verbos
 
   return JVMFlag::SUCCESS;
 }
+
+} // namespace svm_gc
+

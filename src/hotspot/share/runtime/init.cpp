@@ -53,9 +53,18 @@
 
 // Initialization done by VM thread in vm_init_globals()
 #ifndef SVM
+
+namespace svm_gc {
+
 void check_ThreadShadow();
 void eventlog_init();
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+namespace svm_gc {
+
 void mutex_init();
 void universe_oopstorage_init();
 #ifndef SVM
@@ -286,3 +295,6 @@ void set_init_completed() {
   Atomic::release_store(&_init_completed, true);
   ml.notify_all();
 }
+
+} // namespace svm_gc
+

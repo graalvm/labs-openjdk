@@ -34,6 +34,9 @@
 # include OS_HEADER(semaphore)
 #endif
 
+
+namespace svm_gc {
+
 class JavaThread;
 
 // Implements the limited, platform independent Semaphore API.
@@ -56,5 +59,8 @@ class Semaphore : public CHeapObj<mtSynchronizer> {
   void wait_with_safepoint_check(JavaThread* thread);
 #endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_SEMAPHORE_HPP

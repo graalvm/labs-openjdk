@@ -26,6 +26,9 @@
 #ifndef SVM_TYPES_HPP
 #define SVM_TYPES_HPP
 
+
+namespace svm_gc {
+
 class IsolateThread;
 class StackFramesPerThread;
 class StackFrames;
@@ -46,5 +49,8 @@ typedef void*(*freeCodeInfosFunc)(address, IsolateThread*, CodeInfosPerThread*);
 typedef void*(*threadStateTransitionFunc)(address, IsolateThread*);
 typedef bool*(*fastThreadStateTransitionFunc)(address, IsolateThread*);
 typedef void(*cleanRuntimeCodeCacheFunc)(address, IsolateThread*);
+
+
+} // namespace svm_gc
 
 #endif // SVM_TYPES_HPP

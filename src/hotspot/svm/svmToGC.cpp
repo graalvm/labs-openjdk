@@ -79,6 +79,9 @@
  * - C++ code may block or call back to Java -> TO_NATIVE or TO_VM
  */
 
+
+namespace svm_gc {
+
 static inline jlong convert_size_t_to_jlong(size_t val) {
   // In the 64-bit vm, a size_t can overflow a jlong (which is signed).
   NOT_LP64 (return (jlong)val;)
@@ -659,3 +662,6 @@ EXPORT_FOR_SVM size_t svm_gc_get_used_memory_after_last_gc() {
 }
 
 } // extern C
+
+} // namespace svm_gc
+

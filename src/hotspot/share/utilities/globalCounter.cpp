@@ -30,6 +30,9 @@
 #include "utilities/globalCounter.hpp"
 #include "utilities/spinYield.hpp"
 
+
+namespace svm_gc {
+
 GlobalCounter::PaddedCounter GlobalCounter::_global_counter;
 #ifdef SVM
 GlobalCounter::PaddedCounter GlobalCounter::_java_threads_in_critical_section;
@@ -91,3 +94,6 @@ void GlobalCounter::write_synchronize() {
     ctc.do_thread(njti.current());
   }
 }
+
+} // namespace svm_gc
+

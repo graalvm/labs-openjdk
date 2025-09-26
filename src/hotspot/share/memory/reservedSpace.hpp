@@ -31,6 +31,9 @@
 
 // ReservedSpace is a data structure for describing a reserved contiguous address range.
 
+
+namespace svm_gc {
+
 class ReservedSpace {
   char*  _base;
   size_t _size;
@@ -161,5 +164,8 @@ public:
   // encoded safely and implicit null checks can work.
   char* compressed_oop_base() const { return base() - _noaccess_prefix; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_RESERVEDSPACE_HPP

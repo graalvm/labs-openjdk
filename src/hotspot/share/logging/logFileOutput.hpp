@@ -28,6 +28,9 @@
 #include "runtime/semaphore.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class LogDecorations;
 
 // The log file output, with support for file rotation based on a target size.
@@ -103,5 +106,8 @@ class LogFileOutput : public LogFileStreamOutput {
   static void set_file_name_parameters(jlong start_time);
 #endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGFILEOUTPUT_HPP

@@ -92,6 +92,9 @@
 # include <signal.h>
 # include <errno.h>
 
+
+namespace svm_gc {
+
 OSThread*         os::_starting_thread    = nullptr;
 volatile unsigned int os::_rand_seed      = 1234567;
 int               os::_processor_count    = 0;
@@ -2677,3 +2680,6 @@ char* os::build_agent_function_name(const char *sym_name, const char *lib_name,
   return agent_entry_name;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

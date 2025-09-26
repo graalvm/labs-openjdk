@@ -153,6 +153,9 @@
   and thus can only support use of handles passed in.
 */
 
+
+namespace svm_gc {
+
 extern void trace_class_resolution(Klass* to_class) {
   ResourceMark rm;
   int line_number = -1;
@@ -2666,7 +2669,13 @@ JVM_END
 
 // Printing support //////////////////////////////////////////////////
 extern "C" {
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 ATTRIBUTE_PRINTF(3, 0)
 int jio_vsnprintf(char *str, size_t count, const char *fmt, va_list args) {
@@ -3858,3 +3867,6 @@ JVM_LEAF(jboolean, JVM_PrintWarningAtDynamicAgentLoad(void))
 JVM_END
 
 #endif // !SVM
+
+} // namespace svm_gc
+

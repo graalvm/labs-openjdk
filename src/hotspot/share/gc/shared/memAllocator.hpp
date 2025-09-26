@@ -34,6 +34,9 @@
 
 // These fascilities are used for allocating, and initializing newly allocated objects.
 
+
+namespace svm_gc {
+
 class MemAllocator: StackObj {
 protected:
   class Allocation;
@@ -168,5 +171,8 @@ class InternalOOMEMark: public StackObj {
   JavaThread* thread() const  { return _thread; }
 };
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MEMALLOCATOR_HPP

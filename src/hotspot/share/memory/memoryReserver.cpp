@@ -34,6 +34,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 static void sanity_check_size_and_alignment(size_t size, size_t alignment) {
   assert(size > 0, "Precondition");
 
@@ -696,3 +699,6 @@ ReservedHeapSpace HeapReserver::reserve(size_t size, size_t alignment, size_t pa
   return instance.reserve_heap(size, alignment, page_size);
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

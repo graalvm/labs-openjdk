@@ -34,6 +34,9 @@
 #include "jvm_md.h"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1177,6 +1180,9 @@ typedef struct JDK1_1InitArgs {
 } /* extern "C" */
 
 #endif /* __cplusplus */
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 #endif /* !_JAVASOFT_JVM_H_ */

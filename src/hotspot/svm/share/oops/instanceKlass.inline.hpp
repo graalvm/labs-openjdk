@@ -39,6 +39,9 @@
 // By force inlining the following functions, we get similar GC performance
 // as the previous macro based implementation.
 
+
+namespace svm_gc {
+
 template <typename T, class OopClosureType>
 ALWAYSINLINE void InstanceKlass::oop_oop_iterate_oop_map(OopMapBlock* map, oop obj, OopClosureType* closure) {
   T* p         = obj->field_addr<T>(map->offset());
@@ -128,5 +131,8 @@ template <typename T, class OopClosureType>
 ALWAYSINLINE void InstanceKlass::oop_oop_iterate_bounded(oop obj, OopClosureType* closure, MemRegion mr) {
   oop_oop_iterate_oop_maps_bounded<T>(obj, closure, mr);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCEKLASS_INLINE_HPP

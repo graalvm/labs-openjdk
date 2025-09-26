@@ -671,6 +671,12 @@
           constraint(GCCardSizeInBytesConstraintFunc,AtParse)
   // end of GC_FLAGS
 
+
+namespace svm_gc {
+
 DECLARE_FLAGS(GC_FLAGS)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GC_GLOBALS_HPP

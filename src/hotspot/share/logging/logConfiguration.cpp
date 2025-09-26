@@ -39,6 +39,9 @@
 #include "runtime/semaphore.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 LogOutput** LogConfiguration::_outputs = nullptr;
 size_t      LogConfiguration::_n_outputs = 0;
 
@@ -773,3 +776,6 @@ bool LogConfiguration::parse_async_argument(const char* async_tail) {
   return ret;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

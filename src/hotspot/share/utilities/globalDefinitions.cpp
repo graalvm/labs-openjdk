@@ -33,6 +33,9 @@
 #ifndef SVM
 // Info for oops within a java object.  Defaults are zero so
 // things will break badly if incorrectly initialized.
+
+namespace svm_gc {
+
 int heapOopSize        = 0;
 int LogBytesPerHeapOop = 0;
 int LogBitsPerHeapOop  = 0;
@@ -56,11 +59,17 @@ int LogMinObjAlignmentInBytes  = -1;
 
 // Oop encoding heap max
 uint64_t OopEncodingHeapMax = 0;
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 // Something to help porters sleep at night
 
 #ifdef ASSERT
+
+namespace svm_gc {
+
 static BasicType char2type(int ch) {
   switch (ch) {
 #define EACH_SIG(ch, bt, ignore) \
@@ -74,7 +83,13 @@ static BasicType char2type(int ch) {
 #ifndef SVM
 extern bool signature_constants_sane();
 #endif // !SVM
+
+} // namespace svm_gc
+
 #endif //ASSERT
+
+
+namespace svm_gc {
 
 void basic_types_init() {
 #ifdef ASSERT
@@ -451,3 +466,6 @@ bool IEEE_subnormal_handling_OK() {
           && -large_subnormal_double - small_subnormal_double < -large_subnormal_double);
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

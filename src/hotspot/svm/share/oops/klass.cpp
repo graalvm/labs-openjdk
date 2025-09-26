@@ -61,6 +61,9 @@
 #include "svmImageHeap.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 bool Klass::is_klass() const {
   return SVMImageHeap::is_image_heap_object((oop)this) && ((oop)this)->klass_without_asserts() == Universe::_dynamic_hub_klass;
 }
@@ -165,3 +168,6 @@ const char* Klass::internal_name() const {
   oop string = RawAccess<>::oop_load_at((oop)this, SVMGlobalData::_offsets._dynamicHub._name);
   return java_lang_String::as_latin1(string);
 }
+
+} // namespace svm_gc
+

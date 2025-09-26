@@ -25,6 +25,9 @@
 #include "gc/shared/bufferNode.hpp"
 #include "gc/shared/ptrQueue.hpp"
 
+
+namespace svm_gc {
+
 PtrQueue::PtrQueue(PtrQueueSet* qset) :
   _index(0),
   _buf(nullptr)
@@ -109,3 +112,6 @@ void** PtrQueueSet::allocate_buffer() {
 void PtrQueueSet::deallocate_buffer(BufferNode* node) {
   _allocator->release(node);
 }
+
+} // namespace svm_gc
+

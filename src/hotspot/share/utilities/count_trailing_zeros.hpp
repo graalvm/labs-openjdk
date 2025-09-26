@@ -44,6 +44,9 @@
  *****************************************************************************/
 #if defined(TARGET_COMPILER_gcc)
 
+
+namespace svm_gc {
+
 inline unsigned count_trailing_zeros_32(uint32_t x) {
   return __builtin_ctz(x);
 }
@@ -55,6 +58,9 @@ inline unsigned count_trailing_zeros_64(uint64_t x) {
 /*****************************************************************************
  * Microsoft Visual Studio
  *****************************************************************************/
+
+} // namespace svm_gc
+
 #elif defined(TARGET_COMPILER_visCPP)
 
 #include <intrin.h>
@@ -63,6 +69,9 @@ inline unsigned count_trailing_zeros_64(uint64_t x) {
 #ifdef _LP64
 #pragma intrinsic(_BitScanForward64)
 #endif
+
+
+namespace svm_gc {
 
 inline unsigned count_trailing_zeros_32(uint32_t x) {
   unsigned long index;
@@ -87,10 +96,16 @@ inline unsigned count_trailing_zeros_64(uint64_t x) {
 /*****************************************************************************
  * Unknown toolchain
  *****************************************************************************/
+
+} // namespace svm_gc
+
 #else
 #error Unknown TARGET_COMPILER
 
 #endif // Toolchain dispatch
+
+
+namespace svm_gc {
 
 template<typename T,
          ENABLE_IF(std::is_integral<T>::value),
@@ -102,5 +117,8 @@ inline unsigned count_trailing_zeros(T x) {
          count_trailing_zeros_64(x);
 }
 
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_COUNT_TRAILING_ZEROS_HPP

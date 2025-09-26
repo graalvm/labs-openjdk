@@ -37,6 +37,9 @@
 // Writing oops to the image heap may require write barriers, so depending on the situation we either use
 // RawAccess (no barriers) or HeapAccess (barriers).
 
+
+namespace svm_gc {
+
 struct SVMObjectLayoutOffsets {
   int _mark_word;
   int _hub;
@@ -228,5 +231,8 @@ struct SVMIsolateData {
   static objArrayOop _klasses_assumed_reachable_for_code_unloading;
   static bool _during_teardown;
 };
+
+
+} // namespace svm_gc
 
 #endif // SVM_GLOBAL_DATA_HPP

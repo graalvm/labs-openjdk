@@ -38,12 +38,27 @@
   template(Verify)                                \
 
 #ifdef SVM_COMPRESSED_REFERENCES
+
+namespace svm_gc {
+
 typedef char VMOpDataBlackbox[29];
 typedef char VMOpWrapperDataBlackbox[44];
+
+} // namespace svm_gc
+
 #else
+
+namespace svm_gc {
+
 typedef char VMOpDataBlackbox[33];
 typedef char VMOpWrapperDataBlackbox[52];
+
+} // namespace svm_gc
+
 #endif
+
+
+namespace svm_gc {
 
 class VM_Operation;
 
@@ -108,5 +123,8 @@ class VM_Operation : public StackObj {
   virtual VMOp_Type type() const = 0;
   virtual bool allow_nested_vm_operations() const { return false; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_VMOPERATION_HPP

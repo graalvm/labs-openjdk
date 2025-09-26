@@ -39,6 +39,9 @@
 #include "utilities/globalCounter.inline.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 oop load_oop(void* base, ptrdiff_t offset) {
   return RawAccess<>::oop_load_at((oop)base, offset);
 }
@@ -54,3 +57,6 @@ void PerfStringVariable::set_value(const char* s2) {
   // assure the string is null terminated when strlen(s2) >= _length
   byte_arr_base[length] = '\0';
 }
+
+} // namespace svm_gc
+

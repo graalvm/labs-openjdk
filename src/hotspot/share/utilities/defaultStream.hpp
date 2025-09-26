@@ -30,6 +30,9 @@
 #include "utilities/ostream.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 class defaultStream : public SVM_ONLY(outputStream) NOT_SVM(xmlTextStream) {
   friend void ostream_abort();
  public:
@@ -110,5 +113,8 @@ class defaultStream : public SVM_ONLY(outputStream) NOT_SVM(xmlTextStream) {
 
   static defaultStream* instance;  // sole instance
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_DEFAULTSTREAM_HPP

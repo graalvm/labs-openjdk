@@ -33,6 +33,9 @@
 #include "utilities/ostream.hpp"
 
 // allocate using malloc; will fail if no memory available
+
+namespace svm_gc {
+
 char* AllocateHeap(size_t size,
                    MemTag mem_tag,
                    const NativeCallStack& stack,
@@ -256,3 +259,6 @@ void ReallocMark::check(Arena* arena) {
 }
 
 #endif // Non-product
+
+} // namespace svm_gc
+

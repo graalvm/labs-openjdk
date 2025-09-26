@@ -30,6 +30,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 DoNothingClosure do_nothing_cl;
 
 #ifndef SVM
@@ -76,3 +79,6 @@ void MarkingNMethodClosure::do_nmethod(nmethod* nm) {
 #endif // SVM
   }
 }
+
+} // namespace svm_gc
+

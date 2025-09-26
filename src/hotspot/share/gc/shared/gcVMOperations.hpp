@@ -84,6 +84,9 @@
 //   - creates the CDS archive
 //
 
+
+namespace svm_gc {
+
 class VM_GC_Sync_Operation : public VM_Operation {
 public:
 
@@ -226,5 +229,8 @@ class SvcGCMarker : public StackObj {
     VM_GC_Operation::notify_gc_end();
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCVMOPERATIONS_HPP

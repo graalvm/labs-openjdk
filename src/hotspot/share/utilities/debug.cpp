@@ -72,11 +72,20 @@
 
 // Support for showing register content on asserts/guarantees.
 #ifdef CAN_SHOW_REGISTERS_ON_ASSERT
+
+namespace svm_gc {
+
 static char g_dummy;
 char* g_assert_poison = &g_dummy;
 const char* g_assert_poison_read_only = &g_dummy;
 static intx g_asserting_thread = 0;
+
+} // namespace svm_gc
+
 #endif // CAN_SHOW_REGISTERS_ON_ASSERT
+
+
+namespace svm_gc {
 
 int DebuggingContext::_enabled = 0; // Initially disabled.
 
@@ -760,3 +769,6 @@ bool handle_assert_poison_fault(const void* ucVoid) {
 }
 #endif // !SVM
 #endif // CAN_SHOW_REGISTERS_ON_ASSERT
+
+} // namespace svm_gc
+

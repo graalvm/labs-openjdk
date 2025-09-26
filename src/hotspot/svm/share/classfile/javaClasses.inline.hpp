@@ -39,6 +39,9 @@
 #endif // SVM
 
 // java.lang.String
+
+namespace svm_gc {
+
 jbyte* java_lang_String::base(oop string) {
   if (SVMGlobalData::_use_string_inlining) {
     int array_base_offset = ((TypeArrayKlass*)string->klass())->base_offset_in_bytes();
@@ -189,5 +192,8 @@ bool java_lang_ref_Reference::is_weak(oop ref) {
 bool java_lang_ref_Reference::is_soft(oop ref) {
   return InstanceKlass::cast(ref->klass())->reference_type() == REF_SOFT;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CLASSFILE_JAVACLASSES_INLINE_HPP

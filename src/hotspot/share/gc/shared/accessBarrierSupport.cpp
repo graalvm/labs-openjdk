@@ -26,6 +26,9 @@
 #include "gc/shared/accessBarrierSupport.inline.hpp"
 #include "oops/access.hpp"
 
+
+namespace svm_gc {
+
 DecoratorSet AccessBarrierSupport::resolve_unknown_oop_ref_strength(DecoratorSet decorators, oop base, ptrdiff_t offset) {
   // Note that the referent in a FinalReference is technically not strong.
   // However, it always behaves like one in practice. The two cases are:
@@ -45,3 +48,6 @@ DecoratorSet AccessBarrierSupport::resolve_unknown_oop_ref_strength(DecoratorSet
   }
   return ds;
 }
+
+} // namespace svm_gc
+

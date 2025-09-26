@@ -29,6 +29,9 @@
 #include "oops/compressedOops.inline.hpp"
 #include "oops/markWord.hpp"
 
+
+namespace svm_gc {
+
 inline markWord markWord::prototype_for_klass(Klass* klass) {
 #ifdef SVM_COMPRESSED_REFERENCES
   /* The 64-bit mark word is the combination of the 32-bit narrowKlass and the 32-bit mark word. By default, the 32-bit mark word is 0. */
@@ -79,5 +82,8 @@ Klass* markWord::klass_without_asserts() const {
   return 0;
 #endif
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_MARKWORD_INLINE_HPP

@@ -82,6 +82,9 @@
 
 // Stub Code definitions
 
+
+namespace svm_gc {
+
 class StubGenerator: public StubCodeGenerator {
  private:
 
@@ -11921,6 +11924,9 @@ class StubGenerator: public StubCodeGenerator {
 void StubGenerator_generate(CodeBuffer* code, StubGenBlobId blob_id) {
   StubGenerator g(code, blob_id);
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 #if defined (LINUX)
@@ -11934,6 +11940,9 @@ void StubGenerator_generate(CodeBuffer* code, StubGenBlobId blob_id) {
     (volatile void *ptr, uint64_t arg1, uint64_t arg2);                 \
   aarch64_atomic_stub_t aarch64_atomic_ ## OPNAME ## _ ## SIZE ## RELAXED ## _impl \
     = aarch64_atomic_ ## OPNAME ## _ ## SIZE ## RELAXED ## _default_impl;
+
+
+namespace svm_gc {
 
 DEFAULT_ATOMIC_OP(fetch_add, 4, )
 DEFAULT_ATOMIC_OP(fetch_add, 8, )
@@ -11953,5 +11962,8 @@ DEFAULT_ATOMIC_OP(cmpxchg, 4, _seq_cst)
 DEFAULT_ATOMIC_OP(cmpxchg, 8, _seq_cst)
 
 #undef DEFAULT_ATOMIC_OP
+
+
+} // namespace svm_gc
 
 #endif // LINUX

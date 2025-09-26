@@ -50,6 +50,9 @@
 // Implementation of all inlined member functions defined in oop.hpp
 // We need a separate file to avoid circular references
 
+
+namespace svm_gc {
+
 markWord* oopDesc::raw_mark_word_ptr() const {
   ByteSize offset = byte_offset_of(oopDesc, _raw_mark_word);
   return (markWord*) (((char*)this) + in_bytes(offset));
@@ -316,5 +319,8 @@ bool oopDesc::mark_must_be_preserved() const {
 bool oopDesc::mark_must_be_preserved(markWord m) const {
   return m.must_be_preserved();
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_OOP_INLINE_HPP

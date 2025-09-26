@@ -30,6 +30,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 class Decoder;
 class frame;
 class VM_ReportJavaOutOfMemory;
@@ -255,5 +258,8 @@ public:
   VMErrorCallbackMark(VMErrorCallback* callback);
   ~VMErrorCallbackMark();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_VMERROR_HPP

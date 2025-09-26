@@ -28,6 +28,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 OopStorage* OopStorageSet::_storages[all_count] = {};
 
 OopStorage* OopStorageSet::create_strong(const char* name, MemTag mem_tag) {
@@ -110,3 +113,6 @@ void OopStorageSet::verify_initialized(uint index) {
 }
 
 #endif // ASSERT
+
+} // namespace svm_gc
+

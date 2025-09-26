@@ -28,6 +28,9 @@
 
 #include "oops/oop.hpp"
 
+
+namespace svm_gc {
+
 class SVMImageHeap : public AllStatic {
 public:
   static inline bool is_image_heap_object(oop object) {
@@ -39,5 +42,8 @@ public:
     return false;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SVM_IMAGE_HEAP_HPP

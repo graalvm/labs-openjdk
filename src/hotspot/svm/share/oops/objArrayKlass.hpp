@@ -30,6 +30,9 @@
 
 // ObjArrayKlass is the klass for objArrays
 
+
+namespace svm_gc {
+
 class ObjArrayKlass : public ArrayKlass {
  public:
   static const KlassKind Kind = ObjArrayKlassKind;
@@ -80,5 +83,8 @@ class ObjArrayKlass : public ArrayKlass {
   template <typename T, class OopClosureType>
   inline void oop_oop_iterate_elements_bounded(objArrayOop a, OopClosureType* closure, void* low, void* high);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_OBJARRAYKLASS_HPP

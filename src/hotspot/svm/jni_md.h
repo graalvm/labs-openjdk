@@ -54,6 +54,9 @@
 
 #define JNICALL
 
+
+namespace svm_gc {
+
 typedef int jint;
 #ifdef _LP64
 typedef long jlong;
@@ -62,5 +65,8 @@ typedef long long jlong;
 #endif
 
 typedef signed char jbyte;
+
+
+} // namespace svm_gc
 
 #endif /* !_JAVASOFT_JNI_MD_H_ */

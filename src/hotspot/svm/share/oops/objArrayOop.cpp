@@ -27,6 +27,12 @@
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
 
+
+namespace svm_gc {
+
 Klass* objArrayOopDesc::element_klass() {
   return ObjArrayKlass::cast(klass())->element_klass();
 }
+
+} // namespace svm_gc
+

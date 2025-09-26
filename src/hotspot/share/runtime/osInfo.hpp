@@ -30,6 +30,9 @@
 
 // Static information about the operating system. Initialized exactly once
 // at VM start-up and never changes again.
+
+namespace svm_gc {
+
 class OSInfo : AllStatic {
   static size_t    _vm_page_size;
   static size_t    _vm_allocation_granularity;
@@ -51,5 +54,8 @@ public:
     _vm_allocation_granularity = n;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_OSINFO_HPP

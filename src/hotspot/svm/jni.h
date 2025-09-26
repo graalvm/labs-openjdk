@@ -44,6 +44,9 @@
 
 #include "jni_md.h"
 
+
+namespace svm_gc {
+
 #ifndef SVM
 #ifdef __cplusplus
 extern "C" {
@@ -192,5 +195,8 @@ typedef struct {
 } /* extern "C" */
 #endif /* __cplusplus */
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif /* !_JAVASOFT_JNI_H_ */

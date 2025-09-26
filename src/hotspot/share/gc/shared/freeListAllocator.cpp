@@ -26,6 +26,9 @@
 #include "logging/log.hpp"
 #include "utilities/globalCounter.inline.hpp"
 
+
+namespace svm_gc {
+
 FreeListAllocator::NodeList::NodeList() :
   _head(nullptr), _tail(nullptr), _entry_count(0) {}
 
@@ -194,3 +197,6 @@ bool FreeListAllocator::try_transfer_pending() {
   Atomic::release_store(&_transfer_lock, false);
   return true;
 }
+
+} // namespace svm_gc
+

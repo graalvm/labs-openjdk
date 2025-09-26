@@ -31,6 +31,9 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/align.hpp"
 
+
+namespace svm_gc {
+
 inline oop CollectedHeap::obj_allocate(Klass* klass, size_t size NOT_SVM(COMMA TRAPS)) {
   ObjAllocator allocator(klass, size NOT_SVM(COMMA THREAD));
   return allocator.allocate();
@@ -47,5 +50,8 @@ inline oop CollectedHeap::class_allocate(Klass* klass, size_t size, TRAPS) {
   return allocator.allocate();
 }
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_COLLECTEDHEAP_INLINE_HPP

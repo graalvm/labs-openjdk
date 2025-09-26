@@ -27,6 +27,9 @@
 #include "logging/logDecorators.hpp"
 #include "logging/logTagSet.hpp"
 
+
+namespace svm_gc {
+
 class outputStream;
 
 // LogDecorations keeps resolved values for decorators, as well as the
@@ -70,5 +73,8 @@ class LogDecorations {
   const char* decoration(LogDecorators::Decorator decorator, char* buf, size_t buflen) const;
 
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGDECORATIONS_HPP

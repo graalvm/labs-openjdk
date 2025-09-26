@@ -89,11 +89,20 @@
 #include "utilities/preserveException.hpp"
 
 #ifdef SVM
+
+namespace svm_gc {
+
 Klass *Universe::_dynamic_hub_klass                   = nullptr;
+
+} // namespace svm_gc
+
 #else
 // A helper class for caching a Method* when the user of the cache
 // only cares about the latest version of the Method*. This cache safely
 // interacts with the RedefineClasses API.
+
+namespace svm_gc {
+
 class LatestMethodCache {
   // We save the InstanceKlass* and the idnum of Method* in order to get
   // the current Method*.
@@ -117,7 +126,13 @@ static LatestMethodCache _do_stack_walk_cache;              // AbstractStackWalk
 // Known objects
 TypeArrayKlass* Universe::_typeArrayKlasses[T_LONG+1] = { nullptr /*, nullptr...*/ };
 ObjArrayKlass* Universe::_objectArrayKlass            = nullptr;
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+namespace svm_gc {
+
 TypeArrayKlass* Universe::_fillerArrayKlass           = nullptr;
 #ifndef SVM
 OopHandle Universe::_basic_type_mirrors[T_VOID+1];
@@ -1454,3 +1469,6 @@ bool Universe::is_in_heap(const void* p) {
 }
 
 #endif // ASSERT
+
+} // namespace svm_gc
+

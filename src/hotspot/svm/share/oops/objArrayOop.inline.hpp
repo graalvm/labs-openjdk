@@ -32,6 +32,9 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/globals.hpp"
 
+
+namespace svm_gc {
+
 template <class T> T* objArrayOopDesc::obj_at_addr(int index) const {
   assert(is_within_bounds(index), "index %d out of bounds %d", index, length());
   return &((T*)base())[index];
@@ -58,5 +61,8 @@ inline void objArrayOopDesc::obj_at_put(int index, oop value) {
   ptrdiff_t offset = obj_at_offset<narrowOop>(index);
   HeapAccess<IS_ARRAY>::oop_store_at(as_oop(), offset, value);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_OBJARRAYOOP_INLINE_HPP

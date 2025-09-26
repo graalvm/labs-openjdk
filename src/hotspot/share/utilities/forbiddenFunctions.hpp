@@ -49,6 +49,9 @@
 // or have security concerns, either with preferred alternatives, or to be
 // avoided entirely.
 
+
+namespace svm_gc {
+
 FORBID_IMPORTED_NORETURN_C_FUNCTION(void exit(int), "use os::exit")
 FORBID_IMPORTED_NORETURN_C_FUNCTION(void _Exit(int), "use os::exit")
 
@@ -75,5 +78,8 @@ FORBID_IMPORTED_C_FUNCTION(void* calloc(size_t nmemb, size_t size), "use os::mal
 FORBID_IMPORTED_C_FUNCTION(void* realloc(void *ptr, size_t size), "use os::realloc");
 FORBID_IMPORTED_C_FUNCTION(char* strdup(const char *s), "use os::strdup");
 FORBID_IMPORTED_C_FUNCTION(wchar_t* wcsdup(const wchar_t *s), "don't use");
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_FORBIDDENFUNCTIONS_HPP

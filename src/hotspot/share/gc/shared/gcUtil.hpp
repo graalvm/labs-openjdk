@@ -43,6 +43,9 @@
 //
 // This serves as our best estimate of a future unknown.
 //
+
+namespace svm_gc {
+
 class AdaptiveWeightedAverage : public CHeapObj<mtGC> {
  private:
   float            _average;        // The last computed average
@@ -210,5 +213,8 @@ class LinearLeastSquareFit : public CHeapObj<mtGC> {
   bool decrement_will_decrease();
   bool increment_will_decrease();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCUTIL_HPP

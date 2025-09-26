@@ -82,6 +82,9 @@
 #endif // PRODUCT
 
 #ifndef SVM
+
+namespace svm_gc {
+
 bool              VMError::coredump_status;
 char              VMError::coredump_message[O_BUFLEN];
 int               VMError::_current_step;
@@ -91,7 +94,13 @@ volatile bool     VMError::_reporting_did_timeout = false;
 volatile jlong    VMError::_step_start_time = -1;
 volatile bool     VMError::_step_did_timeout = false;
 volatile bool     VMError::_step_did_succeed = false;
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+namespace svm_gc {
+
 volatile intptr_t VMError::_first_error_tid = -1;
 #ifndef SVM
 int               VMError::_id;
@@ -2213,3 +2222,6 @@ VMErrorCallbackMark::~VMErrorCallbackMark() {
   _thread->_vm_error_callbacks = _thread->_vm_error_callbacks->_next;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

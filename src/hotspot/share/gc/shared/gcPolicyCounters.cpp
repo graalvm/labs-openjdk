@@ -26,6 +26,9 @@
 #include "gc/shared/gcPolicyCounters.hpp"
 #include "memory/resourceArea.hpp"
 
+
+namespace svm_gc {
+
 GCPolicyCounters::GCPolicyCounters(const char* name, int collectors,
                                    int generations) {
 
@@ -70,3 +73,6 @@ GCPolicyCounters::GCPolicyCounters(const char* name, int collectors,
 #endif // SVM
   }
 }
+
+} // namespace svm_gc
+

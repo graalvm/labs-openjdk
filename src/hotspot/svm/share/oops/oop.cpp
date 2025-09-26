@@ -42,6 +42,9 @@
 #include "svmImageHeap.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 void oopDesc::print_on(outputStream* st) const {
   if (*((juint*)this) == badHeapWordVal) {
     st->print_cr("BAD WORD");
@@ -86,3 +89,6 @@ void VerifyOopClosure::do_oop(oop* p)       { VerifyOopClosure::do_oop_work(p); 
 void VerifyOopClosure::do_oop(narrowOop* p) { VerifyOopClosure::do_oop_work(p); }
 
 void oopDesc::obj_field_put_raw(int offset, oop value)                { RawAccess<>::oop_store_at(as_oop(), offset, value); }
+
+} // namespace svm_gc
+

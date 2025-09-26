@@ -33,6 +33,9 @@
 #include "oops/oop.hpp"
 #include "runtime/thread.hpp"
 
+
+namespace svm_gc {
+
 class Klass;
 
 // count is number of array elements being written
@@ -144,5 +147,8 @@ clone_in_heap(oop src, oop dst, size_t size) {
   BarrierSetT *bs = barrier_set_cast<BarrierSetT>(barrier_set());
   bs->write_region(MemRegion((HeapWord*)(void*)dst, size));
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MODREFBARRIERSET_INLINE_HPP

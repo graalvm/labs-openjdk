@@ -41,6 +41,9 @@
 #include "svmCodeReferenceMapDecoder.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 class BarrierClosure: public OopClosure {
 public:
   BarrierClosure() {}
@@ -72,3 +75,6 @@ void stackChunkOopDesc::iterate_stack(OopClosure* closure) {
   }
   SVMGlobalData::_free_continuation_stack_frames(CompressedOops::base(), stack);
 }
+
+} // namespace svm_gc
+

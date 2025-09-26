@@ -31,11 +31,20 @@
 
 #ifdef SVM
 // A few forward declarations to make the automatically generated jfrEventClasses.hpp file happy.
+
+namespace svm_gc {
+
 class ClassLoaderData;
 class Method;
 class PackageEntry;
 class ModuleEntry;
+
+} // namespace svm_gc
+
 #endif // SVM
+
+
+namespace svm_gc {
 
 typedef u8 traceid;
 typedef int fio_fd;
@@ -70,5 +79,8 @@ enum JfrCheckpointBufferKind {
   JFR_THREADLOCAL,
   JFR_VIRTUAL_THREADLOCAL
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_JFR_UTILITIES_JFRTYPES_HPP

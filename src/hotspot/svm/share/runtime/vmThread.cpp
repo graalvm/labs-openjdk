@@ -51,6 +51,9 @@
 #include "utilities/events.hpp"
 #include "utilities/vmError.hpp"
 
+
+namespace svm_gc {
+
 void VMThread::evaluate_operation(VM_Operation* op) {
   ResourceMark rm;
   op->evaluate();
@@ -159,3 +162,6 @@ void VMThread::execute(VM_Operation* op) {
 
   guarantee(isolate_thread == nullptr || isolate_thread->has_status_vm(), "isolate thread must be back in VM state");
 }
+
+} // namespace svm_gc
+

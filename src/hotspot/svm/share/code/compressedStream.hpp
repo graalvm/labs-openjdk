@@ -28,6 +28,9 @@
 #include "memory/allocation.hpp"
 
 // NOTE (chaeubl): a modified version of Pack200 that supports jlong values and encodes them in up to 11 bytes.
+
+namespace svm_gc {
+
 class CompressedStream : public ResourceObj {
   friend class VMStructs;
  protected:
@@ -113,5 +116,8 @@ class CompressedReadStream : public CompressedStream {
                                        }
   jlong    read_signed_int();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CODE_COMPRESSEDSTREAM_HPP

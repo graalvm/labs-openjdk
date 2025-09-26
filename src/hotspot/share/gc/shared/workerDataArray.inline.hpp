@@ -30,6 +30,9 @@
 #include "memory/allocation.inline.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 template <typename T>
 WorkerDataArray<T>::WorkerDataArray(const char* short_name, const char* title, uint length) :
  _data(nullptr),
@@ -201,5 +204,8 @@ void WorkerDataArray<T>::reset() {
     }
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WORKERDATAARRAY_INLINE_HPP

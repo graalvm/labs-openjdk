@@ -38,6 +38,9 @@
 #include "gc/parallel/objectStartArray.hpp"
 #endif
 
+
+namespace svm_gc {
+
 uint CardTable::_card_shift = 0;
 uint CardTable::_card_size = 0;
 uint CardTable::_card_size_in_words = 0;
@@ -265,3 +268,6 @@ void CardTable::print_on(outputStream* st) const {
   st->print_cr("Card table byte_map: [" PTR_FORMAT "," PTR_FORMAT "] _byte_map_base: " PTR_FORMAT,
                p2i(_byte_map), p2i(_byte_map + _byte_map_size), p2i(_byte_map_base));
 }
+
+} // namespace svm_gc
+
