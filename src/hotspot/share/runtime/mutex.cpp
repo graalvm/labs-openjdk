@@ -35,6 +35,7 @@
 #include "utilities/events.hpp"
 #include "utilities/macros.hpp"
 
+#ifndef SVM
 class InFlightMutexRelease {
  private:
   Mutex* _in_flight_mutex;
@@ -48,6 +49,7 @@ class InFlightMutexRelease {
   }
   bool not_released() { return _in_flight_mutex != nullptr; }
 };
+#endif // !SVM
 
 #ifdef ASSERT
 void Mutex::check_block_state(Thread* thread) {
@@ -57,8 +59,10 @@ void Mutex::check_block_state(Thread* thread) {
     fatal("VM thread could block on lock that may be held by a JavaThread during safepoint: %s", name());
   }
 
+#ifndef SVM
   assert(!ThreadCrashProtection::is_crash_protected(thread),
          "locking not allowed when crash protection is set");
+#endif // !SVM
 }
 
 void Mutex::check_safepoint_state(Thread* thread) {
@@ -78,7 +82,9 @@ void Mutex::check_safepoint_state(Thread* thread) {
 
 void Mutex::check_no_safepoint_state(Thread* thread) {
   check_block_state(thread);
-  assert(!thread->is_active_Java_thread() || _rank <= nosafepoint,
+  assert(!thread->is_active_Java_thread() || _rank <= nosafepoint
+         // NOTE (chaeubl): no need to restrict the VM thread when it is at a safepoint
+         SVM_ONLY(|| (thread->is_VM_thread() && SafepointSynchronize::is_at_safepoint())),
          "This lock should always have a safepoint check for Java threads: %s",
          name());
 }
@@ -87,6 +93,44 @@ void Mutex::check_no_safepoint_state(Thread* thread) {
 void Mutex::lock_contended(Thread* self) {
   DEBUG_ONLY(int retry_cnt = 0;)
   bool is_active_Java_thread = self->is_active_Java_thread();
+
+#ifdef SVM
+  // Is it a JavaThread participating in the safepoint protocol.
+  if (is_active_Java_thread) {
+    assert(rank() > Mutex::nosafepoint, "Potential deadlock with nosafepoint or lesser rank mutex");
+    address heap_base = CompressedOops::base();
+    IsolateThread *thread = ((JavaThread*) self)->isolate_thread();
+
+    if (thread->has_status_vm()) {
+      while (true) {
+        // do a transition to native thread status so that we can safely block below without preventing a safepoint
+        SVMGlobalData::_transition_vm_to_native(heap_base, thread);
+
+        _lock.lock();
+
+        // do a transition back to VM state so that this thread can be sure that no safepoints are happening concurrently
+        assert(thread->has_status_native_or_safepoint(), "must be");
+        if (SVMGlobalData::_try_fast_transition_native_to_vm(heap_base, thread)) {
+          // The fast path succeeded, so we have the lock and we are back in VM state.
+          assert(thread->has_status_vm(), "must be");
+          break;
+        } else {
+          // The fast thread status transition failed. So, a safepoint is currently in progress. Lets unlock the mutex and
+          // try to lock it again after the safepoint ends. Otherwise, we could end up with a deadlock between this thread
+          // and the VM thread.
+          _lock.unlock();
+          SVMGlobalData::_slow_transition_native_to_vm(heap_base, thread);
+          assert(thread->has_status_vm(), "must be");
+        }
+      }
+    } else {
+      assert(thread->has_status_native_or_safepoint(), "unexpected thread status");
+      _lock.lock();
+    }
+  } else {
+    _lock.lock();
+  }
+#else
   do {
     #ifdef ASSERT
     if (retry_cnt++ > 3) {
@@ -111,6 +155,7 @@ void Mutex::lock_contended(Thread* self) {
       break;
     }
   } while (!_lock.try_lock());
+#endif // SVM
 }
 
 void Mutex::lock(Thread* self) {
@@ -185,6 +230,7 @@ bool Mutex::try_lock() {
   return try_lock_inner(true /* do_rank_checks */);
 }
 
+#ifndef SVM
 bool Mutex::try_lock_without_rank_check() {
   bool res = try_lock_inner(false /* do_rank_checks */);
   DEBUG_ONLY(if (res) _skip_rank_check = true;)
@@ -195,6 +241,7 @@ void Mutex::release_for_safepoint() {
   assert_owner(nullptr);
   _lock.unlock();
 }
+#endif // !SVM
 
 void Mutex::unlock() {
   DEBUG_ONLY(assert_owner(Thread::current()));
@@ -233,6 +280,29 @@ bool Monitor::wait_without_safepoint_check(uint64_t timeout) {
 
 // timeout is in milliseconds - with zero meaning never timeout
 bool Monitor::wait(uint64_t timeout) {
+#ifdef SVM
+  // NOTE (chaeubl): the current implementation only supports the case that the thread is already in native state. This simplifies the implementation so that it is very similar to wait_without_safepoint_check.
+  assert(IsolateThread::current()->has_status_native_or_safepoint(), "otherwise, the logic would have to be more complex");
+
+  Thread* const self = Thread::current();
+  // Safepoint checking logically implies an active JavaThread.
+  assert(self->is_active_Java_thread(), "invariant");
+  // timeout is in milliseconds - with zero meaning never timeout
+  assert(timeout >= 0, "negative timeout");
+  assert_owner(self);
+  check_rank(self);
+
+  // conceptually set the owner to null in anticipation of
+  // abdicating the lock in wait
+  set_owner(nullptr);
+
+  // Check safepoint state after resetting owner and possible NSV.
+  check_safepoint_state(self);
+
+  int wait_status = _lock.wait(timeout);
+  set_owner(self);
+  return wait_status != 0;          // return true IFF timeout
+#else
   JavaThread* const self = JavaThread::current();
   // Safepoint checking logically implies an active JavaThread.
   assert(self->is_active_Java_thread(), "invariant");
@@ -267,6 +337,7 @@ bool Monitor::wait(uint64_t timeout) {
   }
 
   return wait_status != 0;          // return true IFF timeout
+#endif // !SVM
 }
 
 static const int MAX_NUM_MUTEX = 1204;
@@ -429,7 +500,10 @@ void Mutex::check_rank(Thread* thread) {
     // able to check for safepoints first with a TBIVM.
     // For all threads, we enforce not holding the tty lock or below, since this could block progress also.
     // Also "this" should be the monitor with lowest rank owned by this thread.
-    if (least != nullptr && ((least->rank() <= Mutex::nosafepoint && thread->is_Java_thread()) ||
+
+    // NOTE (chaeubl): There is no need to restrict the VM thread when it is at a safepoint. Besides that, we need
+    // to relax the assertion for PeriodicTask_lock because it is used together with another lock during startup.
+    if (least != nullptr SVM_ONLY(&& least != PeriodicTask_lock) && ((least->rank() <= Mutex::nosafepoint && thread->is_Java_thread() SVM_ONLY(&& !(thread->is_VM_thread() && SafepointSynchronize::is_at_safepoint()))) ||
                            least->rank() <= Mutex::tty ||
                            least->rank() <= this->rank())) {
       ResourceMark rm(thread);
@@ -489,12 +563,14 @@ void Mutex::set_owner_implementation(Thread *new_owner) {
     this->_next = new_owner->_owned_locks;
     new_owner->_owned_locks = this;
 
+#ifndef SVM
     // NSV implied with locking allow_vm_block flag.
     // The tty_lock is special because it is released for the safepoint by
     // the safepoint mechanism.
     if (new_owner->is_Java_thread() && _allow_vm_block && this != tty_lock) {
       JavaThread::cast(new_owner)->inc_no_safepoint_count();
     }
+#endif // !SVM
 
   } else {
     // the thread is releasing this lock
@@ -528,14 +604,17 @@ void Mutex::set_owner_implementation(Thread *new_owner) {
     }
     _next = nullptr;
 
+#ifndef SVM
     // ~NSV implied with locking allow_vm_block flag.
     if (old_owner->is_Java_thread() && _allow_vm_block && this != tty_lock) {
       JavaThread::cast(old_owner)->dec_no_safepoint_count();
     }
+#endif // !SVM
   }
 }
 #endif // ASSERT
 
+#ifndef SVM
 // Print all mutexes/monitors that are currently owned by a thread; called
 // by fatal error handler.
 void Mutex::print_owned_locks_on_error(outputStream* st) {
@@ -620,3 +699,4 @@ void RecursiveMutex::unlock(Thread* current) {
     _sem.signal();
   }
 }
+#endif // !SVM

@@ -40,7 +40,11 @@
 
 #ifndef ASSERT
 
-#define DEBUG_RUNTIME_FLAGS(develop,                                        \
+#define DEBUG_RUNTIME_FLAGS(ni_hosted,                                      \
+                            ni_hosted_pd,                                   \
+                            ni_runtime,                                     \
+                            ni_runtime_pd,                                  \
+                            develop,                                        \
                             develop_pd,                                     \
                             product,                                        \
                             product_pd,                                     \
@@ -50,7 +54,11 @@
 
 #else
 
-#define DEBUG_RUNTIME_FLAGS(develop,                                        \
+#define DEBUG_RUNTIME_FLAGS(ni_hosted,                                      \
+                            ni_hosted_pd,                                   \
+                            ni_runtime,                                     \
+                            ni_runtime_pd,                                  \
+                            develop,                                        \
                             develop_pd,                                     \
                             product,                                        \
                             product_pd,                                     \

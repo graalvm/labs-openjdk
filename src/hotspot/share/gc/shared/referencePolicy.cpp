@@ -29,6 +29,7 @@
 #include "memory/universe.hpp"
 #include "runtime/globals.hpp"
 
+#ifndef SVM
 LRUCurrentHeapPolicy::LRUCurrentHeapPolicy() {
   setup();
 }
@@ -53,6 +54,7 @@ bool LRUCurrentHeapPolicy::should_clear_reference(oop p,
 
   return true;
 }
+#endif // !SVM
 
 /////////////////////// MaxHeap //////////////////////
 

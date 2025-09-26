@@ -74,6 +74,7 @@ void GCTracer::send_reference_stats_event(ReferenceType type, size_t count) cons
   }
 }
 
+#ifndef SVM
 void GCTracer::send_metaspace_chunk_free_list_summary(GCWhen::Type when, Metaspace::MetadataType mdtype,
                                                       const MetaspaceChunkFreeListSummary& summary) const {
   EventMetaspaceChunkFreeListSummary e;
@@ -108,6 +109,7 @@ void ParallelOldTracer::send_parallel_old_event() const {
     e.commit();
   }
 }
+#endif // !SVM
 
 void YoungGCTracer::send_young_gc_event() const {
   EventYoungGarbageCollection e(UNTIMED);
@@ -280,6 +282,7 @@ void GCTracer::send_gc_heap_summary_event(GCWhen::Type when, const GCHeapSummary
   heap_summary.accept(&visitor);
 }
 
+#ifndef SVM
 static JfrStructMetaspaceSizes to_struct(const MetaspaceStats& sizes) {
   JfrStructMetaspaceSizes meta_sizes;
   meta_sizes.set_committed(sizes.committed());
@@ -300,6 +303,7 @@ void GCTracer::send_meta_space_summary_event(GCWhen::Type when, const MetaspaceS
     e.commit();
   }
 }
+#endif // !SVM
 
 class PhaseSender : public PhaseVisitor {
   void visit_pause(GCPhase* phase) {

@@ -129,7 +129,9 @@ public:
   ChunkPool(size_t size) : _first(nullptr), _size(size) {}
 
   static void clean() {
+#ifndef SVM
     NativeHeapTrimmer::SuspendMark sm("chunk pool cleaner");
+#endif // !SVM
     for (int i = 0; i < _num_pools; i++) {
       _pools[i].prune();
     }
@@ -191,11 +193,14 @@ Chunk* ChunkPool::allocate_chunk(Arena* arena, size_t length, AllocFailType allo
   // We rely on arena alignment <= malloc alignment.
   assert(is_aligned(chunk, ARENA_AMALLOC_ALIGNMENT), "Chunk start address misaligned.");
 
+#ifndef SVM
   if (CompilationMemoryStatistic::enabled() && on_compiler_thread()) {
     uint64_t stamp = 0;
     CompilationMemoryStatistic::on_arena_chunk_allocation(chunk->length(), (int)arena->get_tag(), &stamp);
     chunk->set_stamp(stamp);
-  } else {
+  } else
+#endif // !SVM
+  {
     chunk->set_stamp(0);
   }
 
@@ -204,12 +209,14 @@ Chunk* ChunkPool::allocate_chunk(Arena* arena, size_t length, AllocFailType allo
 
 void ChunkPool::deallocate_chunk(Chunk* c) {
 
+#ifndef SVM
   // Inform compilation memstat
   if (CompilationMemoryStatistic::enabled() && c->stamp() != 0) {
     assert(on_compiler_thread(), "we stamped this chunk");
     CompilationMemoryStatistic::on_arena_chunk_deallocation(c->length(), c->stamp());
     c->set_stamp(0);
   }
+#endif // !SVM
 
   // If this is a standard-sized chunk, return it to its pool; otherwise free it.
   ChunkPool* pool = ChunkPool::get_pool_for_size(c->length());

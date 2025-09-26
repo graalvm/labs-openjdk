@@ -35,7 +35,7 @@ static bool _initialized = false;
 // will hang or crash. When detachCurrentThread is called the key will be set
 // to null and we will not be called again. If detachCurrentThread is never
 // called we could loop forever depending on the pthread implementation.
-extern "C" void restore_thread_pointer(void* p) {
+NOT_EXTERN_C_IF_SVM void restore_thread_pointer(void* p) {
   ThreadLocalStorage::set_thread((Thread*) p);
 }
 

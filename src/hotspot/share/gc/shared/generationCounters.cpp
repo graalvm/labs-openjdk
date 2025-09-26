@@ -33,6 +33,9 @@ GenerationCounters::GenerationCounters(const char* name,
                                        size_t min_capacity, size_t max_capacity,
                                        size_t curr_capacity) {
   if (UsePerfData) {
+#ifdef SVM
+    Unimplemented();
+#else
     EXCEPTION_MARK;
     ResourceMark rm;
 
@@ -60,11 +63,14 @@ GenerationCounters::GenerationCounters(const char* name,
     _current_size =
       PerfDataManager::create_variable(SUN_GC, cname, PerfData::U_Bytes,
                                        curr_capacity, CHECK);
+#endif // SVM
   }
 }
 
 GenerationCounters::~GenerationCounters() {
+#ifndef SVM
   FREE_C_HEAP_ARRAY(char, _name_space);
+#endif // !SVM
 }
 
 void GenerationCounters::update_all(size_t curr_capacity) {

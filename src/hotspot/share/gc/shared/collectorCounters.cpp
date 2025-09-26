@@ -30,6 +30,9 @@
 CollectorCounters::CollectorCounters(const char* name, int ordinal) {
 
   if (UsePerfData) {
+#ifdef SVM
+    Unimplemented();
+#else
     EXCEPTION_MARK;
     ResourceMark rm;
 
@@ -58,11 +61,14 @@ CollectorCounters::CollectorCounters(const char* name, int ordinal) {
     _last_exit_time = PerfDataManager::create_variable(SUN_GC, cname,
                                                        PerfData::U_Ticks,
                                                        CHECK);
+#endif // SVM
   }
 }
 
 CollectorCounters::~CollectorCounters() {
+#ifndef SVM
   FREE_C_HEAP_ARRAY(char, _name_space);
+#endif // !SVM
 }
 
 TraceCollectorStats::TraceCollectorStats(CollectorCounters* c) :

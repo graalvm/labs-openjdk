@@ -59,6 +59,7 @@ uint64_t ElapsedCounterSource::nanoseconds(Type value) {
   return (uint64_t)conversion<ElapsedCounterSource, NANOUNITS>(value);
 }
 
+#ifndef SVM
 uint64_t FastUnorderedElapsedCounterSource::frequency() {
 #if defined(X86) && !defined(ZERO)
   static bool valid_rdtsc = Rdtsc::initialize();
@@ -133,3 +134,4 @@ uint64_t CompositeElapsedCounterSource::microseconds(Type value) {
 uint64_t CompositeElapsedCounterSource::nanoseconds(Type value) {
   return (uint64_t)conversion<ElapsedCounterSource, NANOUNITS>(value.val1);
 }
+#endif // !SVM

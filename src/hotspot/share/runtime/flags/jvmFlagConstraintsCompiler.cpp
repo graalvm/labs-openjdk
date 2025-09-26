@@ -39,6 +39,7 @@
  * Validate the minimum number of compiler threads needed to run the JVM.
  */
 JVMFlag::Error CICompilerCountConstraintFunc(intx value, bool verbose) {
+#ifndef SVM
   int min_number_of_compiler_threads = 0;
 #if COMPILER1_OR_COMPILER2
   if (CompilerConfig::is_tiered()) {
@@ -61,12 +62,15 @@ JVMFlag::Error CICompilerCountConstraintFunc(intx value, bool verbose) {
                         "at least %d \n",
                         value, min_number_of_compiler_threads);
     return JVMFlag::VIOLATES_CONSTRAINT;
-  } else {
+  } else
+#endif // !SVM
+  {
     return JVMFlag::SUCCESS;
   }
 }
 
 JVMFlag::Error AllocatePrefetchStepSizeConstraintFunc(int value, bool verbose) {
+#ifndef SVM
   if (AllocatePrefetchStyle == 3) {
     if (value % wordSize != 0) {
       JVMFlag::printError(verbose,
@@ -75,10 +79,13 @@ JVMFlag::Error AllocatePrefetchStepSizeConstraintFunc(int value, bool verbose) {
       return JVMFlag::VIOLATES_CONSTRAINT;
     }
   }
+#endif // !SVM
+
   return JVMFlag::SUCCESS;
 }
 
 JVMFlag::Error AllocatePrefetchInstrConstraintFunc(intx value, bool verbose) {
+#ifndef SVM
   intx max_value = max_intx;
 #if defined(X86)
   max_value = 3;
@@ -89,11 +96,13 @@ JVMFlag::Error AllocatePrefetchInstrConstraintFunc(intx value, bool verbose) {
                         "between 0 and %zd\n", value, max_value);
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   return JVMFlag::SUCCESS;
 }
 
 JVMFlag::Error CompileThresholdConstraintFunc(intx value, bool verbose) {
+#ifndef SVM
   if (value < 0 || value > INT_MAX >> InvocationCounter::count_shift) {
     JVMFlag::printError(verbose,
                         "CompileThreshold (%zd) "
@@ -102,11 +111,13 @@ JVMFlag::Error CompileThresholdConstraintFunc(intx value, bool verbose) {
                         INT_MAX >> InvocationCounter::count_shift);
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   return JVMFlag::SUCCESS;
 }
 
 JVMFlag::Error OnStackReplacePercentageConstraintFunc(intx value, bool verbose) {
+#ifndef SVM
   // We depend on CompileThreshold being valid, verify it first.
   if (CompileThresholdConstraintFunc(CompileThreshold, false) == JVMFlag::VIOLATES_CONSTRAINT) {
     JVMFlag::printError(verbose, "OnStackReplacePercentage cannot be validated because CompileThreshold value is invalid\n");
@@ -152,10 +163,13 @@ JVMFlag::Error OnStackReplacePercentageConstraintFunc(intx value, bool verbose) 
       return JVMFlag::VIOLATES_CONSTRAINT;
     }
   }
+#endif // !SVM
+
   return JVMFlag::SUCCESS;
 }
 
 JVMFlag::Error CodeCacheSegmentSizeConstraintFunc(uintx value, bool verbose) {
+#ifndef SVM
   if (CodeCacheSegmentSize < (uintx)CodeEntryAlignment) {
     JVMFlag::printError(verbose,
                         "CodeCacheSegmentSize  (%zu) must be "
@@ -183,11 +197,13 @@ JVMFlag::Error CodeCacheSegmentSizeConstraintFunc(uintx value, bool verbose) {
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
 #endif
+#endif // !SVM
 
   return JVMFlag::SUCCESS;
 }
 
 JVMFlag::Error CodeEntryAlignmentConstraintFunc(intx value, bool verbose) {
+#ifndef SVM
   if (!is_power_of_2(value)) {
     JVMFlag::printError(verbose,
                         "CodeEntryAlignment (%zd) must be "
@@ -202,6 +218,7 @@ JVMFlag::Error CodeEntryAlignmentConstraintFunc(intx value, bool verbose) {
                           CodeEntryAlignment, 16);
       return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   if ((uintx)CodeEntryAlignment > CodeCacheSegmentSize) {
     JVMFlag::printError(verbose,
@@ -216,6 +233,7 @@ JVMFlag::Error CodeEntryAlignmentConstraintFunc(intx value, bool verbose) {
 }
 
 JVMFlag::Error OptoLoopAlignmentConstraintFunc(intx value, bool verbose) {
+#ifndef SVM
   if (!is_power_of_2(value)) {
     JVMFlag::printError(verbose,
                         "OptoLoopAlignment (%zd) "
@@ -233,6 +251,7 @@ JVMFlag::Error OptoLoopAlignmentConstraintFunc(intx value, bool verbose) {
                         value, relocInfo::addr_unit());
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   if (OptoLoopAlignment > CodeEntryAlignment) {
     JVMFlag::printError(verbose,
@@ -246,12 +265,14 @@ JVMFlag::Error OptoLoopAlignmentConstraintFunc(intx value, bool verbose) {
 }
 
 JVMFlag::Error ArraycopyDstPrefetchDistanceConstraintFunc(uintx value, bool verbose) {
+#ifndef SVM
   if (value >= 4032) {
     JVMFlag::printError(verbose,
                         "ArraycopyDstPrefetchDistance (%zu) must be"
                         "between 0 and 4031\n", value);
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   return JVMFlag::SUCCESS;
 }
@@ -268,17 +289,20 @@ JVMFlag::Error AVX3ThresholdConstraintFunc(int value, bool verbose) {
 }
 
 JVMFlag::Error ArraycopySrcPrefetchDistanceConstraintFunc(uintx value, bool verbose) {
+#ifndef SVM
   if (value >= 4032) {
     JVMFlag::printError(verbose,
                         "ArraycopySrcPrefetchDistance (%zu) must be"
                         "between 0 and 4031\n", value);
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   return JVMFlag::SUCCESS;
 }
 
 JVMFlag::Error TypeProfileLevelConstraintFunc(uint value, bool verbose) {
+#ifndef SVM
   uint original_value = value;
   for (int i = 0; i < 3; i++) {
     if (value % 10 > 2) {
@@ -295,6 +319,7 @@ JVMFlag::Error TypeProfileLevelConstraintFunc(uint value, bool verbose) {
                         "for TypeProfileLevel: maximal 3 digits\n", original_value);
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
   return JVMFlag::SUCCESS;
 }
 
@@ -319,12 +344,15 @@ JVMFlag::Error VerifyIterativeGVNConstraintFunc(uint value, bool verbose) {
 }
 
 JVMFlag::Error InitArrayShortSizeConstraintFunc(intx value, bool verbose) {
+#ifndef SVM
   if (value % BytesPerLong != 0) {
     JVMFlag::printError(verbose,
                         "InitArrayShortSize (%zd) must be "
                         "a multiple of %d\n", value, BytesPerLong);
     return JVMFlag::VIOLATES_CONSTRAINT;
-  } else {
+  } else
+#endif // !SVM
+  {
     return JVMFlag::SUCCESS;
   }
 }
@@ -401,6 +429,7 @@ JVMFlag::Error LoopStripMiningIterConstraintFunc(uintx value, bool verbose) {
 #endif // COMPILER2
 
 JVMFlag::Error DisableIntrinsicConstraintFunc(ccstrlist value, bool verbose) {
+#ifndef SVM
   ControlIntrinsicValidator validator(value, true/*disabled_all*/);
   if (!validator.is_valid()) {
     JVMFlag::printError(verbose,
@@ -408,11 +437,13 @@ JVMFlag::Error DisableIntrinsicConstraintFunc(ccstrlist value, bool verbose) {
                         validator.what());
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   return JVMFlag::SUCCESS;
 }
 
 JVMFlag::Error ControlIntrinsicConstraintFunc(ccstrlist value, bool verbose) {
+#ifndef SVM
   ControlIntrinsicValidator validator(value, false/*disabled_all*/);
   if (!validator.is_valid()) {
     JVMFlag::printError(verbose,
@@ -420,6 +451,7 @@ JVMFlag::Error ControlIntrinsicConstraintFunc(ccstrlist value, bool verbose) {
                         validator.what());
     return JVMFlag::VIOLATES_CONSTRAINT;
   }
+#endif // !SVM
 
   return JVMFlag::SUCCESS;
 }

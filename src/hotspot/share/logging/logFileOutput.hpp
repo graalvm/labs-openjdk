@@ -32,6 +32,7 @@ class LogDecorations;
 
 // The log file output, with support for file rotation based on a target size.
 class LogFileOutput : public LogFileStreamOutput {
+#ifndef SVM
  private:
   static const char* const FileOpenMode;
   static const char* const FileCountOptionKey;
@@ -79,8 +80,10 @@ class LogFileOutput : public LogFileStreamOutput {
       _current_file = 0;
     }
   }
+#endif // !SVM
 
  public:
+#ifndef SVM
   LogFileOutput(const char *name);
   virtual ~LogFileOutput();
   virtual bool initialize(const char* options, outputStream* errstream);
@@ -98,6 +101,7 @@ class LogFileOutput : public LogFileStreamOutput {
   const char* cur_log_file_name();
   static const char* const Prefix;
   static void set_file_name_parameters(jlong start_time);
+#endif // !SVM
 };
 
 #endif // SHARE_LOGGING_LOGFILEOUTPUT_HPP

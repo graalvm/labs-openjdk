@@ -191,14 +191,18 @@ class Mutex : public CHeapObj<mtSynchronizer> {
   bool try_lock_inner(bool do_rank_checks);
  public:
 
+#ifndef SVM
   void release_for_safepoint();
+#endif // !SVM
 
   // Lock without safepoint check. Should ONLY be used by safepoint code and other code
   // that is guaranteed not to block while running inside the VM.
   void lock_without_safepoint_check();
   void lock_without_safepoint_check(Thread* self);
+#ifndef SVM
   // A thread should not call this if failure to acquire ownership will blocks its progress
   bool try_lock_without_rank_check();
+#endif // !SVM
 
   // Current owner - note not MT-safe. Can only be used to guarantee that
   // the current running thread owns the lock
@@ -216,10 +220,12 @@ class Mutex : public CHeapObj<mtSynchronizer> {
     void print() const;
   #endif
 
+#ifndef SVM
   // Print all mutexes/monitors that are currently owned by a thread; called
   // by fatal error handler.
   static void print_owned_locks_on_error(outputStream* st);
   static void print_lock_ranks(outputStream* st);
+#endif // !SVM
 };
 
 class Monitor : public Mutex {
@@ -263,6 +269,7 @@ class PaddedMonitor : public Monitor {
   PaddedMonitor(Rank rank, const char *name) : Monitor(rank, name) {};
 };
 
+#ifndef SVM
 // RecursiveMutex is a minimal implementation, and has no safety and rank checks that Mutex has.
 // There are also no checks that the recursive lock is not held when going to Java or to JNI, like
 // other JVM mutexes have.  This should be used only for cases where the alternatives with all the
@@ -282,5 +289,6 @@ class RecursiveMutex : public CHeapObj<mtThread> {
   // For use in asserts
   bool holds_lock(Thread* current) { return _owner == current; }
 };
+#endif // !SVM
 
 #endif // SHARE_RUNTIME_MUTEX_HPP

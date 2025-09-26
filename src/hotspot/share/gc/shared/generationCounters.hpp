@@ -43,7 +43,9 @@ class GenerationCounters: public CHeapObj<mtGC> {
   // PerfConstant*           _max_size;
   // PerfConstant*           _spaces;
 
+#ifndef SVM
   char*              _name_space;
+#endif // !SVM
 
  public:
   GenerationCounters(const char* name, int ordinal, int spaces,
@@ -54,6 +56,8 @@ class GenerationCounters: public CHeapObj<mtGC> {
 
   void update_all(size_t curr_capacity);
 
+#ifndef SVM
   const char* name_space() const        { return _name_space; }
+#endif // !SVM
 };
 #endif // SHARE_GC_SHARED_GENERATIONCOUNTERS_HPP

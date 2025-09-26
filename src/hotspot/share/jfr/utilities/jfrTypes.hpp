@@ -29,6 +29,14 @@
 #include "jfrfiles/jfrTypes.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+#ifdef SVM
+// A few forward declarations to make the automatically generated jfrEventClasses.hpp file happy.
+class ClassLoaderData;
+class Method;
+class PackageEntry;
+class ModuleEntry;
+#endif // SVM
+
 typedef u8 traceid;
 typedef int fio_fd;
 

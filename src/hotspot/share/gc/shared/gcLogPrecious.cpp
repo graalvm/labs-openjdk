@@ -75,6 +75,7 @@ void GCLogPrecious::vwrite_and_debug(LogTargetHandle log,
   DEBUG_ONLY(BREAKPOINT;)
 }
 
+#ifndef SVM
 void GCLogPrecious::print_on_error(outputStream* st) {
   st->print_cr("GC Precious Log:");
 
@@ -96,3 +97,4 @@ void GCLogPrecious::print_on_error(outputStream* st) {
 
   _lock->unlock();
 }
+#endif // !SVM

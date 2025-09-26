@@ -26,6 +26,7 @@
 #include "runtime/cpuTimeCounters.hpp"
 #include "runtime/atomic.hpp"
 
+#ifndef SVM
 const char* CPUTimeGroups::to_string(CPUTimeType val) {
   switch (val) {
     case CPUTimeType::gc_total:
@@ -47,6 +48,7 @@ const char* CPUTimeGroups::to_string(CPUTimeType val) {
       return "";
   };
 }
+#endif // !SVM
 
 bool CPUTimeGroups::is_gc_counter(CPUTimeType val) {
   switch (val) {
@@ -64,7 +66,7 @@ bool CPUTimeGroups::is_gc_counter(CPUTimeType val) {
 CPUTimeCounters* CPUTimeCounters::_instance = nullptr;
 
 CPUTimeCounters::CPUTimeCounters() :
-    _cpu_time_counters(),
+    NOT_SVM(_cpu_time_counters() COMMA)
     _gc_total_cpu_time_diff(0) {
 }
 
@@ -87,6 +89,7 @@ void CPUTimeCounters::publish_gc_total_cpu_time() {
   get_counter(CPUTimeGroups::CPUTimeType::gc_total)->inc(fetched_value);
 }
 
+#ifndef SVM
 void CPUTimeCounters::create_counter(CounterNS ns, CPUTimeGroups::CPUTimeType name) {
   if (UsePerfData && os::is_thread_cpu_time_supported()) {
     EXCEPTION_MARK;
@@ -100,9 +103,14 @@ void CPUTimeCounters::create_counter(CounterNS ns, CPUTimeGroups::CPUTimeType na
 void CPUTimeCounters::create_counter(CPUTimeGroups::CPUTimeType group) {
   CPUTimeCounters::create_counter(SUN_THREADS_CPUTIME, group);
 }
+#endif // !SVM
 
 PerfCounter* CPUTimeCounters::get_counter(CPUTimeGroups::CPUTimeType name) {
+#ifdef SVM
+  Unimplemented();
+#else
   return CPUTimeCounters::get_instance()->_cpu_time_counters[static_cast<int>(name)];
+#endif // SVM
 }
 
 void CPUTimeCounters::update_counter(CPUTimeGroups::CPUTimeType name, jlong total) {

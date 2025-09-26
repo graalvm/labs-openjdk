@@ -136,6 +136,7 @@ public:
     : LogStream((LogTargetImpl<level, T0, T1, T2, T3, T4, GuardTag>*)nullptr) {}
 };
 
+#ifndef SVM
 class LogMessageHandle {
   const LogLevelType _level;
   LogMessageImpl& _lm;
@@ -163,5 +164,6 @@ public:
   NonInterleavingLogStream(LogLevelType level, LogMessageImpl& lm)
     : LogStreamImpl(LogMessageHandle(level, lm)) {}
 };
+#endif // !SVM
 
 #endif // SHARE_LOGGING_LOGSTREAM_HPP

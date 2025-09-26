@@ -62,7 +62,9 @@
 #if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(_AIX)
 #include <signal.h>
 #ifndef __OpenBSD__
+#ifndef SVM
 #include <ucontext.h>
+#endif // !SVM
 #endif
 #ifdef __APPLE__
   #include <AvailabilityMacros.h>

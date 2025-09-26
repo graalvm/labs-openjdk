@@ -35,7 +35,7 @@
 class oopDesc;
 
 // ShowRegistersOnAssert support (for now Linux and Windows only)
-#if (defined(LINUX) || defined(_WINDOWS)) && !defined(ZERO)
+#if (defined(LINUX) || defined(_WINDOWS)) && !defined(ZERO) && !defined(SVM)
 #define CAN_SHOW_REGISTERS_ON_ASSERT
 extern char* g_assert_poison;
 extern const char* g_assert_poison_read_only;
@@ -46,6 +46,14 @@ bool handle_assert_poison_fault(const void* ucVoid);
 #else
 #define TOUCH_ASSERT_POISON
 #endif // CAN_SHOW_REGISTERS_ON_ASSERT
+
+#ifdef ASSERT
+#define __FILENAME_ONLY__ __FILE__
+#else
+// NOTE (chaeubl): Avoid that __FILE__ embeds the full path into the binary.
+#define __FILENAME_ONLY__ "unknown file"
+#endif
+
 
 // The DebuggingContext class provides a mechanism for temporarily disabling
 // asserts and various consistency checks.  Ordinarily that would be a really
@@ -154,12 +162,17 @@ do {                                                                   \
     report_vm_error(file, line, "assert(" #p ") failed", __VA_ARGS__); \
   }                                                                    \
 } while (0)
-#define vmassert(p, ...) vmassert_with_file_and_line(p, __FILE__, __LINE__, __VA_ARGS__)
+#define vmassert(p, ...) vmassert_with_file_and_line(p, __FILENAME_ONLY__, __LINE__, __VA_ARGS__)
 #endif
 
 // For backward compatibility.
 #define assert_with_file_and_line(p, file, line, ...) vmassert_with_file_and_line(p, file, line, __VA_ARGS__)
 #define assert(p, ...) vmassert(p, __VA_ARGS__)
+#ifdef SVM
+#define assert_svm_only(p, ...) vmassert(p, __VA_ARGS__)
+#else
+#define assert_svm_only(p, ...)
+#endif // SVM
 
 #define precond(p)   assert(p, "precond")
 #define postcond(p)  assert(p, "postcond")
@@ -178,7 +191,7 @@ do {                                                                   \
 do {                                                                           \
   if (! VMASSERT_CHECK_PASSED(p)) {                                            \
     TOUCH_ASSERT_POISON;                                                       \
-    report_vm_status_error(__FILE__, __LINE__, "assert(" #p ") failed",        \
+    report_vm_status_error(__FILENAME_ONLY__, __LINE__, "assert(" #p ") failed", \
                            status, msg);                                       \
   }                                                                            \
 } while (0)
@@ -195,20 +208,20 @@ do {                                                                           \
 do {                                                                              \
   if (!(p)) {                                                                     \
     TOUCH_ASSERT_POISON;                                                          \
-    report_vm_error(__FILE__, __LINE__, "guarantee(" #p ") failed", __VA_ARGS__); \
+    report_vm_error(__FILENAME_ONLY__, __LINE__, "guarantee(" #p ") failed", __VA_ARGS__); \
   }                                                                               \
 } while (0)
 
 #define fatal(...)                                                                \
 do {                                                                              \
   TOUCH_ASSERT_POISON;                                                            \
-  report_fatal(INTERNAL_ERROR, __FILE__, __LINE__, __VA_ARGS__);                  \
+  report_fatal(INTERNAL_ERROR, __FILENAME_ONLY__, __LINE__, __VA_ARGS__);         \
 } while (0)
 
 // out of memory
 #define vm_exit_out_of_memory(size, vm_err_type, ...)                             \
 do {                                                                              \
-  report_vm_out_of_memory(__FILE__, __LINE__, size, vm_err_type, __VA_ARGS__);    \
+  report_vm_out_of_memory(__FILENAME_ONLY__, __LINE__, size, vm_err_type, __VA_ARGS__); \
 } while (0)
 
 #define check_with_errno(check_type, cond, msg)                                   \
@@ -224,24 +237,24 @@ do {                                                                            
 #define ShouldNotCallThis()                                                       \
 do {                                                                              \
   TOUCH_ASSERT_POISON;                                                            \
-  report_should_not_call(__FILE__, __LINE__);                                     \
+  report_should_not_call(__FILENAME_ONLY__, __LINE__);                            \
 } while (0)
 
 #define ShouldNotReachHere()                                                      \
 do {                                                                              \
   TOUCH_ASSERT_POISON;                                                            \
-  report_should_not_reach_here(__FILE__, __LINE__);                               \
+  report_should_not_reach_here(__FILENAME_ONLY__, __LINE__);                      \
 } while (0)
 
 #define Unimplemented()                                                           \
 do {                                                                              \
   TOUCH_ASSERT_POISON;                                                            \
-  report_unimplemented(__FILE__, __LINE__);                                       \
+  report_unimplemented(__FILENAME_ONLY__, __LINE__);                              \
 } while (0)
 
 #define Untested(msg)                                                             \
 do {                                                                              \
-  report_untested(__FILE__, __LINE__, msg);                                       \
+  report_untested(__FILENAME_ONLY__, __LINE__, msg);                              \
   BREAKPOINT;                                                                     \
 } while (0);
 
@@ -282,19 +295,23 @@ void report_vm_out_of_memory(const char* file, int line, size_t size, VMErrorTyp
 [[noreturn]] void report_should_not_reach_here(const char* file, int line);
 [[noreturn]] void report_unimplemented(const char* file, int line);
 
+#ifndef SVM
 // NOT [[noreturn]]
 void report_untested(const char* file, int line, const char* message);
+#endif // !SVM
 
 ATTRIBUTE_PRINTF(1, 2)
 void warning(const char* format, ...);
 
 #define STATIC_ASSERT(Cond) static_assert((Cond), #Cond)
 
+#ifndef SVM
 // out of memory reporting
 void report_java_out_of_memory(const char* message);
 
 // Returns true iff the address p is readable and *(intptr_t*)p != errvalue
 extern "C" bool dbg_is_safe(const void* p, intptr_t errvalue);
 extern "C" bool dbg_is_good_oop(oopDesc* o);
+#endif // !SVM
 
 #endif // SHARE_UTILITIES_DEBUG_HPP

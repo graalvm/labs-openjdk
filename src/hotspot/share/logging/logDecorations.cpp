@@ -29,9 +29,12 @@
 #include "runtime/os.hpp"
 #include "services/management.hpp"
 
+#ifndef SVM
 const char* volatile LogDecorations::_host_name = nullptr;
+#endif // !SVM
 const int LogDecorations::_pid = os::current_process_id(); // This is safe to call during dynamic initialization.
 
+#ifndef SVM
 const char* LogDecorations::host_name() {
   const char* host_name = Atomic::load_acquire(&_host_name);
   if (host_name == nullptr) {
@@ -47,6 +50,7 @@ const char* LogDecorations::host_name() {
   }
   return host_name;
 }
+#endif // !SVM
 
 LogDecorations::LogDecorations(LogLevelType level, const LogTagSet &tagset, const LogDecorators &decorators) :
   // When constructing the LogDecorations we resolve values for the requested decorators.
@@ -137,6 +141,8 @@ void LogDecorations::print_tags_decoration(outputStream* st) const {
   _tagset.label(st);
 }
 
+#ifndef SVM
 void LogDecorations::print_hostname_decoration(outputStream* st) const {
   st->print_raw(host_name());
 }
+#endif // !SVM

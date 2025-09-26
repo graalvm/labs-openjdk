@@ -25,6 +25,9 @@
 #include "memory/reservedSpace.hpp"
 #include "runtime/os.hpp"
 #include "utilities/align.hpp"
+#ifdef SVM
+#include "oops/compressedOops.hpp"
+#endif // SVM
 
 #ifdef ASSERT
 void ReservedSpace::sanity_checks() {
@@ -34,3 +37,16 @@ void ReservedSpace::sanity_checks() {
   assert(os::page_sizes().contains(_page_size), "Invalid pagesize");
 }
 #endif
+
+#ifdef SVM
+/* NOTE (chaeubl): we adjust the base and heap size according to the null_region_size. */
+ReservedHeapSpace::ReservedHeapSpace(char* base, size_t size, size_t alignment, size_t page_size, size_t null_regions_size) :
+  ReservedSpace(base + null_regions_size, size - null_regions_size, alignment, page_size, false, false),
+  _noaccess_prefix(null_regions_size)
+{
+  // We initialize compressed oops very early on as we may access image heap oops during early startup.
+  assert(CompressedOops::base() == (address)this->compressed_oop_base(), "must be");
+  assert(CompressedOops::begin() == (address)this->base(), "must be");
+  assert(CompressedOops::end() == (address)this->end(), "must be");
+}
+#endif // SVM

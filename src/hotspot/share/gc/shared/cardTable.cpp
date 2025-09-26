@@ -50,7 +50,10 @@ void CardTable::initialize_card_size() {
   _card_shift = log2i_exact(_card_size);
   _card_size_in_words = _card_size / sizeof(HeapWord);
 
+#ifndef SVM
+  // NOTE (chaeubl): when this is called, the logging infrastructure is not initialized yet.
   log_info_p(gc, init)("CardTable entry size: " UINT32_FORMAT,  _card_size);
+#endif // !SVM
 }
 
 size_t CardTable::compute_byte_map_size(size_t num_bytes) {

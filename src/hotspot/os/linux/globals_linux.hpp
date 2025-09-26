@@ -28,7 +28,11 @@
 //
 // Declare Linux specific flags. They are not available on other platforms.
 //
-#define RUNTIME_OS_FLAGS(develop,                                       \
+#define RUNTIME_OS_FLAGS(ni_hosted,                                     \
+                         ni_hosted_pd,                                  \
+                         ni_runtime,                                    \
+                         ni_runtime_pd,                                 \
+                         develop,                                       \
                          develop_pd,                                    \
                          product,                                       \
                          product_pd,                                    \
@@ -44,7 +48,7 @@
   product(bool, LoadExecStackDllInVMThread, true,                       \
           "Load DLLs with executable-stack attribute in the VM Thread") \
                                                                         \
-  product(bool, UseContainerSupport, true,                              \
+  ni_hosted(bool, UseContainerSupport, true,                            \
           "Enable detection and runtime container configuration support") \
                                                                         \
   product(bool, AdjustStackSizeForTLS, false,                           \

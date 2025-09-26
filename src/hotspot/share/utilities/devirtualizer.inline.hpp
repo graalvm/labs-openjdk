@@ -107,10 +107,12 @@ call_do_metadata(bool (Receiver::*)(), bool (Base::*)(), OopClosureType* closure
   return closure->OopClosureType::do_metadata();
 }
 
+#ifndef SVM
 template <typename OopClosureType>
 inline bool Devirtualizer::do_metadata(OopClosureType* closure) {
   return call_do_metadata(&OopClosureType::do_metadata, &OopIterateClosure::do_metadata, closure);
 }
+#endif // !SVM
 
 // Implementation of the non-virtual do_klass dispatch.
 
@@ -126,10 +128,12 @@ call_do_klass(void (Receiver::*)(Klass*), void (Base::*)(Klass*), OopClosureType
   closure->OopClosureType::do_klass(k);
 }
 
+#ifndef SVM
 template <typename OopClosureType>
 inline void Devirtualizer::do_klass(OopClosureType* closure, Klass* k) {
   call_do_klass(&OopClosureType::do_klass, &OopIterateClosure::do_klass, closure, k);
 }
+#endif // !SVM
 
 // Implementation of the non-virtual do_cld dispatch.
 
@@ -145,10 +149,12 @@ call_do_cld(void (Receiver::*)(ClassLoaderData*), void (Base::*)(ClassLoaderData
   closure->OopClosureType::do_cld(cld);
 }
 
+#ifndef SVM
 template <typename OopClosureType>
 void Devirtualizer::do_cld(OopClosureType* closure, ClassLoaderData* cld) {
   call_do_cld(&OopClosureType::do_cld, &OopIterateClosure::do_cld, closure, cld);
 }
+#endif // !SVM
 
 // Implementation of the non-virtual do_derived_oop dispatch.
 
@@ -164,10 +170,12 @@ call_do_derived_oop(void (Receiver::*)(derived_base*, derived_pointer*), void (B
   closure->DerivedOopClosureType::do_derived_oop(base, derived);
 }
 
+#ifndef SVM
 template <typename DerivedOopClosureType>
 inline void Devirtualizer::do_derived_oop(DerivedOopClosureType* closure, derived_base* base, derived_pointer* derived) {
   call_do_derived_oop(&DerivedOopClosureType::do_derived_oop, &DerivedOopClosure::do_derived_oop, closure, base, derived);
 }
+#endif // !SVM
 
 #endif // SHARE_UTILITIES_DEVIRTUALIZER_INLINE_HPP
 

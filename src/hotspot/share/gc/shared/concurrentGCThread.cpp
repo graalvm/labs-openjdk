@@ -47,7 +47,7 @@ void ConcurrentGCThread::run() {
   run_service();
 
   // Signal thread has terminated
-  MonitorLocker ml(Terminator_lock);
+  MonitorLocker ml(Terminator_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
   Atomic::release_store(&_has_terminated, true);
   ml.notify_all();
 }
@@ -62,7 +62,7 @@ void ConcurrentGCThread::stop() {
   stop_service();
 
   // Wait for thread to terminate
-  MonitorLocker ml(Terminator_lock);
+  MonitorLocker ml(Terminator_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
   while (!_has_terminated) {
     ml.wait();
   }

@@ -27,13 +27,16 @@
 #include "memory/resourceArea.hpp"
 #include "runtime/perfData.hpp"
 
-HSpaceCounters::HSpaceCounters(const char* name_space,
+HSpaceCounters::HSpaceCounters(SVM_ONLY(int generation_ordinal) NOT_SVM(const char* name_space),
                                const char* name,
                                int ordinal,
                                size_t max_size,
                                size_t initial_capacity) {
 
   if (UsePerfData) {
+#ifdef SVM
+    Unimplemented();
+#else
     EXCEPTION_MARK;
     ResourceMark rm;
 
@@ -62,11 +65,14 @@ HSpaceCounters::HSpaceCounters(const char* name_space,
     cname = PerfDataManager::counter_name(_name_space, "initCapacity");
     PerfDataManager::create_constant(SUN_GC, cname, PerfData::U_Bytes,
                                      initial_capacity, CHECK);
+#endif // SVM
   }
 }
 
 HSpaceCounters::~HSpaceCounters() {
+#ifndef SVM
   FREE_C_HEAP_ARRAY(char, _name_space);
+#endif // !SVM
 }
 
 void HSpaceCounters::update_capacity(size_t v) {
@@ -82,6 +88,7 @@ void HSpaceCounters::update_all(size_t capacity, size_t used) {
   update_used(used);
 }
 
+#ifndef SVM
 DEBUG_ONLY(
   // for security reasons, we do not allow arbitrary reads from
   // the counters as they may live in shared memory.
@@ -92,3 +99,4 @@ DEBUG_ONLY(
     return _used->get_value();
   }
 )
+#endif // !SVM

@@ -54,12 +54,14 @@ class os::Posix {
   friend class os;
 
 protected:
+#ifndef SVM
   static void print_distro_info(outputStream* st);
   static void print_rlimit_info(outputStream* st);
   static void print_uname_info(outputStream* st);
   static void print_libversion_info(outputStream* st);
   static void print_load_average(outputStream* st);
   static void print_uptime_info(outputStream* st);
+#endif // !SVM
 
 public:
   static void init(void);  // early initialization - no logging available
@@ -73,6 +75,7 @@ public:
   // to buf with len buflen; buf is returned.
   static char* describe_pthread_attr(char* buf, size_t buflen, const pthread_attr_t* attr);
 
+#ifndef SVM
   // Returns true if given uid is root.
   static bool is_root(uid_t uid);
 
@@ -88,6 +91,7 @@ public:
   // Set PC into context. Needed for continuation after signal.
   static address ucontext_get_pc(const ucontext_t* ctx);
   static void    ucontext_set_pc(ucontext_t* ctx, address pc);
+#endif // !SVM
 
   DEBUG_ONLY(static bool ucontext_is_interpreter(const ucontext_t* ctx);)
 
@@ -96,9 +100,11 @@ public:
   // clock ticks per second of the system
   static int clock_tics_per_second();
 
+#ifndef SVM
   static bool handle_stack_overflow(JavaThread* thread, address addr, address pc,
                                     const void* ucVoid,
                                     address* stub);
+#endif // !SVM
 };
 
 #endif // OS_POSIX_OS_POSIX_HPP

@@ -241,6 +241,7 @@ class StackObj {
 // and shared read-write classes.
 //
 
+#ifndef SVM
 class ClassLoaderData;
 class MetaspaceClosure;
 
@@ -366,6 +367,7 @@ class MetaspaceObj {
   // is used by the templates in metaspaceClosure.hpp
   static bool is_read_only_by_default() { return false; }
 };
+#endif // !SVM
 
 // Base class for classes that constitute name spaces.
 
@@ -451,7 +453,7 @@ protected:
   void* operator new [](size_t size, const std::nothrow_t&  nothrow_constant, MemTag mem_tag) throw() = delete;
 
   // Arena allocations
-  void* operator new(size_t size, Arena *arena);
+  void* operator new(size_t size, Arena *arena) throw();
   void* operator new [](size_t size, Arena *arena) = delete;
 
   // Resource allocations

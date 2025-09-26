@@ -44,7 +44,7 @@
 //#include "jvmci/jvmci_globals_pd.hpp"
 //#endif
 
-#if !defined(COMPILER1) && !defined(COMPILER2) && !INCLUDE_JVMCI
+#if defined(SVM) || !defined(COMPILER1) && !defined(COMPILER2) && !INCLUDE_JVMCI
 define_pd_global(bool, BackgroundCompilation,        false);
 define_pd_global(bool, CICompileOSR,                 false);
 define_pd_global(bool, UseTypeProfile,               false);
@@ -70,7 +70,7 @@ define_pd_global(uintx,  NonNMethodCodeHeapSize,     32*M);
 define_pd_global(uintx,  CodeCacheExpansionSize,     32*K);
 define_pd_global(uintx,  CodeCacheMinBlockLength,    1);
 define_pd_global(uintx,  CodeCacheMinimumUseSpace,   200*K);
-#ifndef ZERO
+#if !defined(ZERO) && !defined(SVM)
 define_pd_global(bool, NeverActAsServerClassMachine, true);
 define_pd_global(uint64_t,MaxRAM,                    1ULL*G);
 #else

@@ -35,11 +35,13 @@ class os::Linux {
   static int (*_pthread_getcpuclockid)(pthread_t, clockid_t *);
   static int (*_pthread_setname_np)(pthread_t, const char*);
 
+#ifndef SVM
   static address   _initial_thread_stack_bottom;
   static uintptr_t _initial_thread_stack_size;
 
   static const char *_libc_version;
   static const char *_libpthread_version;
+#endif // !SVM
 
   static bool _supports_fast_thread_cpu_time;
 
@@ -53,8 +55,10 @@ class os::Linux {
   static julong _physical_memory;
   static pthread_t _main_thread;
 
+#ifndef SVM
   static julong available_memory();
   static julong free_memory();
+#endif // !SVM
 
 
   static void initialize_system_info();
@@ -63,12 +67,15 @@ class os::Linux {
   static int commit_memory_impl(char* addr, size_t bytes,
                                 size_t alignment_hint, bool exec);
 
+#ifndef SVM
   static void set_libc_version(const char *s)       { _libc_version = s; }
   static void set_libpthread_version(const char *s) { _libpthread_version = s; }
 
   static void rebuild_cpu_to_node_map();
   static void rebuild_nindex_to_node_map();
+#endif // !SVM
   static GrowableArray<int>* cpu_to_node()    { return _cpu_to_node; }
+#ifndef SVM
   static GrowableArray<int>* nindex_to_node()  { return _nindex_to_node; }
 
   static void print_process_memory_info(outputStream* st);
@@ -80,8 +87,10 @@ class os::Linux {
   static void print_proc_sys_info(outputStream* st);
   static bool print_ld_preload_file(outputStream* st);
   static void print_uptime_info(outputStream* st);
+#endif // !SVM
 
  public:
+#ifndef SVM
   struct CPUPerfTicks {
     uint64_t used;
     uint64_t usedKernel;
@@ -89,8 +98,10 @@ class os::Linux {
     uint64_t steal;
     bool     has_steal_ticks;
   };
+#endif // !SVM
 
   static int active_processor_count();
+#ifndef SVM
   static void kernel_version(long* major, long* minor, long* patch);
 
   // If kernel1 > kernel2 return  1
@@ -105,6 +116,7 @@ class os::Linux {
   static void *dlopen_helper(const char *name, char *ebuf, int ebuflen);
   static void *dll_load_in_vmthread(const char *name, char *ebuf, int ebuflen);
   static const char *dll_path(void* lib);
+#endif // !SVM
 
   static void init_thread_fpu_state();
   static int  get_fpu_control_word();
@@ -113,13 +125,15 @@ class os::Linux {
   // returns kernel thread id (similar to LWP id on Solaris), which can be
   // used to access /proc
   static pid_t gettid();
-
+#ifndef SVM
   static address   initial_thread_stack_bottom(void)                { return _initial_thread_stack_bottom; }
   static uintptr_t initial_thread_stack_size(void)                  { return _initial_thread_stack_size; }
+#endif // !SVM
 
   static julong physical_memory() { return _physical_memory; }
   static julong host_swap();
 
+#ifndef SVM
   static intptr_t* ucontext_get_sp(const ucontext_t* uc);
   static intptr_t* ucontext_get_fp(const ucontext_t* uc);
 
@@ -128,22 +142,27 @@ class os::Linux {
   static const char *libpthread_version()     { return _libpthread_version; }
 
   static void libpthread_init();
+#endif // !SVM
   static void sched_getcpu_init();
+#ifndef SVM
   static bool libnuma_init();
   static void* libnuma_dlsym(void* handle, const char* name);
   // libnuma v2 (libnuma_1.2) symbols
   static void* libnuma_v2_dlsym(void* handle, const char* name);
+#endif // !SVM
 
   // Return default guard size for the specified thread type
   static size_t default_guard_size(os::ThreadType thr_type);
 
   static bool adjustStackSizeForGuardPages(); // See comments in os_linux.cpp
 
+#ifndef SVM
   static void capture_initial_stack(size_t max_size);
 
   // Stack overflow handling
   static bool manually_expand_stack(JavaThread * t, address addr);
   static void expand_stack_to(address bottom);
+#endif // !SVM
 
   // fast POSIX clocks support
   static void fast_thread_clock_init(void);
@@ -158,11 +177,13 @@ class os::Linux {
 
   static jlong fast_thread_cpu_time(clockid_t clockid);
 
+#ifndef SVM
   static jlong sendfile(int out_fd, int in_fd, jlong* offset, jlong count);
 
   // Determine if the vmid is the parent pid for a child in a PID namespace.
   // Return the namespace pid if so, otherwise -1.
   static int get_namespace_pid(int vmid);
+#endif // !SVM
 
   // Output structure for query_process_memory_info() (all values in KB)
   struct meminfo_t {
@@ -181,6 +202,7 @@ class os::Linux {
   // fields will contain -1.
   static bool query_process_memory_info(meminfo_t* info);
 
+#ifndef SVM
   // Tells if the user asked for transparent huge pages.
   static bool _thp_requested;
 
@@ -191,13 +213,16 @@ class os::Linux {
   static bool should_madvise_shmem_thps();
 
   static void madvise_transparent_huge_pages(void* addr, size_t bytes);
+#endif // !SVM
 
   // Stack repair handling
 
   // none present
 
  private:
+#ifndef SVM
   static void numa_init();
+#endif // !SVM
 
   static void disable_numa(const char* reason, bool warning);
   typedef int (*sched_getcpu_func_t)(void);
@@ -245,6 +270,7 @@ class os::Linux {
   static struct bitmask* _numa_cpunodebind_bitmask;
 
   static void set_sched_getcpu(sched_getcpu_func_t func) { _sched_getcpu = func; }
+#ifndef SVM
   static void set_numa_node_to_cpus(numa_node_to_cpus_func_t func) { _numa_node_to_cpus = func; }
   static void set_numa_node_to_cpus_v2(numa_node_to_cpus_v2_func_t func) { _numa_node_to_cpus_v2 = func; }
   static void set_numa_max_node(numa_max_node_func_t func) { _numa_max_node = func; }
@@ -268,6 +294,7 @@ class os::Linux {
   static void set_numa_interleave_bitmask(struct bitmask* ptr)     { _numa_interleave_bitmask = ptr ;   }
   static void set_numa_membind_bitmask(struct bitmask* ptr)        { _numa_membind_bitmask = ptr ;      }
   static void set_numa_cpunodebind_bitmask(struct bitmask* ptr)        { _numa_cpunodebind_bitmask = ptr ;      }
+#endif // !SVM
   static int sched_getcpu_syscall(void);
 
   enum NumaAllocationPolicy{
@@ -279,12 +306,16 @@ class os::Linux {
 
  public:
   static int sched_getcpu()  { return _sched_getcpu != nullptr ? _sched_getcpu() : -1; }
+#ifndef SVM
   static int numa_node_to_cpus(int node, unsigned long *buffer, int bufferlen);
+#endif // !SVM
   static int numa_max_node() { return _numa_max_node != nullptr ? _numa_max_node() : -1; }
   static int numa_num_configured_nodes() {
     return _numa_num_configured_nodes != nullptr ? _numa_num_configured_nodes() : -1;
   }
+#ifndef SVM
   static int numa_available() { return _numa_available != nullptr ? _numa_available() : -1; }
+#endif // !SVM
   static int numa_tonode_memory(void *start, size_t size, int node) {
     return _numa_tonode_memory != nullptr ? _numa_tonode_memory(start, size, node) : -1;
   }
@@ -293,6 +324,7 @@ class os::Linux {
     return _current_numa_policy == Interleave;
   }
 
+#ifndef SVM
   static void set_configured_numa_policy(NumaAllocationPolicy numa_policy) {
     _current_numa_policy = numa_policy;
   }
@@ -305,6 +337,7 @@ class os::Linux {
     }
     return Membind;
   }
+#endif // !SVM
 
   static void numa_interleave_memory(void *start, size_t size) {
     // Prefer v2 API
@@ -318,23 +351,28 @@ class os::Linux {
       _numa_interleave_memory(start, size, _numa_all_nodes);
     }
   }
+#ifndef SVM
   static void numa_set_preferred(int node) {
     if (_numa_set_preferred != nullptr) {
       _numa_set_preferred(node);
     }
   }
+#endif // !SVM
   static void numa_set_bind_policy(int policy) {
     if (_numa_set_bind_policy != nullptr) {
       _numa_set_bind_policy(policy);
     }
   }
+#ifndef SVM
   static int numa_distance(int node1, int node2) {
     return _numa_distance != nullptr ? _numa_distance(node1, node2) : -1;
   }
+#endif // !SVM
   static long numa_move_pages(int pid, unsigned long count, void **pages, const int *nodes, int *status, int flags) {
     return _numa_move_pages != nullptr ? _numa_move_pages(pid, count, pages, nodes, status, flags) : -1;
   }
   static int get_node_by_cpu(int cpu_id);
+#ifndef SVM
   static int get_existing_num_nodes();
   // Check if numa node is configured (non-zero memory node).
   static bool is_node_in_configured_nodes(unsigned int n) {
@@ -362,6 +400,7 @@ class os::Linux {
     } else
       return false;
   }
+#endif // !SVM
   // Check if node is in bound node set.
   static bool is_node_in_bound_nodes(int node) {
     if (_numa_bitmask_isbitset != nullptr) {
@@ -373,6 +412,7 @@ class os::Linux {
     }
     return false;
   }
+#ifndef SVM
   // Check if memory is bound to only one numa node.
   // Returns true if memory is bound to a single numa node, otherwise returns false.
   static bool is_bound_to_single_mem_node() {
@@ -422,6 +462,7 @@ class os::Linux {
   }
 
   static void* resolve_function_descriptor(void* p);
+#endif // !SVM
 
 #ifdef __GLIBC__
   // os::Linux::get_mallinfo() hides the complexity of dealing with mallinfo() or

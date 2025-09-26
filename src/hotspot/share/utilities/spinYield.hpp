@@ -31,6 +31,7 @@
 
 class outputStream;
 
+// NOTE (chaeubl): extern "C" is needed because this function is defined in assembly
 extern "C" int SpinPause();
 
 class SpinYield : public StackObj {

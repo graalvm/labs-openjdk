@@ -32,9 +32,11 @@
 
 DoNothingClosure do_nothing_cl;
 
+#ifndef SVM
 void CLDToOopClosure::do_cld(ClassLoaderData* cld) {
   cld->oops_do(_oop_closure, _cld_claim);
 }
+#endif // !SVM
 
 void ObjectToOopClosure::do_object(oop obj) {
   obj->oop_iterate(_cl);
@@ -42,14 +44,21 @@ void ObjectToOopClosure::do_object(oop obj) {
 
 void NMethodToOopClosure::do_nmethod(nmethod* nm) {
   nm->oops_do(_cl);
+#ifndef SVM
   if (_fix_relocations) {
     nm->fix_oop_relocations();
   }
+#endif // SVM
 }
 
 void MarkingNMethodClosure::do_nmethod(nmethod* nm) {
   assert(nm != nullptr, "Unexpected nullptr");
   if (nm->oops_do_try_claim()) {
+#ifdef SVM
+    // NOTE (chaeubl): for nmethods, we only mark the tether. All other nmethod oops are handled when we visit
+    // the code cache.
+    _cl->do_oop(nm->tether_addr());
+#else
     // Process the oops in the nmethod
     nm->oops_do(_cl);
 
@@ -64,5 +73,6 @@ void MarkingNMethodClosure::do_nmethod(nmethod* nm) {
     if (_fix_relocations) {
       nm->fix_oop_relocations();
     }
+#endif // SVM
   }
 }

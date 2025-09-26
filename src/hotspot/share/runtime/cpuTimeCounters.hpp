@@ -46,7 +46,9 @@ public:
     COUNT,
   };
 
+#ifndef SVM
   static const char* to_string(CPUTimeType val);
+#endif // !SVM
   static bool is_gc_counter(CPUTimeType val);
 };
 
@@ -58,9 +60,11 @@ private:
 
   static CPUTimeCounters* _instance;
 
+#ifndef SVM
   // An array of PerfCounters which correspond to the various counters we want
   // to track. Indexed by the enum value `CPUTimeType`.
   PerfCounter* _cpu_time_counters[static_cast<int>(CPUTimeGroups::CPUTimeType::COUNT)];
+#endif // !SVM
 
   // A long which atomically tracks how much CPU time has been spent doing GC
   // since the last time we called `publish_total_cpu_time()`.
@@ -68,7 +72,9 @@ private:
   // is added to the `gc_total` CPUTimeType at the end of GC.
   volatile jlong _gc_total_cpu_time_diff;
 
+#ifndef SVM
   static void create_counter(CounterNS ns, CPUTimeGroups::CPUTimeType name);
+#endif // !SVM
 
   static CPUTimeCounters* get_instance() {
     assert(_instance != nullptr, "no instance found");
@@ -82,11 +88,15 @@ public:
     assert(_instance == nullptr, "we can only allocate one CPUTimeCounters object");
     if (UsePerfData && os::is_thread_cpu_time_supported()) {
       _instance = new CPUTimeCounters();
+#ifndef SVM
       create_counter(SUN_THREADS, CPUTimeGroups::CPUTimeType::gc_total);
+#endif // !SVM
     }
   }
 
+#ifndef SVM
   static void create_counter(CPUTimeGroups::CPUTimeType name);
+#endif // !SVM
   static PerfCounter* get_counter(CPUTimeGroups::CPUTimeType name);
   static void update_counter(CPUTimeGroups::CPUTimeType name, jlong total);
 

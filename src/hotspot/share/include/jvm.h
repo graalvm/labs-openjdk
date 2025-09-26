@@ -33,6 +33,7 @@
 #include "jvm_io.h"
 #include "jvm_md.h"
 
+#ifndef SVM
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1176,5 +1177,6 @@ typedef struct JDK1_1InitArgs {
 } /* extern "C" */
 
 #endif /* __cplusplus */
+#endif // !SVM
 
 #endif /* !_JAVASOFT_JVM_H_ */

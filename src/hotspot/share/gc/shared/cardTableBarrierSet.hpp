@@ -52,9 +52,12 @@ protected:
   bool       _defer_initial_card_mark;
   CardTable* _card_table;
 
-  CardTableBarrierSet(BarrierSetAssembler* barrier_set_assembler,
+  CardTableBarrierSet(
+#ifndef SVM
+                      BarrierSetAssembler* barrier_set_assembler,
                       BarrierSetC1* barrier_set_c1,
                       BarrierSetC2* barrier_set_c2,
+#endif // !SVM
                       CardTable* card_table,
                       const BarrierSet::FakeRtti& fake_rtti);
 

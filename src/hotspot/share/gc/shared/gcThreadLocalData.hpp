@@ -40,6 +40,10 @@
 // should consider placing frequently accessed fields first in
 // T, so that field offsets relative to Thread are small, which
 // often allows for a more compact instruction encoding.
-typedef uint64_t GCThreadLocalData[43]; // 344 bytes
 
+#ifdef SVM
+typedef uint64_t GCThreadLocalData[0];
+#else
+typedef uint64_t GCThreadLocalData[43]; // 344 bytes
+#endif // SVM
 #endif // SHARE_GC_SHARED_GCTHREADLOCALDATA_HPP

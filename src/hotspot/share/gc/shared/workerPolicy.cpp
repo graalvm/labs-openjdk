@@ -66,7 +66,7 @@ uint WorkerPolicy::nof_parallel_worker_threads(uint num,
 }
 
 uint WorkerPolicy::calc_parallel_worker_threads() {
-  uint den = VM_Version::parallel_worker_threads_denominator();
+  uint den = Abstract_VM_Version::parallel_worker_threads_denominator();
   return nof_parallel_worker_threads(5, den, 8);
 }
 

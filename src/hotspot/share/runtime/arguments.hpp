@@ -39,6 +39,7 @@
 
 class JVMFlag;
 
+#ifndef SVM
 // Invocation API hook typedefs (these should really be defined in jni.h)
 extern "C" {
   typedef void (JNICALL *abort_hook_t)(void);
@@ -147,11 +148,13 @@ class SystemProperty : public PathString {
 
 // Helper class for controlling the lifetime of JavaVMInitArgs objects.
 class ScopedVMInitArgs;
+#endif // !SVM
 
 struct VMInitArgsGroup;
 template <typename E, MemTag MT> class GrowableArrayCHeap;
 
 class Arguments : AllStatic {
+#ifndef SVM
   friend class VMStructs;
   friend class JvmtiExport;
   friend class ArgumentsTest;
@@ -163,6 +166,7 @@ class Arguments : AllStatic {
     _mixed,     // corresponds to -Xmixed
     _comp       // corresponds to -Xcomp
   };
+#endif // !SVM
 
   enum ArgsRange {
     arg_unreadable = -3,
@@ -171,6 +175,7 @@ class Arguments : AllStatic {
     arg_in_range   = 0
   };
 
+#ifndef SVM
   enum PropertyAppendable {
     AppendProperty,
     AddProperty
@@ -185,9 +190,11 @@ class Arguments : AllStatic {
     InternalProperty,
     ExternalProperty
   };
+#endif // !SVM
 
  private:
 
+#ifndef SVM
   // a pointer to the flags file name if it is specified
   static char*  _jvm_flags_file;
   // an array containing all flags specified in the .hotspotrc file
@@ -272,15 +279,24 @@ class Arguments : AllStatic {
   // GC ergonomics
   static void set_conservative_max_heap_alignment();
   static void set_use_compressed_oops();
+#endif // !SVM
   static jint set_ergonomics_flags();
+#ifndef SVM
   static void set_compact_headers_flags();
+#endif // !SVM
   // Limits the given heap size by the maximum amount of virtual
   // memory this process is currently allowed to use. It also takes
   // the virtual-to-physical ratio of the current GC into account.
   static size_t limit_heap_by_allocatable_memory(size_t size);
   // Setup heap size
   static void set_heap_size();
+#ifdef SVM
+  static void verify_heap_sizes();
+  static bool assert_heap_sizes();
+  static size_t increase_by_image_heap_size(size_t size);
+#endif // SVM
 
+#ifndef SVM
   // Bytecode rewriting
   static void set_bytecode_flags();
 
@@ -305,10 +321,12 @@ class Arguments : AllStatic {
   static jint set_aggressive_opts_flags();
 
   static jint set_aggressive_heap_flags();
+#endif // !SVM
 
   // Argument parsing
   static bool parse_argument(const char* arg, JVMFlagOrigin origin);
   static bool process_argument(const char* arg, jboolean ignore_unrecognized, JVMFlagOrigin origin);
+#ifndef SVM
   static void process_java_launcher_argument(const char*, void*);
   static jint parse_options_environment_variable(const char* name, ScopedVMInitArgs* vm_args);
   static jint parse_java_tool_options_environment_variable(ScopedVMInitArgs* vm_args);
@@ -331,10 +349,21 @@ class Arguments : AllStatic {
                                            ScopedVMInitArgs* args_out);
 
   static bool handle_deprecated_print_gc_flags();
+#endif // !SVM
 
-  static jint parse_vm_init_args(GrowableArrayCHeap<VMInitArgsGroup, mtArguments>* all_args);
+  static jint parse_vm_init_args(
+#ifndef SVM
+      GrowableArrayCHeap<VMInitArgsGroup, mtArguments>* all_args)
+#endif // !SVM
+  );
+#ifdef SVM
+  static jint parse_each_vm_init_arg(char *args, bool hosted, JVMFlagOrigin origin);
+  static jint parse_each_vm_init_arg(int argc, char *argv[], JVMFlagOrigin origin);
+#else
   static jint parse_each_vm_init_arg(const JavaVMInitArgs* args, JVMFlagOrigin origin);
+#endif // SVM
   static jint finalize_vm_init_args();
+#ifndef SVM
   static bool is_bad_option(const JavaVMOption* option, jboolean ignore, const char* option_type);
 
   static bool is_bad_option(const JavaVMOption* option, jboolean ignore) {
@@ -366,18 +395,22 @@ class Arguments : AllStatic {
 
   // Return the real name for the flag passed on the command line (either an alias name or "flag_name").
   static const char* real_flag_name(const char *flag_name);
+#endif // !SVM
+
   static JVMFlag* find_jvm_flag(const char* name, size_t name_length);
 
+#ifndef SVM
   // Return the "real" name for option arg if arg is an alias, and print a warning if arg is deprecated.
   // Return nullptr if the arg has expired.
   static const char* handle_aliases_and_deprecation(const char* arg);
   static size_t _default_SharedBaseAddress; // The default value specified in globals.hpp
+#endif // !SVM
 
   static bool internal_module_property_helper(const char* property, bool check_for_cds);
 
  public:
   // Parses the arguments, first phase
-  static jint parse(const JavaVMInitArgs* args);
+  static jint parse(NOT_SVM(const JavaVMInitArgs* args));
   // Parse a string for a unsigned integer.  Returns true if value
   // is an unsigned integer greater than or equal to the minimum
   // parameter passed and returns the value in uint_arg.  Returns
@@ -386,18 +419,22 @@ class Arguments : AllStatic {
                          uint min_size);
   // Apply ergonomics
   static jint apply_ergo();
+#ifndef SVM
   // Adjusts the arguments after the OS have adjusted the arguments
   static jint adjust_after_os();
+#endif // !SVM
 
   // Check consistency or otherwise of VM argument settings
   static bool check_vm_args_consistency();
+#ifndef SVM
   // Used by os_solaris
   static bool process_settings_file(const char* file_name, bool should_exist, jboolean ignore_unrecognized);
 
   static size_t conservative_max_heap_alignment() { return _conservative_max_heap_alignment; }
+#endif // !SVM
   // Return the maximum size a heap with compressed oops can take
   static size_t max_heap_for_compressed_oops();
-
+#ifndef SVM
   // return a char* array containing all options
   static char** jvm_flags_array()          { return _jvm_flags_array; }
   static char** jvm_args_array()           { return _jvm_args_array; }
@@ -517,16 +554,23 @@ class Arguments : AllStatic {
   // jdwp
   static bool has_jdwp_agent() { return _has_jdwp_agent; }
 
+  // jdwp
+  static bool has_jdwp_agent() { return _has_jdwp_agent; }
+
   // Utility: copies src into buf, replacing "%%" with "%" and "%p" with pid.
   static bool copy_expand_pid(const char* src, size_t srclen, char* buf, size_t buflen);
 
+#endif // !SVM
   static bool atojulong(const char *s, julong* result);
 
+#ifndef SVM
   static bool has_jfr_option() NOT_JFR_RETURN_(false);
 
   DEBUG_ONLY(static bool verify_special_jvm_flags(bool check_globals);)
+#endif // !SVM
 };
 
+#ifndef SVM
 // Disable options not supported in this release, with a warning if they
 // were explicitly requested on the command-line
 #define UNSUPPORTED_OPTION(opt)                          \
@@ -538,6 +582,7 @@ do {                                                     \
     FLAG_SET_DEFAULT(opt, false);                        \
   }                                                      \
 } while(0)
+#endif // !SVM
 
 // similar to UNSUPPORTED_OPTION but sets flag to nullptr
 #define UNSUPPORTED_OPTION_NULL(opt)                         \

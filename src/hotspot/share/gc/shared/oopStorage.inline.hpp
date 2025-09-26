@@ -182,6 +182,7 @@ public:
 
   size_t active_index() const;
   void set_active_index(size_t index);
+#ifndef SVM
   static size_t active_index_safe(const Block* block); // Returns 0 if access fails.
 
   // Return block of owner containing ptr, if ptr is a valid entry of owner.
@@ -189,6 +190,7 @@ public:
   // positive" pointer; see allocation_status.
   // precondition: ptr != nullptr
   static Block* block_for_ptr(const OopStorage* owner, const oop* ptr);
+#endif // !SVM
 
   oop* allocate();
   uintx allocate_all();
@@ -200,7 +202,9 @@ public:
   template<typename F> bool iterate(F f);
   template<typename F> bool iterate(F f) const;
 
+#ifndef SVM
   bool print_containing(const oop* addr, outputStream* st);
+#endif // !SVM
 }; // class Block
 
 inline OopStorage::Block* OopStorage::AllocationList::head() {

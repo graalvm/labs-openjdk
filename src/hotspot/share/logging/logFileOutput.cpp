@@ -32,6 +32,7 @@
 #include "utilities/defaultStream.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+#ifndef SVM
 const char* const LogFileOutput::Prefix = "file=";
 const char* const LogFileOutput::FileOpenMode = "a";
 const char* const LogFileOutput::PidFilenamePlaceholder = "%p";
@@ -460,3 +461,4 @@ void LogFileOutput::describe(outputStream *out) {
              proper_unit_for_byte_size(_rotate_size),
              LogConfiguration::is_async_mode() ? "true" : "false");
 }
+#endif // !SVM

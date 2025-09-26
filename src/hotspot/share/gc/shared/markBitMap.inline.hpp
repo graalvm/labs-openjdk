@@ -32,9 +32,13 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/align.hpp"
 #include "utilities/bitMap.inline.hpp"
+#ifdef SVM
+#include "svmImageHeap.hpp"
+#endif // SVM
 
 inline HeapWord* MarkBitMap::get_next_marked_addr(const HeapWord* const addr,
                                                   HeapWord* const limit) const {
+  assert_svm_only(!SVMImageHeap::is_in_image_heap(addr), "image heap regions are never marked");
   assert(limit != nullptr, "limit must not be null");
   // Round addr up to a possible object boundary to be safe.
   size_t const addr_offset = addr_to_offset(align_up(addr, HeapWordSize << _shifter));

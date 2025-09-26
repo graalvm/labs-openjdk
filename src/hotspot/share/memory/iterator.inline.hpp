@@ -41,7 +41,11 @@
 #include "oops/objArrayKlass.inline.hpp"
 #include "oops/typeArrayKlass.inline.hpp"
 #include "utilities/debug.hpp"
+#ifdef SVM
+#include "oops/instancePodKlass.inline.hpp"
+#endif // SVM
 
+#ifndef SVM
 // Defaults to strong claiming.
 inline MetadataVisitingOopIterateClosure::MetadataVisitingOopIterateClosure(ReferenceDiscoverer* rd) :
     ClaimMetadataVisitingOopIterateClosure(ClassLoaderData::_claim_strong, rd) {}
@@ -67,6 +71,8 @@ inline void ClaimMetadataVisitingOopIterateClosure::do_method(Method* m) {
   // Mark interpreted frames for class redefinition
   m->record_gc_epoch();
 }
+#endif // !SVM
+
 
 // Dispatch table implementation for *Klass::oop_oop_iterate
 //
@@ -149,8 +155,12 @@ private:
     Table(){
       set_init_function<InstanceKlass>();
       set_init_function<InstanceRefKlass>();
+#ifdef SVM
+      set_init_function<InstancePodKlass>();
+#else
       set_init_function<InstanceMirrorKlass>();
       set_init_function<InstanceClassLoaderKlass>();
+#endif // SVM
       set_init_function<InstanceStackChunkKlass>();
       set_init_function<ObjArrayKlass>();
       set_init_function<TypeArrayKlass>();
@@ -212,8 +222,12 @@ private:
     Table(){
       set_init_function<InstanceKlass>();
       set_init_function<InstanceRefKlass>();
+#ifdef SVM
+      set_init_function<InstancePodKlass>();
+#else
       set_init_function<InstanceMirrorKlass>();
       set_init_function<InstanceClassLoaderKlass>();
+#endif // SVM
       set_init_function<InstanceStackChunkKlass>();
       set_init_function<ObjArrayKlass>();
       set_init_function<TypeArrayKlass>();
@@ -275,8 +289,12 @@ private:
     Table(){
       set_init_function<InstanceKlass>();
       set_init_function<InstanceRefKlass>();
+#ifdef SVM
+      set_init_function<InstancePodKlass>();
+#else
       set_init_function<InstanceMirrorKlass>();
       set_init_function<InstanceClassLoaderKlass>();
+#endif // SVM
       set_init_function<InstanceStackChunkKlass>();
       set_init_function<ObjArrayKlass>();
       set_init_function<TypeArrayKlass>();

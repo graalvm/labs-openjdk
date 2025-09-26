@@ -126,4 +126,6 @@ void LogStreamImpl<BackingLog>::write(const char* s, size_t len) {
 }
 
 template class LogStreamImpl<LogTargetHandle>;
+#ifndef SVM
 template class LogStreamImpl<LogMessageHandle>;
+#endif // !SVM

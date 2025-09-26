@@ -43,6 +43,10 @@ enum JVMFlagsEnum : int {
             DEFINE_FLAG_MEMBER_ENUM,
             DEFINE_FLAG_MEMBER_ENUM,
             DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
             IGNORE_RANGE,
             IGNORE_CONSTRAINT)
   NUM_JVMFlagsEnum
@@ -59,10 +63,14 @@ enum JVMFlagsEnum : int {
 #define DEFINE_FLAG_MEMBER_SETTER(type, name, ...) FLAG_MEMBER_SETTER_(type, name)
 
 #ifdef PRODUCT
-ALL_FLAGS(IGNORE_FLAG,               // develop     : declared as const
+ALL_FLAGS(DEFINE_FLAG_MEMBER_SETTER,
+          DEFINE_FLAG_MEMBER_SETTER,
+          DEFINE_FLAG_MEMBER_SETTER,
+          DEFINE_FLAG_MEMBER_SETTER,
+          IGNORE_FLAG,               // develop     : declared as const
           IGNORE_FLAG,               // develop-pd  : declared as const
-          DEFINE_FLAG_MEMBER_SETTER,
-          DEFINE_FLAG_MEMBER_SETTER,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
           IGNORE_RANGE,
           IGNORE_CONSTRAINT)
 #else
@@ -70,6 +78,10 @@ ALL_FLAGS(DEFINE_FLAG_MEMBER_SETTER,
           DEFINE_FLAG_MEMBER_SETTER,
           DEFINE_FLAG_MEMBER_SETTER,
           DEFINE_FLAG_MEMBER_SETTER,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
           IGNORE_RANGE,
           IGNORE_CONSTRAINT)
 #endif

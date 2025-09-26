@@ -120,6 +120,7 @@
 
 #include <errno.h>
 
+#ifndef SVM
 /*
   NOTE about use of any ctor or function call that can trigger a safepoint/GC:
   such ctors and calls MUST NOT come between an oop declaration/init and its
@@ -2665,6 +2666,7 @@ JVM_END
 
 // Printing support //////////////////////////////////////////////////
 extern "C" {
+#endif // !SVM
 
 ATTRIBUTE_PRINTF(3, 0)
 int jio_vsnprintf(char *str, size_t count, const char *fmt, va_list args) {
@@ -2702,13 +2704,17 @@ int jio_fprintf(FILE* f, const char *fmt, ...) {
 
 ATTRIBUTE_PRINTF(2, 0)
 int jio_vfprintf(FILE* f, const char *fmt, va_list args) {
+#ifndef SVM
   if (Arguments::vfprintf_hook() != nullptr) {
      return Arguments::vfprintf_hook()(f, fmt, args);
-  } else {
+  } else
+#endif // !SVM
+  {
     return vfprintf(f, fmt, args);
   }
 }
 
+#ifndef SVM
 ATTRIBUTE_PRINTF(1, 2)
 JNIEXPORT int jio_printf(const char *fmt, ...) {
   int len;
@@ -2718,18 +2724,23 @@ JNIEXPORT int jio_printf(const char *fmt, ...) {
   va_end(args);
   return len;
 }
+#endif // !SVM
 
 // HotSpot specific jio method
 void jio_print(const char* s, size_t len) {
+#ifndef SVM
   // Try to make this function as atomic as possible.
   if (Arguments::vfprintf_hook() != nullptr) {
     jio_fprintf(defaultStream::output_stream(), "%.*s", (int)len, s);
-  } else {
+  } else
+#endif // !SVM
+  {
     // Make an unused local variable to avoid warning from gcc compiler.
     bool dummy = os::write(defaultStream::output_fd(), s, len);
   }
 }
 
+#ifndef SVM
 } // Extern C
 
 // java.lang.Thread //////////////////////////////////////////////////////////////////////////////
@@ -3845,3 +3856,5 @@ JVM_END
 JVM_LEAF(jboolean, JVM_PrintWarningAtDynamicAgentLoad(void))
   return (EnableDynamicAgentLoading && !FLAG_IS_CMDLINE(EnableDynamicAgentLoading)) ? JNI_TRUE : JNI_FALSE;
 JVM_END
+
+#endif // !SVM

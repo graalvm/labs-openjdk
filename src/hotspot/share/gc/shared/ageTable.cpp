@@ -43,6 +43,9 @@ AgeTable::AgeTable(bool global) : _use_perf_data(UsePerfData && global) {
 
   if (_use_perf_data) {
 
+#ifdef SVM
+    Unimplemented();
+#else
     ResourceMark rm;
     EXCEPTION_MARK;
 
@@ -61,6 +64,7 @@ AgeTable::AgeTable(bool global) : _use_perf_data(UsePerfData && global) {
     const char* cname = PerfDataManager::counter_name(agetable_ns, "size");
     PerfDataManager::create_constant(SUN_GC, cname, PerfData::U_None,
                                      table_size, CHECK);
+#endif // SVM
   }
 }
 
