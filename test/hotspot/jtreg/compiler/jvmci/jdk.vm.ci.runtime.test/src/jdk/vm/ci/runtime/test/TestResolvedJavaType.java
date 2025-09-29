@@ -59,6 +59,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -708,6 +709,48 @@ public class TestResolvedJavaType extends TypeUniverse {
         }
     }
 
+    private static sealed class SealedTestClass
+      permits PermittedTestClass1, PermittedTestClass3 {
+    }
+
+    private static sealed class PermittedTestClass1 extends SealedTestClass
+      permits PermittedTestClass2 {
+    }
+
+    private static final class PermittedTestClass2 extends PermittedTestClass1 {
+    }
+
+    private static final class PermittedTestClass3 extends SealedTestClass {
+    }
+
+    private static class UnsealedTestClass {
+    }
+
+    private static final class UnsealedTestSubClass extends UnsealedTestClass {
+    }
+
+    @Test
+    public void getPermittedSubclassesTest() {
+        assertGetPermittedSubclasses(int.class);
+        assertGetPermittedSubclasses(void.class);
+        assertGetPermittedSubclasses(UnsealedTestClass.class);
+        assertGetPermittedSubclasses(SealedTestClass.class);
+    }
+
+    private void assertGetPermittedSubclasses(Class<?> clazz) {
+        ResolvedJavaType type = metaAccess.lookupJavaType(clazz);
+        assertEquals("Sealed status mismatch for class '" + clazz.getName(), clazz.isSealed(), type.isSealed());
+        List<JavaType> actual = type.getPermittedSubclasses();
+        Class<?>[] expected = clazz.getPermittedSubclasses();
+        if (expected == null) {
+            assertNull(actual);
+        } else {
+            Set<JavaType> actualSet = new HashSet<>(actual);
+            Set<JavaType> expectedSet = Arrays.stream(expected).map(metaAccess::lookupJavaType).collect(Collectors.toSet());
+            assertEquals(expectedSet, actualSet);
+        }
+    }
+
     static class Declarations {
 
         final Method implementation;
@@ -1313,6 +1356,7 @@ public class TestResolvedJavaType extends TypeUniverse {
         "getElementalType",
         "getEnclosingType",
         "lookupType",
+        "isSealed", // tested with getPermittedSubsclasses
         "resolveField",
         "$jacocoInit"
     };

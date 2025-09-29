@@ -103,6 +103,16 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     }
 
     @Override
+    public List<JavaType> getPermittedSubclasses() {
+        return null;
+    }
+
+    @Override
+    public boolean isSealed() {
+        return false;
+    }
+
+    @Override
     public ResolvedJavaType getComponentType() {
         return null;
     }

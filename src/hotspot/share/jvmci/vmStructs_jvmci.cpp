@@ -165,6 +165,8 @@
   unchecked_nonstatic_field(Array<u2>,         _data,                                  sizeof(u2))                                   \
   nonstatic_field(Array<Klass*>,               _length,                                int)                                          \
   nonstatic_field(Array<Klass*>,               _data[0],                               Klass*)                                       \
+  unchecked_nonstatic_field(Array<jushort>,    _data,                                  sizeof(jushort))                              \
+  nonstatic_field(Array<jushort>,              _length,                                int)                                          \
                                                                                                                                      \
   volatile_nonstatic_field(BasicLock,          _metadata,                              uintptr_t)                                    \
                                                                                                                                      \
@@ -221,6 +223,7 @@
   volatile_nonstatic_field(InstanceKlass,      _init_thread,                                  JavaThread*)                           \
   nonstatic_field(InstanceKlass,               _misc_flags._flags,                            u2)                                    \
   nonstatic_field(InstanceKlass,               _annotations,                                  Annotations*)                          \
+  nonstatic_field(InstanceKlass,               _permitted_subclasses,                         Array<jushort>*)                       \
                                                                                                                                      \
   volatile_nonstatic_field(JavaFrameAnchor,    _last_Java_sp,                                 intptr_t*)                             \
   volatile_nonstatic_field(JavaFrameAnchor,    _last_Java_pc,                                 address)                               \

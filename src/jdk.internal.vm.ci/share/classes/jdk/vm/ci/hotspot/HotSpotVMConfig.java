@@ -26,7 +26,6 @@ import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
 
 import jdk.vm.ci.common.JVMCIError;
-import jdk.vm.ci.services.Services;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.util.Architecture;
 
@@ -97,6 +96,7 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
     final int instanceKlassConstantsOffset = getFieldOffset("InstanceKlass::_constants", Integer.class, "ConstantPool*");
     final int instanceKlassFieldInfoStreamOffset = getFieldOffset("InstanceKlass::_fieldinfo_stream", Integer.class, "Array<u1>*");
     final int instanceKlassAnnotationsOffset = getFieldOffset("InstanceKlass::_annotations", Integer.class, "Annotations*");
+    final int instanceKlassPermittedSubclassesOffset = getFieldOffset("InstanceKlass::_permitted_subclasses", Integer.class, "Array<jushort>*");
     final int instanceKlassMiscFlagsOffset = getFieldOffset("InstanceKlass::_misc_flags._flags", Integer.class, "u2");
     final int klassMiscFlagsOffset = getFieldOffset("Klass::_misc_flags._flags", Integer.class, "u1");
     final int klassVtableStartOffset = getFieldValue("CompilerToVM::Data::Klass_vtable_start_offset", Integer.class, "int");
@@ -113,6 +113,8 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
     final int arrayU1LengthOffset = getFieldOffset("Array<int>::_length", Integer.class, "int");
     final int arrayU1DataOffset = getFieldOffset("Array<u1>::_data", Integer.class);
     final int arrayU2DataOffset = getFieldOffset("Array<u2>::_data", Integer.class);
+    final int arrayJUShortDataOffset = getFieldOffset("Array<jushort>::_data", Integer.class);
+    final int arrayJUShortLengthOffset = getFieldOffset("Array<jushort>::_length", Integer.class, "int");
 
     final int jvmAccHasFinalizer = getConstant("KlassFlags::_misc_has_finalizer", Integer.class);
     final int jvmFieldFlagInternalShift = getConstant("FieldInfo::FieldFlags::_ff_injected", Integer.class);
