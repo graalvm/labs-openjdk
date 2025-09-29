@@ -64,6 +64,7 @@ import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -764,6 +765,57 @@ public class TestResolvedJavaType extends TypeUniverse {
             Set<JavaType> actualSet = new HashSet<>(actual);
             Set<JavaType> expectedSet = Arrays.stream(expected).map(metaAccess::lookupJavaType).collect(Collectors.toSet());
             assertEquals(expectedSet, actualSet);
+        }
+    }
+
+    @Test
+    public void getEnclosingMethodTest() {
+        // no anonymous class -> expected null
+        Object obj0 = new Object();
+        testEnclosingMethod(obj0.getClass(), false);
+
+        // anonymous class -> not null
+        Object obj1 = new Object() {};
+        testEnclosingMethod(obj1.getClass(), true);
+
+        // local class -> not null
+        class Foo {};
+        testEnclosingMethod(Foo.class, true);
+
+        class Bar {
+            final Object obj0;
+            final Object obj1;
+            final Object obj2;
+
+            Bar() {
+                // no anonymous class -> expected null
+                obj0 = new Object();
+
+                // anonymous class -> not null
+                obj1 = new Object() {};
+
+                // local class -> not null
+                class Foo {};
+                obj2 = new Foo();
+            }
+        }
+        Bar bar = new Bar();
+        testEnclosingMethod(bar.obj0.getClass(), false);
+        testEnclosingMethod(bar.obj1.getClass(), true);
+        testEnclosingMethod(bar.obj2.getClass(), true);
+    }
+
+    private static void testEnclosingMethod(Class<?> clazz, boolean isEnclosed) {
+        ResolvedJavaType type = metaAccess.lookupJavaType(clazz);
+        Method enclosingMethod = clazz.getEnclosingMethod();
+        Executable expected = enclosingMethod != null ? enclosingMethod : clazz.getEnclosingConstructor();
+        ResolvedJavaMethod actual = type.getEnclosingMethod();
+        if (expected == null) {
+            assertFalse(isEnclosed);
+            assertNull(actual);
+        } else {
+            assertTrue(isEnclosed);
+            assertEquals(metaAccess.lookupJavaMethod(expected), actual);
         }
     }
 

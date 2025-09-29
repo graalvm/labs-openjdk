@@ -27,6 +27,7 @@ import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -101,6 +102,17 @@ final class HotSpotJDKReflection extends HotSpotJVMCIReflection {
     HotSpotResolvedObjectType getEnclosingClass(HotSpotResolvedObjectTypeImpl holder) {
         Class<?> javaMirror = getMirror(holder);
         return (HotSpotResolvedObjectType) runtime().fromClass(javaMirror.getEnclosingClass());
+    }
+
+    @Override
+    HotSpotResolvedJavaMethod getEnclosingMethod(HotSpotResolvedObjectTypeImpl holder) {
+        Class<?> javaMirror = getMirror(holder);
+        Method enclosingMethod = javaMirror.getEnclosingMethod();
+        Executable enclosingExecutable = enclosingMethod != null ? enclosingMethod : javaMirror.getEnclosingConstructor();
+        if (enclosingExecutable == null) {
+            return null;
+        }
+        return compilerToVM().asResolvedJavaMethod(enclosingExecutable);
     }
 
     @Override

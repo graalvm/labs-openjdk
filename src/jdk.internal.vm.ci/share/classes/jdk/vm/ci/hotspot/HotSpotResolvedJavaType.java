@@ -61,6 +61,9 @@ public abstract class HotSpotResolvedJavaType extends HotSpotJavaType implements
         return arrayOfType;
     }
 
+    @Override
+    public abstract HotSpotResolvedJavaMethod getEnclosingMethod();
+
     /**
      * Checks whether this type is currently being initialized. If a type is being initialized it
      * implies that it was {@link #isLinked() linked} and that the static initializer is currently

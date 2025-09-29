@@ -50,6 +50,8 @@ abstract class HotSpotJVMCIReflection {
 
     abstract HotSpotResolvedObjectType getEnclosingClass(HotSpotResolvedObjectTypeImpl holder);
 
+    abstract HotSpotResolvedJavaMethod getEnclosingMethod(HotSpotResolvedObjectTypeImpl holder);
+
     abstract boolean equals(HotSpotObjectConstantImpl hotSpotResolvedJavaType, HotSpotObjectConstantImpl that);
 
     abstract ResolvedJavaMethod.Parameter[] getParameters(HotSpotResolvedJavaMethodImpl javaMethod);

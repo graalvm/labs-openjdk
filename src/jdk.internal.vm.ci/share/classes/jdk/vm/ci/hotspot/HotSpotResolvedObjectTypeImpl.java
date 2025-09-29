@@ -1146,6 +1146,11 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     @Override
+    public HotSpotResolvedJavaMethod getEnclosingMethod() {
+        return runtime().reflection.getEnclosingMethod(this);
+    }
+
+    @Override
     public ResolvedJavaMethod[] getDeclaredConstructors() {
         link();
         return runtime().compilerToVm.getDeclaredConstructors(this);

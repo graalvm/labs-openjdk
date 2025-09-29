@@ -313,6 +313,11 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     }
 
     @Override
+    public HotSpotResolvedJavaMethod getEnclosingMethod() {
+        return null;
+    }
+
+    @Override
     public ResolvedJavaMethod[] getDeclaredConstructors() {
         return new ResolvedJavaMethod[0];
     }
