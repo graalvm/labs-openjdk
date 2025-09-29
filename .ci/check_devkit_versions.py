@@ -36,7 +36,7 @@ import re
 from os.path import dirname, join
 
 repo_dir = dirname(dirname(__file__))
-ci_jsonnet_path = join(repo_dir, 'ci.jsonnet')
+ci_jsonnet_path = join(repo_dir, '.ci/ci.jsonnet')
 jib_profiles_path = join(repo_dir, 'make', 'conf', 'jib-profiles.js')
 
 def load_jib_devkits():
