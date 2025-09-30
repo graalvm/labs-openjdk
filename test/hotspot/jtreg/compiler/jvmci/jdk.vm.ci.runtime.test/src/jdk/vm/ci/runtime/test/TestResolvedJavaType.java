@@ -61,10 +61,12 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.AnnotatedElement;
@@ -706,6 +708,36 @@ public class TestResolvedJavaType extends TypeUniverse {
                 ResolvedJavaType actual = type.getArrayClass();
                 assertTrue(actual.equals(metaAccess.lookupJavaType(expected)));
             }
+        }
+    }
+
+    static class HiddenPrototype {}
+
+    @Test
+    public void isHiddenTest() throws IllegalAccessException {
+        // non-hidden class
+        assertFalse(TestResolvedJavaType.class.isHidden());
+        assertFalse(metaAccess.lookupJavaType(TestResolvedJavaType.class).isHidden());
+        // hidden class
+        Lookup lookup = MethodHandles.lookup();
+        byte[] bytes = getClassBytes(HiddenPrototype.class);
+        Class<?> c = lookup.defineHiddenClass(bytes, true).lookupClass();
+        assertTrue(c.isHidden());
+        assertTrue(metaAccess.lookupJavaType(c).isHidden());
+    }
+
+    static byte[] getClassBytes(Class<?> originalClass) {
+        try (InputStream classFile = originalClass.getResourceAsStream("TestResolvedJavaType$HiddenPrototype.class")) {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[16384];
+
+            while ((nRead = classFile.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new AssertionError(e);
         }
     }
 

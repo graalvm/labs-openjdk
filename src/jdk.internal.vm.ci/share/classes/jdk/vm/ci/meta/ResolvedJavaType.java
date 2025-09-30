@@ -248,6 +248,15 @@ public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated
     ResolvedJavaType getArrayClass();
 
     /**
+     * Returns {@code true} if and only if the underlying class is a hidden class.
+     *
+     * @return {@code true} if and only if this class is a hidden class
+     *
+     * @see Class#isHidden()
+     */
+    boolean isHidden();
+
+    /**
      * Returns an unmodifiable list of {@link JavaType} objects representing the subclasses or
      * subinterfaces that are explicitly permitted to extend or implement this sealed class or
      * interface, as declared in its <em>PermittedSubclasses</em> class file attribute. Only direct
