@@ -258,12 +258,13 @@ public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated
      * whether a type is a direct or indirect permitted subtype. The order of the results matches
      * that of {@link Class#getPermittedSubclasses()}.
      * <p>
-     * If the type is not sealed, returns {@code null}.
+     * If this type is not sealed, returns {@code null}. Returning a list with length 0 means
+     * this type is sealed and has no permitted subclasses. That is, it is effectively final.
      *
      * @return unmodifiable list of permitted subtypes, or {@code null} if this type is not sealed
      * @see Class#getPermittedSubclasses()
      */
-    List<JavaType> getPermittedSubclasses();
+    List<? extends JavaType> getPermittedSubclasses();
 
     /**
      * Returns {@code true} if and only if this type represents a sealed class or
