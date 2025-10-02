@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import jdk.vm.ci.common.JVMCIError;
 import jdk.vm.ci.meta.Assumptions.AssumptionResult;
@@ -50,6 +51,7 @@ import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
+import jdk.vm.ci.meta.MetaUtil;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
@@ -745,6 +747,51 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     /**
+     * Map to mitigate exponential cost of {@link #lookupField} for classes with many fields.
+     */
+    Map<FieldInfo.Key, Integer> fieldInfoMap;
+
+    /**
+     * Classes with more than this number of fields will use {@link #fieldInfoMap}
+     * in {@link #lookupField(Field)}.
+     */
+    private static final int FIELD_INFO_MAP_THRESHOLD = 1024;
+
+    /**
+     * Support for {@link HotSpotMetaAccessProvider#lookupJavaField(Field)}.
+     */
+    HotSpotResolvedJavaField lookupField(Field reflectionField) {
+        FieldInfo[] fields = getFieldInfo();
+        String name = reflectionField.getName();
+        String sig = MetaUtil.toInternalName(reflectionField.getType().getName());
+        boolean isStatic = Modifier.isStatic(reflectionField.getModifiers());
+        FieldInfo.Key key = new FieldInfo.Key(name, sig, isStatic);
+        if (fields.length > FIELD_INFO_MAP_THRESHOLD) {
+            if (fieldInfoMap == null) {
+                Map<FieldInfo.Key, Integer> map = new HashMap<>(fields.length);
+                for (int index = 0; index < fields.length; index++) {
+                    FieldInfo fi = fields[index];
+                    map.put(FieldInfo.Key.from(fi, this), index);
+                }
+                fieldInfoMap = map;
+            }
+            Integer index = fieldInfoMap.get(key);
+            if (index != null) {
+                FieldInfo fi = fields[index];
+                return createField(fi.getType(this), fi.offset(), fi.classfileFlags(), fi.internalFlags(), index);
+            }
+        } else {
+            for (int index = 0; index < fields.length; index++) {
+                FieldInfo fi = fields[index];
+                if (FieldInfo.Key.from(fi, this).equals(key)) {
+                    return createField(fi.getType(this), fi.offset(), fi.classfileFlags(), fi.internalFlags(), index);
+                }
+            }
+        }
+        throw new JVMCIError("unresolved field %s", reflectionField);
+    }
+
+    /**
      * This class represents the field information for one field contained in the fields array of an
      * {@code InstanceKlass}. The implementation is similar to the native {@code FieldInfo} class.
      *
@@ -755,8 +802,18 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
      * @param internalFlags    field's internal flags (from the VM)
      * @param initializerIndex field's initial value index in the constant pool
      */
-     record FieldInfo(int nameIndex, int signatureIndex, int offset, int classfileFlags, int internalFlags,
-                         int initializerIndex) {
+     record FieldInfo(int nameIndex,
+                      int signatureIndex,
+                      int offset,
+                      int classfileFlags,
+                      int internalFlags,
+                      int initializerIndex) {
+
+         record Key(String name, String signature, boolean isStatic) {
+             static Key from(FieldInfo fi, HotSpotResolvedObjectTypeImpl holder) {
+                 return new FieldInfo.Key(fi.getName(holder), fi.getSignature(holder), fi.isStatic());
+             }
+         }
 
         /**
          * Returns the name of this field as a {@link String}. If the field is an internal field the
@@ -880,8 +937,9 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         int resultCount = 0;
         int index;
 
-        for (index = 0; index < getFieldInfo().length; index++) {
-            if (getFieldInfo(index).isStatic() == retrieveStaticFields) {
+        FieldInfo[] fieldInfo = getFieldInfo();
+        for (index = 0; index < fieldInfo.length; index++) {
+            if (fieldInfo[index].isStatic() == retrieveStaticFields) {
                 resultCount++;
             }
         }
@@ -902,8 +960,8 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         // but the array of fields to be returned must be sorted by increasing offset
         // This code populates the array, then applies the sorting function
         int resultIndex = prependLength;
-        for (int i = 0; i < getFieldInfo().length; ++i) {
-            FieldInfo field = getFieldInfo(i);
+        for (int i = 0; i < fieldInfo.length; ++i) {
+            FieldInfo field = fieldInfo[i];
             if (field.isStatic() == retrieveStaticFields) {
                 int offset = field.offset();
                 HotSpotResolvedJavaField resolvedJavaField = createField(field.getType(this), offset, field.classfileFlags(), field.internalFlags(), i);
@@ -1058,7 +1116,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
             // @formatter:off
             if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN &&
                     expectedEntryKind.isPrimitive() &&
-                    !expectedEntryKind.equals(JavaKind.Void) &&
+                    !expectedEntryKind.equals(jdk.vm.ci.meta.JavaKind.Void) &&
                     field.getJavaKind().isPrimitive()) {
                 resolvedFieldOffset +=
                         field.getJavaKind().getByteCount() -
