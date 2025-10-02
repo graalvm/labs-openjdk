@@ -34,14 +34,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import jdk.internal.vm.VMSupport;
 import jdk.vm.ci.common.JVMCIError;
-import jdk.vm.ci.meta.AnnotationData;
 import jdk.vm.ci.meta.Assumptions.AssumptionResult;
 import jdk.vm.ci.meta.Assumptions.ConcreteMethod;
 import jdk.vm.ci.meta.Assumptions.ConcreteSubtype;
@@ -51,15 +51,18 @@ import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
+import jdk.vm.ci.meta.MetaUtil;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.UnresolvedJavaField;
 import jdk.vm.ci.meta.UnresolvedJavaType;
+import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 /**
  * Implementation of {@link JavaType} for resolved non-primitive HotSpot classes. This class is not
- * an {@link MetaspaceHandleObject} because it doesn't have to be scanned for GC. It's liveness is
+ * an {@link MetaspaceHandleObject} because it doesn't have to be scanned for GC. Its liveness is
  * maintained by a reference to the {@link Class} instance.
  */
 final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implements HotSpotResolvedObjectType, MetaspaceObject {
@@ -72,6 +75,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
      */
     private final long klassPointer;
 
+    private List<ResolvedJavaRecordComponent> recordComponents;
     private HotSpotResolvedJavaMethodImpl[] methodCacheArray;
     private HashMap<Long, HotSpotResolvedJavaMethodImpl> methodCacheHashMap;
     private volatile HotSpotResolvedJavaField[] instanceFields;
@@ -82,7 +86,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
 
     /**
      * Lazily initialized cache for {@link #getComponentType()}. Set to {@code this}, if this has no
-     * component type (i.e., this is an non-array type).
+     * component type (i.e., this is a non-array type).
      */
     private HotSpotResolvedJavaType componentType;
 
@@ -132,7 +136,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         // The mirror object must be in the global scope since
         // this object will be cached in HotSpotJVMCIRuntime.resolvedJavaTypes
         // and live across more than one compilation.
-        try (HotSpotObjectConstantScope global = HotSpotObjectConstantScope.enterGlobalScope()) {
+        try (HotSpotObjectConstantScope _ = HotSpotObjectConstantScope.enterGlobalScope()) {
             this.mirror = runtime().compilerToVm.getJavaMirror(this);
             assert getName().charAt(0) != '[' || isArray() : getName();
         }
@@ -270,8 +274,8 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         } else if (isInterface()) {
             HotSpotResolvedObjectTypeImpl implementor = getSingleImplementor();
             /*
-             * If the implementor field contains itself that indicates that the interface has more
-             * than one implementors (see: InstanceKlass::add_implementor).
+             * If the implementor field contains itself, it indicates that the interface has more
+             * than one implementor (see: InstanceKlass::add_implementor).
              */
             if (implementor == null || implementor.equals(this)) {
                 return null;
@@ -453,17 +457,17 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
 
     @Override
     public boolean isInitialized() {
-        return isArray() ? true : getInitState() == config().instanceKlassStateFullyInitialized;
+        return isArray() || getInitState() == config().instanceKlassStateFullyInitialized;
     }
 
     @Override
     public boolean isBeingInitialized() {
-        return isArray() ? false : getInitState() == config().instanceKlassStateBeingInitialized;
+        return !isArray() && getInitState() == config().instanceKlassStateBeingInitialized;
     }
 
     @Override
     public boolean isLinked() {
-        return isArray() ? true : getInitState() >= config().instanceKlassStateLinked;
+        return isArray() || getInitState() >= config().instanceKlassStateLinked;
     }
 
     @Override
@@ -527,8 +531,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     @Override
     public boolean isAssignableFrom(ResolvedJavaType other) {
         assert other != null;
-        if (other instanceof HotSpotResolvedObjectTypeImpl) {
-            HotSpotResolvedObjectTypeImpl otherType = (HotSpotResolvedObjectTypeImpl) other;
+        if (other instanceof HotSpotResolvedObjectTypeImpl otherType) {
             return runtime().reflection.isAssignableFrom(this, otherType);
         }
         return false;
@@ -569,7 +572,10 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
 
     @Override
     public HotSpotConstantPool getConstantPool() {
-        if (constantPool == null || !isArray() && UNSAFE.getAddress(getKlassPointer() + config().instanceKlassConstantsOffset) != constantPool.getConstantPoolPointer()) {
+        if (isArray()) {
+            return null;
+        }
+        if (constantPool == null || UNSAFE.getAddress(getKlassPointer() + config().instanceKlassConstantsOffset) != constantPool.getConstantPoolPointer()) {
             /*
              * If the pointer to the ConstantPool has changed since this was last read refresh the
              * HotSpotConstantPool wrapper object. This ensures that uses of the constant pool are
@@ -704,7 +710,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         return null;
     }
 
-    private FieldInfo[] getFieldInfo() {
+    FieldInfo[] getFieldInfo() {
         if (fieldInfo == null) {
             fieldInfo = runtime().compilerToVm.getDeclaredFieldsInfo(this);
         }
@@ -724,10 +730,9 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof HotSpotResolvedObjectTypeImpl)) {
+        if (!(obj instanceof HotSpotResolvedObjectTypeImpl that)) {
             return false;
         }
-        HotSpotResolvedObjectTypeImpl that = (HotSpotResolvedObjectTypeImpl) obj;
         return getKlassPointer() == that.getKlassPointer();
     }
 
@@ -742,60 +747,73 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     /**
+     * Map to mitigate exponential cost of {@link #lookupField} for classes with many fields.
+     */
+    Map<FieldInfo.Key, Integer> fieldInfoMap;
+
+    /**
+     * Classes with more than this number of fields will use {@link #fieldInfoMap}
+     * in {@link #lookupField(Field)}.
+     */
+    private static final int FIELD_INFO_MAP_THRESHOLD = 1024;
+
+    /**
+     * Support for {@link HotSpotMetaAccessProvider#lookupJavaField(Field)}.
+     */
+    HotSpotResolvedJavaField lookupField(Field reflectionField) {
+        FieldInfo[] fields = getFieldInfo();
+        String name = reflectionField.getName();
+        String sig = MetaUtil.toInternalName(reflectionField.getType().getName());
+        boolean isStatic = Modifier.isStatic(reflectionField.getModifiers());
+        FieldInfo.Key key = new FieldInfo.Key(name, sig, isStatic);
+        if (fields.length > FIELD_INFO_MAP_THRESHOLD) {
+            if (fieldInfoMap == null) {
+                Map<FieldInfo.Key, Integer> map = new HashMap<>(fields.length);
+                for (int index = 0; index < fields.length; index++) {
+                    FieldInfo fi = fields[index];
+                    map.put(FieldInfo.Key.from(fi, this), index);
+                }
+                fieldInfoMap = map;
+            }
+            Integer index = fieldInfoMap.get(key);
+            if (index != null) {
+                FieldInfo fi = fields[index];
+                return createField(fi.getType(this), fi.offset(), fi.classfileFlags(), fi.internalFlags(), index);
+            }
+        } else {
+            for (int index = 0; index < fields.length; index++) {
+                FieldInfo fi = fields[index];
+                if (FieldInfo.Key.from(fi, this).equals(key)) {
+                    return createField(fi.getType(this), fi.offset(), fi.classfileFlags(), fi.internalFlags(), index);
+                }
+            }
+        }
+        throw new JVMCIError("unresolved field %s", reflectionField);
+    }
+
+    /**
      * This class represents the field information for one field contained in the fields array of an
      * {@code InstanceKlass}. The implementation is similar to the native {@code FieldInfo} class.
+     *
+     * @param nameIndex        index of field's name in the constant pool
+     * @param signatureIndex   index of field's signature in the constant pool
+     * @param offset           field's offset
+     * @param classfileFlags   field's access flags (from the class file)
+     * @param internalFlags    field's internal flags (from the VM)
+     * @param initializerIndex field's initial value index in the constant pool
      */
-    static class FieldInfo {
+     record FieldInfo(int nameIndex,
+                      int signatureIndex,
+                      int offset,
+                      int classfileFlags,
+                      int internalFlags,
+                      int initializerIndex) {
 
-        private final int nameIndex;
-        private final int signatureIndex;
-        private final int offset;
-        private final int classfileFlags;
-        private final int internalFlags;
-        private final int initializerIndex;
-
-        /**
-         * Creates a field info with the provided indices.
-         *
-         * @param nameIndex        index of field's name in the constant pool
-         * @param signatureIndex   index of field's signature in the constant pool
-         * @param offset           field's offset
-         * @param classfileFlags   field's access flags (from the class file)
-         * @param internalFlags    field's internal flags (from the VM)
-         * @param initializerIndex field's initial value index in the constant pool
-         */
-        FieldInfo(int nameIndex, int signatureIndex, int offset, int classfileFlags, int internalFlags, int initializerIndex) {
-            this.nameIndex = nameIndex;
-            this.signatureIndex = signatureIndex;
-            this.offset = offset;
-            this.classfileFlags = classfileFlags;
-            this.internalFlags = internalFlags;
-            this.initializerIndex = initializerIndex;
-        }
-
-        private int getClassfileFlags() {
-            return classfileFlags;
-        }
-
-        private int getInternalFlags() {
-            return internalFlags;
-        }
-
-        private int getNameIndex() {
-            return nameIndex;
-        }
-
-        private int getSignatureIndex() {
-            return signatureIndex;
-        }
-
-        private int getConstantValueIndex() {
-            return initializerIndex;
-        }
-
-        public int getOffset() {
-            return offset;
-        }
+         record Key(String name, String signature, boolean isStatic) {
+             static Key from(FieldInfo fi, HotSpotResolvedObjectTypeImpl holder) {
+                 return new FieldInfo.Key(fi.getName(holder), fi.getSignature(holder), fi.isStatic());
+             }
+         }
 
         /**
          * Returns the name of this field as a {@link String}. If the field is an internal field the
@@ -835,11 +853,11 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         }
 
         private boolean isInternal() {
-            return (getInternalFlags() & (1 << config().jvmFieldFlagInternalShift)) != 0;
+            return (internalFlags() & (1 << config().jvmFieldFlagInternalShift)) != 0;
         }
 
         public boolean isStatic() {
-            return Modifier.isStatic(getClassfileFlags());
+            return Modifier.isStatic(classfileFlags());
         }
     }
 
@@ -889,6 +907,26 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         }
     }
 
+    @Override
+    public boolean isRecord() {
+        HotSpotResolvedObjectTypeImpl superclass = getSuperclass();
+        if (!isLeaf() || superclass == null || !superclass.equals(runtime().getJavaLangRecord())) {
+            return false;
+        }
+        return UNSAFE.getAddress(getKlassPointer() + config().instanceKlassRecordComponentsOffset) != 0;
+    }
+
+    @Override
+    public List<? extends ResolvedJavaRecordComponent> getRecordComponents() {
+        if (!isRecord()) {
+            return null;
+        }
+        if (recordComponents == null) {
+            recordComponents = Collections.unmodifiableList(Arrays.asList(compilerToVM().getRecordComponents(this)));
+        }
+        return recordComponents;
+    }
+
     /**
      * Gets the instance or static fields of this class.
      *
@@ -896,12 +934,12 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
      * @param prepend              an array to be prepended to the returned result
      */
     private HotSpotResolvedJavaField[] getFields(boolean retrieveStaticFields, HotSpotResolvedJavaField[] prepend) {
-        HotSpotVMConfig config = config();
         int resultCount = 0;
-        int index = 0;
+        int index;
 
-        for (index = 0; index < getFieldInfo().length; index++) {
-            if (getFieldInfo(index).isStatic() == retrieveStaticFields) {
+        FieldInfo[] fieldInfo = getFieldInfo();
+        for (index = 0; index < fieldInfo.length; index++) {
+            if (fieldInfo[index].isStatic() == retrieveStaticFields) {
                 resultCount++;
             }
         }
@@ -922,11 +960,11 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         // but the array of fields to be returned must be sorted by increasing offset
         // This code populates the array, then applies the sorting function
         int resultIndex = prependLength;
-        for (int i = 0; i < getFieldInfo().length; ++i) {
-            FieldInfo field = getFieldInfo(i);
+        for (int i = 0; i < fieldInfo.length; ++i) {
+            FieldInfo field = fieldInfo[i];
             if (field.isStatic() == retrieveStaticFields) {
-                int offset = field.getOffset();
-                HotSpotResolvedJavaField resolvedJavaField = createField(field.getType(this), offset, field.getClassfileFlags(), field.getInternalFlags(), i);
+                int offset = field.offset();
+                HotSpotResolvedJavaField resolvedJavaField = createField(field.getType(this), offset, field.classfileFlags(), field.internalFlags(), i);
                 result[resultIndex++] = resolvedJavaField;
             }
         }
@@ -948,22 +986,32 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
      * @param includingInherited if true, expand this query to include superclasses of this type
      */
     private boolean mayHaveAnnotations(boolean includingInherited) {
-        if (isArray()) {
-            return false;
-        }
-        HotSpotVMConfig config = config();
-        final long metaspaceAnnotations = UNSAFE.getAddress(getKlassPointer() + config.instanceKlassAnnotationsOffset);
-        if (metaspaceAnnotations != 0) {
-            long classAnnotations = UNSAFE.getAddress(metaspaceAnnotations + config.annotationsClassAnnotationsOffset);
-            if (classAnnotations != 0) {
-                return true;
-            }
+        if (hasDirectAnnotations(false)) {
+            return true;
         }
         if (includingInherited) {
             HotSpotResolvedObjectTypeImpl superClass = getSuperclass();
             if (superClass != null) {
                 return superClass.mayHaveAnnotations(true);
             }
+        }
+        return false;
+    }
+
+    /**
+     * Returns whether this type has type annotations ({@code typeAnnotations == true}) or
+     * non-inherited declared annotations ({@code typeAnnotations == false}).
+     */
+    private boolean hasDirectAnnotations(boolean typeAnnotations) {
+        if (isArray()) {
+            return false;
+        }
+        HotSpotVMConfig config = config();
+        final long metaspaceAnnotations = UNSAFE.getAddress(getKlassPointer() + config.instanceKlassAnnotationsOffset);
+        if (metaspaceAnnotations != 0) {
+            int annotationsOffset = typeAnnotations?config.annotationsClassTypeAnnotationsOffset: config.annotationsClassAnnotationsOffset;
+            long classAnnotations = UNSAFE.getAddress(metaspaceAnnotations + annotationsOffset);
+            return classAnnotations != 0;
         }
         return false;
     }
@@ -1062,18 +1110,13 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
         return findFieldWithOffset(offset, expectedEntryKind, declaredFields);
     }
 
-    public ResolvedJavaField findStaticFieldWithOffset(long offset, JavaKind expectedEntryKind) {
-        ResolvedJavaField[] declaredFields = getStaticFields();
-        return findFieldWithOffset(offset, expectedEntryKind, declaredFields);
-    }
-
     private static ResolvedJavaField findFieldWithOffset(long offset, JavaKind expectedEntryKind, ResolvedJavaField[] declaredFields) {
         for (ResolvedJavaField field : declaredFields) {
             long resolvedFieldOffset = field.getOffset();
             // @formatter:off
             if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN &&
                     expectedEntryKind.isPrimitive() &&
-                    !expectedEntryKind.equals(JavaKind.Void) &&
+                    !expectedEntryKind.equals(jdk.vm.ci.meta.JavaKind.Void) &&
                     field.getJavaKind().isPrimitive()) {
                 resolvedFieldOffset +=
                         field.getJavaKind().getByteCount() -
@@ -1160,11 +1203,7 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
 
     @Override
     public ResolvedJavaType lookupType(UnresolvedJavaType unresolvedJavaType, boolean resolve) {
-        JavaType javaType = HotSpotJVMCIRuntime.runtime().lookupType(unresolvedJavaType.getName(), this, resolve);
-        if (javaType instanceof ResolvedJavaType) {
-            return (ResolvedJavaType) javaType;
-        }
-        return null;
+        return lookupType(unresolvedJavaType, this, resolve);
     }
 
     @Override
@@ -1188,27 +1227,20 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     @Override
-    public AnnotationData getAnnotationData(ResolvedJavaType annotationType) {
-        if (!mayHaveAnnotations(true)) {
-            checkIsAnnotation(annotationType);
+    public AnnotationsInfo getDeclaredAnnotationInfo() {
+        if (!hasDirectAnnotations(false)) {
             return null;
         }
-        return getFirstAnnotationOrNull(getAnnotationData0(annotationType));
+        byte[] bytes = compilerToVM().getRawAnnotationBytes('t', this, this.getKlassPointer(), 0, CompilerToVM.DECLARED_ANNOTATIONS);
+        return AnnotationsInfo.make(bytes, getConstantPool(), this);
     }
 
     @Override
-    public List<AnnotationData> getAnnotationData(ResolvedJavaType type1, ResolvedJavaType type2, ResolvedJavaType... types) {
-        if (!mayHaveAnnotations(true)) {
-            checkIsAnnotation(type1);
-            checkIsAnnotation(type2);
-            checkAreAnnotations(types);
-            return List.of();
+    public AnnotationsInfo getTypeAnnotationInfo() {
+        if (!hasDirectAnnotations(true)) {
+            return null;
         }
-        return getAnnotationData0(AnnotationDataDecoder.asArray(type1, type2, types));
-    }
-
-    private List<AnnotationData> getAnnotationData0(ResolvedJavaType... filter) {
-        byte[] encoded = compilerToVM().getEncodedClassAnnotationData(this, filter);
-        return VMSupport.decodeAnnotations(encoded, AnnotationDataDecoder.INSTANCE);
+        byte[] bytes = compilerToVM().getRawAnnotationBytes('t', this, this.getKlassPointer(), 0, CompilerToVM.TYPE_ANNOTATIONS);
+        return AnnotationsInfo.make(bytes, getConstantPool(), this);
     }
 }
