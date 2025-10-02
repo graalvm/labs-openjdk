@@ -34,6 +34,10 @@
 #include "utilities/macros.hpp"
 
 // Assembly code for platforms that need it.
+// NOTE (chaeubl): extern "C" is needed because these functions are defined in assembly
+
+namespace svm_gc {
+
 extern "C" {
   void _Copy_conjoint_words(const HeapWord* from, HeapWord* to, size_t count);
   void _Copy_disjoint_words(const HeapWord* from, HeapWord* to, size_t count);
@@ -360,5 +364,8 @@ class Copy : AllStatic {
 #include CPU_HEADER(copy)
 
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_COPY_HPP

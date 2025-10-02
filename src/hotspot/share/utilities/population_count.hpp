@@ -43,6 +43,9 @@
 // these. For example, with current build configurations, __builtin_popcount(x)
 // generate a call to a similar but slower 64-bit version when calling with
 // a 32-bit integer type.
+
+namespace svm_gc {
+
 template <typename T>
 constexpr unsigned population_count(T x) {
   STATIC_ASSERT(BitsPerWord <= 128);
@@ -67,5 +70,8 @@ constexpr unsigned population_count(T x) {
   // before the right-shift, hence the conversion back to T.
   return checked_cast<unsigned>(static_cast<T>(r) >> (((sizeof(T) - 1) * BitsPerByte)));
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_POPULATION_COUNT_HPP

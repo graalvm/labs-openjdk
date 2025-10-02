@@ -32,6 +32,9 @@
 #include "runtime/vm_version.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 void GCInitLogger::print_all() {
   print_version();
   print_cpu();
@@ -50,9 +53,11 @@ void GCInitLogger::print() {
 }
 
 void GCInitLogger::print_version() {
+#ifndef SVM
   log_info(gc, init)("Version: %s (%s)",
                      VM_Version::vm_release(),
                      VM_Version::jdk_debug_level());
+#endif // !SVM
 }
 
 void GCInitLogger::print_cpu() {
@@ -81,12 +86,14 @@ void GCInitLogger::print_numa() {
 }
 
 void GCInitLogger::print_compressed_oops() {
+#ifndef SVM
   if (UseCompressedOops) {
     log_info_p(gc, init)("Compressed Oops: Enabled (%s)",
                          CompressedOops::mode_to_string(CompressedOops::mode()));
   } else {
     log_info_p(gc, init)("Compressed Oops: Disabled");
   }
+#endif // !SVM
 }
 
 void GCInitLogger::print_heap() {
@@ -125,3 +132,6 @@ const char* GCInitLogger::large_pages_support() {
     return "Disabled";
   }
 }
+
+} // namespace svm_gc
+

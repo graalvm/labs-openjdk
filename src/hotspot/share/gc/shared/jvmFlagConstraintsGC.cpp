@@ -52,6 +52,9 @@
 // checking functions,  FLAG_IS_CMDLINE() is used to check if
 // the flag has been set by the user and so should be checked.
 
+
+namespace svm_gc {
+
 static JVMFlag::Error MinPLABSizeBounds(const char* name, size_t value, bool verbose) {
   if ((GCConfig::is_gc_selected(CollectedHeap::G1) || GCConfig::is_gc_selected(CollectedHeap::Parallel)) &&
       (value < PLAB::min_size())) {
@@ -414,3 +417,6 @@ JVMFlag::Error GCCardSizeInBytesConstraintFunc(uint value, bool verbose) {
     return JVMFlag::SUCCESS;
   }
 }
+
+} // namespace svm_gc
+

@@ -40,6 +40,9 @@
 #include "prims/jvmtiTagMap.hpp"
 #endif // INCLUDE_JVMTI
 
+
+namespace svm_gc {
+
 static void notify_jvmti_tagmaps() {
 #if INCLUDE_JVMTI
   // Notify JVMTI tagmaps that a STW weak reference processing might be
@@ -120,3 +123,6 @@ void WeakProcessor::Task::report_num_dead() {
 void WeakProcessor::WeakOopsDoTask::work(uint worker_id) {
   _erased_do_work(this, worker_id);
 }
+
+} // namespace svm_gc
+

@@ -30,6 +30,9 @@
 
 
 // Copy bytes; larger units are filled atomically if everything is aligned.
+
+namespace svm_gc {
+
 void Copy::conjoint_memory_atomic(const void* from, void* to, size_t size) {
   uintptr_t bits = (uintptr_t) from | (uintptr_t) to | (uintptr_t) size;
 
@@ -256,3 +259,6 @@ void Copy::fill_to_memory_atomic(void* to, size_t size, jubyte value) {
 #endif
   }
 }
+
+} // namespace svm_gc
+

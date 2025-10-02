@@ -28,6 +28,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "runtime/semaphore.hpp"
 
+
+namespace svm_gc {
+
 uint          SuspendibleThreadSet::_nthreads          = 0;
 uint          SuspendibleThreadSet::_nthreads_stopped  = 0;
 volatile bool SuspendibleThreadSet::_suspend_all       = false;
@@ -130,3 +133,6 @@ void SuspendibleThreadSet::desynchronize() {
   Atomic::store(&_suspend_all, false);
   ml.notify_all();
 }
+
+} // namespace svm_gc
+

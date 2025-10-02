@@ -71,7 +71,9 @@
 # include <sys/wait.h>
 # include <pwd.h>
 # include <poll.h>
+#ifndef SVM
 # include <ucontext.h>
+#endif // !SVM
 #ifndef AMD64
 # include <fpu_control.h>
 #endif
@@ -90,6 +92,10 @@
 #define SPELL_REG_SP "esp"
 #define SPELL_REG_FP "ebp"
 #endif // AMD64
+
+#ifndef SVM
+
+namespace svm_gc {
 
 address os::current_stack_pointer() {
   return (address)__builtin_frame_address(0);
@@ -203,13 +209,21 @@ frame os::current_frame() {
   }
 }
 
+} // namespace svm_gc
+
+#endif // !SVM
+
 // Utility functions
 
 // From IA32 System Programming Guide
+
+namespace svm_gc {
+
 enum {
   trap_page_fault = 0xE
 };
 
+#ifndef SVM
 bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
                                              ucontext_t* uc, JavaThread* thread) {
 
@@ -429,6 +443,7 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
 
   return false;
 }
+#endif // !SVM
 
 void os::Linux::init_thread_fpu_state(void) {
 #ifndef AMD64
@@ -492,6 +507,7 @@ juint os::cpu_microcode_revision() {
 ////////////////////////////////////////////////////////////////////////////////
 // thread stack
 
+#ifndef SVM
 // Minimum usable stack sizes required to get to user code. Space for
 // HotSpot guard pages is added later.
 size_t os::_compiler_thread_min_stack_allowed = 48 * K;
@@ -501,6 +517,7 @@ size_t os::_vm_internal_thread_min_stack_allowed = 64 * K;
 #else
 size_t os::_vm_internal_thread_min_stack_allowed = (48 DEBUG_ONLY(+ 4)) * K;
 #endif // _LP64
+#endif // !SVM
 
 // return default stack size for thr_type
 size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
@@ -513,6 +530,7 @@ size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
   return s;
 }
 
+#ifndef SVM
 /////////////////////////////////////////////////////////////////////////////
 // helper functions for fatal error handler
 
@@ -629,6 +647,7 @@ void os::print_register_info(outputStream *st, const void *context, int& continu
     ++n;
   }
 }
+#endif // !SVM
 
 void os::setup_fpu() {
 #ifndef AMD64
@@ -638,6 +657,7 @@ void os::setup_fpu() {
 #endif // !AMD64
 }
 
+#ifndef SVM
 #ifndef PRODUCT
 void os::verify_stack_alignment() {
 #ifdef AMD64
@@ -650,3 +670,7 @@ int os::extra_bang_size_in_bytes() {
   // JDK-8050147 requires the full cache line bang for x86.
   return VM_Version::L1_line_size();
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

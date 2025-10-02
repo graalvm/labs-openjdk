@@ -116,8 +116,16 @@
 #if INCLUDE_JFR
 #include "jfr/jfr.hpp"
 #endif
+#ifdef SVM
+#include "gc/shared/gcArguments.hpp"
+#include "gc/shared/gcConfig.hpp"
+#endif // SVM
 
+#ifndef SVM
 // Initialization after module runtime initialization
+
+namespace svm_gc {
+
 void universe_post_module_init();  // must happen after call_initPhase2
 
 
@@ -218,12 +226,20 @@ static const char* get_java_version_info(InstanceKlass* ik,
 int         Threads::_number_of_threads = 0;
 int         Threads::_number_of_non_daemon_threads = 0;
 int         Threads::_return_code = 0;
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+namespace svm_gc {
+
 uintx       Threads::_thread_claim_token = 1; // Never zero.
 
 #ifdef ASSERT
 bool        Threads::_vm_complete = false;
 #endif
 
+#ifndef SVM
 // General purpose hook into Java code, run once when the VM is initialized.
 // The Java library method itself may be changed independently from the VM.
 static void call_postVMInitHook(TRAPS) {
@@ -235,22 +251,32 @@ static void call_postVMInitHook(TRAPS) {
                            CHECK);
   }
 }
+#endif // !SVM
 
 // All NonJavaThreads (i.e., every non-JavaThread in the system).
 void Threads::non_java_threads_do(ThreadClosure* tc) {
+#ifdef SVM
+  assert_at_safepoint();
+#else
   NoSafepointVerifier nsv;
+#endif // SVM
   for (NonJavaThread::Iterator njti; !njti.end(); njti.step()) {
     tc->do_thread(njti.current());
   }
 }
 
 // All JavaThreads
+#ifdef SVM
+#define ALL_JAVA_THREADS(X) \
+  for (JavaThreadIteratorWithHandle jtiwh; JavaThread* X = jtiwh.next(); )
+#else
 #define ALL_JAVA_THREADS(X) \
   for (JavaThread* X : *ThreadsSMRSupport::get_java_thread_list())
+#endif // SVM
 
 // All JavaThreads
 void Threads::java_threads_do(ThreadClosure* tc) {
-  assert_locked_or_safepoint(Threads_lock);
+  SVM_ONLY(assert_at_safepoint()) NOT_SVM(assert_locked_or_safepoint(Threads_lock));
   // ALL_JAVA_THREADS iterates through all JavaThreads.
   ALL_JAVA_THREADS(p) {
     tc->do_thread(p);
@@ -259,7 +285,7 @@ void Threads::java_threads_do(ThreadClosure* tc) {
 
 // All JavaThreads + all non-JavaThreads (i.e., every thread in the system).
 void Threads::threads_do(ThreadClosure* tc) {
-  assert_locked_or_safepoint(Threads_lock);
+  SVM_ONLY(assert_at_safepoint()) NOT_SVM(assert_locked_or_safepoint(Threads_lock));
   java_threads_do(tc);
   non_java_threads_do(tc);
 }
@@ -281,6 +307,7 @@ void Threads::possibly_parallel_threads_do(bool is_par, ThreadClosure* tc) {
   }
 }
 
+#ifndef SVM
 // The system initialization in the library has three phases.
 //
 // Phase 1: java.lang.System class initialization
@@ -424,7 +451,54 @@ void Threads::initialize_jsr292_core_classes(TRAPS) {
     HeapShared::initialize_java_lang_invoke(CHECK);
   }
 }
+#endif // !SVM
 
+#ifdef SVM
+jint Threads::parse_arguments() {
+  // Initialize library-based TLS
+  ThreadLocalStorage::init();
+
+  // Initialize the output stream module
+  ostream_init();
+
+  // Initialize the os module
+  os::init();
+
+  // Initialize memory pools
+  Arena::initialize_chunk_pool();
+
+  // Make sure to initialize log configuration *before* parsing arguments
+  LogConfiguration::initialize(os::javaTimeMillis());
+
+  // Parse arguments
+  // Note: this internally calls os::init_container_support()
+  jint parse_result = Arguments::parse();
+  if (parse_result != JNI_OK) return parse_result;
+
+  os::init_before_ergo();
+
+  jint ergo_result = Arguments::apply_ergo();
+  if (ergo_result != JNI_OK) return ergo_result;
+
+  // Final check of all ranges after ergonomics which may change values.
+  if (!JVMFlagLimit::check_all_ranges()) {
+    return JNI_EINVAL;
+  }
+
+  // Final check of all 'AfterErgo' constraints after ergonomics which may change values.
+  bool constraint_result = JVMFlagLimit::check_all_constraints(JVMFlagConstraintPhase::AfterErgo);
+  if (!constraint_result) {
+    return JNI_EINVAL;
+  }
+
+  // Moved from universe_init() as it manipulates the heap sizes as well.
+  GCConfig::arguments()->initialize_heap_sizes();
+
+  return JNI_OK;
+}
+#endif // SVM
+
+#ifndef SVM
 // One-shot PeriodicTask subclass for reading the release file
 class ReadReleaseFileTask : public PeriodicTask {
  public:
@@ -437,7 +511,12 @@ class ReadReleaseFileTask : public PeriodicTask {
     delete this;
   }
 };
+#endif // !SVM
 
+#ifdef SVM
+jint Threads::create_vm(IsolateThread *isolate_thread) {
+  // NOTE (chaeubl): the early initialization & the argument parsing were moved to the method above
+#else
 jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   extern void JDK_Version_init();
 
@@ -507,11 +586,14 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   if (PauseAtStartup) {
     os::pause();
   }
+#endif // !SVM
 
   HOTSPOT_VM_INIT_BEGIN();
 
+#ifndef SVM
   // Timing (must come after argument parsing)
   TraceTime timer("Create VM", TRACETIME_LOG(Info, startuptime));
+#endif // !SVM
 
   // Initialize the os module after parsing the args
   jint os_init_2_result = os::init_2();
@@ -524,24 +606,29 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   }
 #endif // CAN_SHOW_REGISTERS_ON_ASSERT
 
+#ifndef SVM
   SafepointMechanism::initialize();
 
   jint adjust_after_os_result = Arguments::adjust_after_os();
   if (adjust_after_os_result != JNI_OK) return adjust_after_os_result;
+#endif // !SVM
 
   // Initialize output stream logging
   ostream_init_log();
 
+#ifndef SVM
   // Launch -agentlib/-agentpath and converted -Xrun agents
   JvmtiAgentList::load_agents();
 
   // Initialize Threads state
   _number_of_threads = 0;
   _number_of_non_daemon_threads = 0;
+#endif // !SVM
 
   // Initialize global data structures and create system classes in heap
   vm_init_globals();
 
+#ifndef SVM
 #if INCLUDE_JVMCI
   if (JVMCICounterSize > 0) {
     JavaThread::_jvmci_old_thread_counters = NEW_C_HEAP_ARRAY(jlong, JVMCICounterSize, mtJVMCI);
@@ -553,11 +640,15 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
 
   // Initialize OopStorage for threadObj
   JavaThread::_thread_oop_storage = OopStorageSet::create_strong("Thread OopStorage", mtThread);
+#endif // !SVM
 
   // Attach the main thread to this os thread
-  JavaThread* main_thread = new JavaThread();
+  JavaThread* main_thread = SVM_ONLY(new (isolate_thread->java_thread()) JavaThread()) NOT_SVM(new JavaThread());
+#ifndef SVM
   main_thread->set_thread_state(_thread_in_vm);
+#endif // SVM
   main_thread->initialize_thread_current();
+#ifndef SVM
   // Once mutexes and main_thread are ready, we can use NmtVirtualMemoryLocker.
   MemTracker::NmtVirtualMemoryLocker::set_safe_to_use();
   // must do this before set_active_handles
@@ -569,15 +660,19 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   // Set the _monitor_owner_id now since we will run Java code before the Thread instance
   // is even created. The same value will be assigned to the Thread instance on init.
   main_thread->set_monitor_owner_id(ThreadIdentifier::next());
+#endif // !SVM
 
   if (!Thread::set_as_starting_thread(main_thread)) {
     vm_shutdown_during_initialization(
                                       "Failed necessary internal allocation. Out of swap space");
+#ifndef SVM
     main_thread->smr_delete();
     *canTryAgain = false; // don't let caller call JNI_CreateJavaVM again
+#endif // !SVM
     return JNI_ENOMEM;
   }
 
+#ifndef SVM
   JFR_ONLY(Jfr::initialize_main_thread(main_thread);)
 
   // Enable guard page *after* os::create_main_thread(), otherwise it would
@@ -587,23 +682,31 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   // Initialize Java-Level synchronization subsystem
   ObjectMonitor::Initialize();
   ObjectSynchronizer::initialize();
+#endif // !SVM
 
   // Initialize global modules
   jint status = init_globals();
   if (status != JNI_OK) {
+#ifndef SVM
     main_thread->smr_delete();
     *canTryAgain = false; // don't let caller call JNI_CreateJavaVM again
+#endif // !SVM
     return status;
   }
 
+#ifndef SVM
   // Have the WatcherThread read the release file in the background.
   ReadReleaseFileTask* read_task = new ReadReleaseFileTask();
   read_task->enroll();
+#endif // !SVM
 
   // Create WatcherThread as soon as we can since we need it in case
   // of hangs during error reporting.
   WatcherThread::start();
 
+#ifdef SVM
+  main_thread->initialize();
+#else
   // Add main_thread to threads list to finish barrier setup with
   // on_thread_attach.  Should be before starting to build Java objects in
   // init_globals2, which invokes barriers.
@@ -611,8 +714,10 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
     MutexLocker mu(Threads_lock);
     Threads::add(main_thread);
   }
+#endif // SVM
 
   status = init_globals2();
+#ifndef SVM
   if (status != JNI_OK) {
     Threads::remove(main_thread, false);
     // It is possible that we managed to fully initialize Universe but have then
@@ -657,6 +762,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
       }
     }
   }
+#endif // SVM
 
   assert(Universe::is_fully_initialized(), "not initialized");
   if (VerifyDuringStartup) {
@@ -665,6 +771,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
     VMThread::execute(&verify_op);
   }
 
+#ifndef SVM
   // We need this to update the java.vm.info property in case any flags used
   // to initially define it have been changed. This is needed for both CDS
   // since UseSharedSpaces may be changed after java.vm.info
@@ -694,17 +801,21 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
 
   // No more stub generation allowed after that point.
   StubCodeDesc::freeze();
+#endif // !SVM
 
   // Set flag that basic initialization has completed. Used by exceptions and various
   // debug stuff, that does not work until all basic classes have been initialized.
   set_init_completed();
 
   LogConfiguration::post_initialize();
+#ifndef SVM
   Metaspace::post_initialize();
+#endif // !SVM
   MutexLockerImpl::post_initialize();
 
   HOTSPOT_VM_INIT_END();
 
+#ifndef SVM
   // record VM initialization completion time
 #if INCLUDE_MANAGEMENT
   Management::record_vm_init_completed();
@@ -732,9 +843,11 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   if (!EagerXrunInit) {
     JvmtiAgentList::load_xrun_agents();
   }
+#endif // !SVM
 
   Arena::start_chunk_pool_cleaner_task();
 
+#ifndef SVM
   // Start the service thread
   // The service thread enqueues JVMTI deferred events and does various hashtable
   // and other cleanups.  Needs to start before the compilers start posting events.
@@ -875,6 +988,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   if (HAS_PENDING_EXCEPTION) {
     CLEAR_PENDING_EXCEPTION;
   }
+#endif // !SVM
 
   // Let WatcherThread run all registered periodic tasks now.
   // NOTE:  All PeriodicTasks should be registered by now. If they
@@ -882,11 +996,15 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   //   take a while to process their first tick).
   WatcherThread::run_all_tasks();
 
+#ifndef SVM
   create_vm_timer.end();
+#endif // !SVM
+
 #ifdef ASSERT
   _vm_complete = true;
 #endif
 
+#ifndef SVM
   if (CDSConfig::is_dumping_classic_static_archive()) {
     // Classic -Xshare:dump, aka "old workflow"
     MetaspaceShared::preload_and_dump(CHECK_JNI_ERR);
@@ -900,6 +1018,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
     log.print_cr("At VM initialization completion:");
     ClassLoader::print_counters(&log);
   }
+#endif // !SVM
 
   return JNI_OK;
 }
@@ -941,6 +1060,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
 void Threads::destroy_vm() {
   JavaThread* thread = JavaThread::current();
 
+#ifndef SVM
 #ifdef ASSERT
   _vm_complete = false;
 #endif
@@ -970,9 +1090,11 @@ void Threads::destroy_vm() {
 
   // run Java level shutdown hooks
   thread->invoke_shutdown_hooks();
+#endif // !SVM
 
   before_exit(thread);
 
+#ifndef SVM
   thread->exit(true);
 
   // We are no longer on the main thread list but could still be in a
@@ -1012,6 +1134,7 @@ void Threads::destroy_vm() {
   // simply kill or suspend them, as it is inherently deadlock-prone.
 
   VM_Exit::set_vm_exited();
+#endif // SVM
 
   // Clean up ideal graph printers after the VMThread has started
   // the final safepoint which will block all the Compiler threads.
@@ -1023,25 +1146,30 @@ void Threads::destroy_vm() {
   IdealGraphPrinter::clean_up();
 #endif
 
+#ifndef SVM
   notify_vm_shutdown();
+#endif // !SVM
 
   // exit_globals() will delete tty
   exit_globals();
 
   // Deleting the shutdown thread here is safe. See comment on
   // wait_until_not_protected() above.
-  delete thread;
+  SVM_ONLY(thread->~JavaThread()) NOT_SVM(delete thread);
 
+#ifndef SVM
 #if INCLUDE_JVMCI
   if (JVMCICounterSize > 0) {
     FREE_C_HEAP_ARRAY(jlong, JavaThread::_jvmci_old_thread_counters);
   }
 #endif
+#endif // !SVM
 
   LogConfiguration::finalize();
 }
 
 
+#ifndef SVM
 jboolean Threads::is_supported_jni_version_including_1_1(jint version) {
   if (version == JNI_VERSION_1_1) return JNI_TRUE;
   return is_supported_jni_version(version);
@@ -1174,6 +1302,7 @@ void Threads::oops_do(OopClosure* f, NMethodClosure* cf) {
   }
   VMThread::vm_thread()->oops_do(f, cf);
 }
+#endif // !SVM
 
 void Threads::change_thread_claim_token() {
   if (++_thread_claim_token == 0) {
@@ -1204,6 +1333,7 @@ static void assert_thread_claimed(const char* kind, Thread* t, uintx expected) {
 }
 
 void Threads::assert_all_threads_claimed() {
+  // NOTE (chaeubl): if this fails, then some GC operation was not applied to all threads
   ALL_JAVA_THREADS(p) {
     assert_thread_claimed("JavaThread", p, _thread_claim_token);
   }
@@ -1214,7 +1344,11 @@ void Threads::assert_all_threads_claimed() {
     NJTClaimedVerifierClosure(uintx thread_claim_token) : ThreadClosure(), _thread_claim_token(thread_claim_token) { }
 
     virtual void do_thread(Thread* thread) override {
-      assert_thread_claimed("Non-JavaThread", VMThread::vm_thread(), _thread_claim_token);
+      // NOTE (chaeubl): HotSpot only checks the VM thread here. We check all threads but ignore threads with
+      // a token of 0, as those are usually newly started threads.
+      if (thread->threads_do_token() != 0) {
+        assert_thread_claimed("Non-JavaThread", thread, _thread_claim_token);
+      }
     }
   } tc(_thread_claim_token);
 
@@ -1238,6 +1372,7 @@ void Threads::possibly_parallel_oops_do(bool is_par, OopClosure* f, NMethodClosu
   possibly_parallel_threads_do(is_par, &tc);
 }
 
+#ifndef SVM
 void Threads::metadata_do(MetadataClosure* f) {
   ALL_JAVA_THREADS(p) {
     p->metadata_do(f);
@@ -1515,11 +1650,89 @@ unsigned Threads::print_threads_compiling(outputStream* st, char* buf, int bufle
   }
   return num;
 }
+#endif // !SVM
 
 void Threads::verify() {
   ALL_JAVA_THREADS(p) {
     p->verify();
   }
+#ifndef SVM
   VMThread* thread = VMThread::vm_thread();
   if (thread != nullptr) thread->verify();
+#endif // !SVM
 }
+
+#ifdef SVM
+int Threads::number_of_non_daemon_threads() {
+  oop atomic_integer = RawAccess<>::oop_load_at(SVMIsolateData::_static_object_fields, SVMGlobalData::_offsets._java_threads._static_non_daemon_threads);
+  assert(atomic_integer != nullptr && atomic_integer->klass()->is_instance_klass(), "must be");
+  return RawAccess<>::load_at(atomic_integer, SVMGlobalData::_offsets._atomic_integer._value);
+}
+
+StackFramesPerThread* Threads::set_java_stack_frames() {
+  if (JavaThread::current()->has_stack_frames()) {
+    return nullptr;
+  }
+
+  StackFramesPerThread *stack_frames = SVMGlobalData::_fetch_thread_stack_frames(CompressedOops::base(), JavaThread::current()->isolate_thread());
+  size_t i = 0;
+  for (JavaThreadIteratorWithHandle jtiwh; JavaThread *jt = jtiwh.next(); ) {
+    jt->set_stack_frames(stack_frames->threads[i]);
+    i++;
+  }
+  assert(i == stack_frames->count, "must be");
+  return stack_frames;
+}
+
+void Threads::free_java_stack_frames(StackFramesPerThread *stack_frames) {
+  if (stack_frames == nullptr) {
+    return;
+  }
+
+  size_t i = 0;
+  for (JavaThreadIteratorWithHandle jtiwh; JavaThread *jt = jtiwh.next(); ) {
+    jt->set_stack_frames(nullptr);
+    i++;
+  }
+  assert(i == stack_frames->count, "must be");
+
+  SVMGlobalData::_free_thread_stack_frames(CompressedOops::base(), JavaThread::current()->isolate_thread(), stack_frames);
+}
+
+CodeInfosPerThread* Threads::set_java_code_infos() {
+  CodeInfosPerThread *code_infos = nullptr;
+  if (SVMGlobalData::_fetch_code_infos != nullptr) {
+    code_infos = SVMGlobalData::_fetch_code_infos(CompressedOops::base(), JavaThread::current()->isolate_thread());
+  }
+
+  if (code_infos == nullptr) {
+    for (JavaThreadIteratorWithHandle jtiwh; JavaThread *jt = jtiwh.next(); ) {
+      jt->set_code_infos(&JavaThread::_no_code_info_data);
+    }
+  } else {
+    size_t i = 0;
+    for (JavaThreadIteratorWithHandle jtiwh; JavaThread *jt = jtiwh.next(); ) {
+      jt->set_code_infos(code_infos->threads[i]);
+      i++;
+    }
+    assert(i == code_infos->count, "must be");
+  }
+  return code_infos;
+}
+
+void Threads::free_java_code_infos(CodeInfosPerThread *code_infos) {
+  size_t i = 0;
+  for (JavaThreadIteratorWithHandle jtiwh; JavaThread *jt = jtiwh.next(); ) {
+    jt->set_code_infos(nullptr);
+    i++;
+  }
+
+  if (code_infos != nullptr) {
+    assert(i == code_infos->count, "must be");
+    SVMGlobalData::_free_code_infos(CompressedOops::base(), JavaThread::current()->isolate_thread(), code_infos);
+  }
+}
+#endif // SVM
+
+} // namespace svm_gc
+

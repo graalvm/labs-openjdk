@@ -29,6 +29,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class Mutex;
 class stringStream;
 
@@ -38,7 +41,7 @@ class stringStream;
 #define log_level_p(level, ...)                                          \
   GCLogPreciousHandle(                                                   \
       LogTargetHandle::create<LogLevel::level, LOG_TAGS(__VA_ARGS__)>()  \
-      DEBUG_ONLY(COMMA __FILE__ COMMA __LINE__))
+      DEBUG_ONLY(COMMA __FILENAME_ONLY__ COMMA __LINE__))
 
 #define log_info_p(...)    log_level_p(Info, __VA_ARGS__).write
 #define log_debug_p(...)   log_level_p(Debug, __VA_ARGS__).write
@@ -77,7 +80,9 @@ public:
                                DEBUG_ONLY(COMMA const char* file)
                                DEBUG_ONLY(COMMA int line)) ATTRIBUTE_PRINTF(2, 0);
 
+#ifndef SVM
   static void print_on_error(outputStream* st);
+#endif // !SVM
 };
 
 class GCLogPreciousHandle {
@@ -108,5 +113,8 @@ class GCLogPreciousHandle {
     va_end(args);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCLOGPRECIOUS_HPP

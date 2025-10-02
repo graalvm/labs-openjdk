@@ -77,6 +77,9 @@
 // _start is the inclusive lower bound of values in the range.
 // _end is the exclusive upper bound of values in the range.
 // The enumerators of T must have sequential values in that range.
+
+namespace svm_gc {
+
 template<typename T> struct EnumeratorRange;
 
 // Helper class for ENUMERATOR_RANGE and ENUMERATOR_VALUE_RANGE.
@@ -288,5 +291,8 @@ public:
     return static_cast<size_t>(Traits::underlying_value(value) - _start);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_ENUMITERATOR_HPP

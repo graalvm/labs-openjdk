@@ -30,8 +30,12 @@
 
 // Basic error support
 
+#ifndef SVM
 // Info for oops within a java object.  Defaults are zero so
 // things will break badly if incorrectly initialized.
+
+namespace svm_gc {
+
 int heapOopSize        = 0;
 int LogBytesPerHeapOop = 0;
 int LogBitsPerHeapOop  = 0;
@@ -56,9 +60,16 @@ int LogMinObjAlignmentInBytes  = -1;
 // Oop encoding heap max
 uint64_t OopEncodingHeapMax = 0;
 
+} // namespace svm_gc
+
+#endif // !SVM
+
 // Something to help porters sleep at night
 
 #ifdef ASSERT
+
+namespace svm_gc {
+
 static BasicType char2type(int ch) {
   switch (ch) {
 #define EACH_SIG(ch, bt, ignore) \
@@ -69,8 +80,16 @@ static BasicType char2type(int ch) {
   return T_ILLEGAL;
 }
 
+#ifndef SVM
 extern bool signature_constants_sane();
+#endif // !SVM
+
+} // namespace svm_gc
+
 #endif //ASSERT
+
+
+namespace svm_gc {
 
 void basic_types_init() {
 #ifdef ASSERT
@@ -105,13 +124,17 @@ void basic_types_init() {
   static_assert(wordSize == BytesPerWord, "should be the same since they're used interchangeably");
   static_assert(wordSize == HeapWordSize, "should be the same since they're also used interchangeably");
 
+#ifndef SVM
   assert(signature_constants_sane(), "");
+#endif // !SVM
 
   int num_type_chars = 0;
   for (int i = 0; i < 99; i++) {
     if (type2char((BasicType)i) != 0) {
       assert(char2type(type2char((BasicType)i)) == i, "proper inverses");
+#ifndef SVM
       assert(Signature::basic_type(type2char((BasicType)i)) == i, "proper inverses");
+#endif // !SVM
       num_type_chars++;
     }
   }
@@ -179,6 +202,12 @@ void basic_types_init() {
   if(JavaPriority10_To_OSPriority != -1 )
     os::java_to_os_priority[10] = JavaPriority10_To_OSPriority;
 
+#ifdef SVM
+  // NOTE (chaeubl): we use constants for all those values below as we compile two different binaries anyways.
+  assert(heapOopSize == sizeof(narrowOop), "must be");
+  _type2aelembytes[T_NARROWOOP] = heapOopSize;
+  _type2aelembytes[T_NARROWKLASS] = heapOopSize;
+#else
   // Set the size of basic types here (after argument parsing but before
   // stub generation).
   if (UseCompressedOops) {
@@ -195,6 +224,7 @@ void basic_types_init() {
     BytesPerHeapOop    = BytesPerWord;
     BitsPerHeapOop     = BitsPerWord;
   }
+#endif // !SVM
   _type2aelembytes[T_OBJECT] = heapOopSize;
   _type2aelembytes[T_ARRAY]  = heapOopSize;
 }
@@ -408,6 +438,7 @@ STATIC_ASSERT(right_n_bits(1|2) == 0x7);
 
 // Check for Flush-To-Zero mode
 
+#ifndef SVM
 // On some processors faster execution can be achieved by setting a
 // mode to return zero for extremely small results, rather than an
 // IEEE-754 subnormal number. This mode is not compatible with the
@@ -434,3 +465,7 @@ bool IEEE_subnormal_handling_OK() {
   return (large_subnormal_double + small_subnormal_double > large_subnormal_double
           && -large_subnormal_double - small_subnormal_double < -large_subnormal_double);
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

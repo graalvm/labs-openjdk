@@ -33,6 +33,9 @@
 #include "utilities/ostream.hpp"
 
 // allocate using malloc; will fail if no memory available
+
+namespace svm_gc {
+
 char* AllocateHeap(size_t size,
                    MemTag mem_tag,
                    const NativeCallStack& stack,
@@ -66,6 +69,7 @@ void FreeHeap(void* p) {
   os::free(p);
 }
 
+#ifndef SVM
 void* MetaspaceObj::_shared_metaspace_base = nullptr;
 void* MetaspaceObj::_shared_metaspace_top  = nullptr;
 
@@ -105,6 +109,7 @@ bool MetaspaceObj::is_valid(const MetaspaceObj* p) {
 void MetaspaceObj::print_address_on(outputStream* st) const {
   st->print(" {" PTR_FORMAT "}", p2i(this));
 }
+#endif // !SVM
 
 //
 // ArenaObj
@@ -118,7 +123,7 @@ void* ArenaObj::operator new(size_t size, Arena *arena) throw() {
 // AnyObj
 //
 
-void* AnyObj::operator new(size_t size, Arena *arena) {
+void* AnyObj::operator new(size_t size, Arena *arena) throw() {
   address res = (address)arena->Amalloc(size);
   DEBUG_ONLY(set_allocation_type(res, ARENA);)
   return res;
@@ -254,3 +259,6 @@ void ReallocMark::check(Arena* arena) {
 }
 
 #endif // Non-product
+
+} // namespace svm_gc
+

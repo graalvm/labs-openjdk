@@ -28,6 +28,9 @@
 #include "runtime/nonJavaThread.hpp"
 #include "runtime/safepoint.hpp"
 
+
+namespace svm_gc {
+
 uint GCId::_next_id = 0;
 GCIdPrinter GCId::_default_printer;
 GCIdPrinter* GCId::_printer = &_default_printer;
@@ -42,10 +45,16 @@ void GCId::set_printer(GCIdPrinter* printer) {
   _printer = printer;
 }
 
+#ifdef SVM
+static Thread* currentNamedthread() {
+  return Thread::current();
+}
+#else
 static NamedThread* currentNamedthread() {
   assert(Thread::current()->is_Named_thread(), "This thread must be NamedThread");
   return (NamedThread*)Thread::current();
 }
+#endif // SVM
 
 uint GCId::create() {
   return _next_id++;
@@ -62,7 +71,11 @@ uint GCId::current() {
 }
 
 uint GCId::current_or_undefined() {
+#ifdef SVM
+  return Thread::current()->gc_id();
+#else
   return Thread::current()->is_Named_thread() ? currentNamedthread()->gc_id() : undefined();
+#endif
 }
 
 size_t GCId::print_prefix(char* buf, size_t len) {
@@ -87,3 +100,6 @@ GCIdMark::GCIdMark(uint gc_id) : _previous_gc_id(currentNamedthread()->gc_id()) 
 GCIdMark::~GCIdMark() {
   currentNamedthread()->set_gc_id(_previous_gc_id);
 }
+
+} // namespace svm_gc
+

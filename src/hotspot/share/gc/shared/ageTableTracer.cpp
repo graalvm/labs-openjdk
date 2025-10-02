@@ -26,6 +26,9 @@
 #include "gc/shared/gcId.hpp"
 #include "jfr/jfrEvents.hpp"
 
+
+namespace svm_gc {
+
 void AgeTableTracer::send_tenuring_distribution_event(uint age, size_t size) {
   EventTenuringDistribution e;
   if (e.should_commit()) {
@@ -39,3 +42,6 @@ void AgeTableTracer::send_tenuring_distribution_event(uint age, size_t size) {
 bool AgeTableTracer::is_tenuring_distribution_event_enabled() {
   return EventTenuringDistribution::is_enabled();
 }
+
+} // namespace svm_gc
+

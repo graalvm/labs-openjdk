@@ -30,6 +30,9 @@
 #include "nmt/memTag.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class MemoryReserver : AllStatic {
   static ReservedSpace reserve_memory(char* requested_address,
                                       size_t size,
@@ -37,11 +40,13 @@ class MemoryReserver : AllStatic {
                                       bool exec,
                                       MemTag mem_tag);
 
+#ifndef SVM
   static ReservedSpace reserve_memory_special(char* requested_address,
                                               size_t size,
                                               size_t alignment,
                                               size_t page_size,
                                               bool exec);
+#endif // !SVM
 
 public:
   // Final destination
@@ -65,13 +70,16 @@ public:
                                size_t page_size,
                                MemTag mem_tag);
 
+#ifndef SVM
   static ReservedSpace reserve(size_t size,
                                MemTag mem_tag);
 
   // Release reserved memory
   static bool release(const ReservedSpace& reserved);
+#endif // !SVM
 };
 
+#ifndef SVM
 class CodeMemoryReserver : AllStatic {
 public:
   static ReservedSpace reserve(size_t size,
@@ -143,5 +151,9 @@ public:
                                    size_t page_size,
                                    const char* heap_allocation_directory);
 };
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_MEMORYRESERVER_HPP

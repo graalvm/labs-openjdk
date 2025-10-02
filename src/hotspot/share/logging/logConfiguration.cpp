@@ -39,6 +39,9 @@
 #include "runtime/semaphore.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 LogOutput** LogConfiguration::_outputs = nullptr;
 size_t      LogConfiguration::_n_outputs = 0;
 
@@ -48,8 +51,10 @@ LogStderrOutput* LogConfiguration::StderrLog = nullptr;
 LogConfiguration::UpdateListenerFunction* LogConfiguration::_listener_callbacks = nullptr;
 size_t      LogConfiguration::_n_listener_callbacks = 0;
 
+#ifndef SVM
 // LogFileOutput is the default type of output, its type prefix should be used if no type was specified
 static const char* implicit_output_prefix = LogFileOutput::Prefix;
+#endif // !SVM
 
 // Stack object to take the lock for configuring the logging.
 // Should only be held during the critical parts of the configuration
@@ -86,7 +91,9 @@ void LogConfiguration::post_initialize() {
     _outputs[i]->_reconfigured = false;
   }
 
+#ifndef SVM
   LogDiagnosticCommand::registerCommand();
+#endif // !SVM
   Log(logging) log;
   if (log.is_info()) {
     log.info("Log configuration fully initialized.");
@@ -106,7 +113,9 @@ void LogConfiguration::post_initialize() {
 void LogConfiguration::initialize(jlong vm_start_time) {
   StdoutLog = new LogStdoutOutput();
   StderrLog = new LogStderrOutput();
+#ifndef SVM
   LogFileOutput::set_file_name_parameters(vm_start_time);
+#endif // !SVM
   assert(_outputs == nullptr, "Should not initialize _outputs before this function, initialize called twice?");
   _outputs = NEW_C_HEAP_ARRAY(LogOutput*, 2, mtLogging);
   _outputs[0] = StdoutLog;
@@ -126,6 +135,7 @@ void LogConfiguration::finalize() {
   FREE_C_HEAP_ARRAY(LogOutput*, _outputs);
 }
 
+#ifndef SVM
 // Normalizes the given LogOutput name to type=name form.
 // For example, foo, "foo", file="foo", will all be normalized to file=foo (no quotes, prefixed).
 static bool normalize_output_name(const char* full_name, char* buffer, size_t len, outputStream* errstream) {
@@ -210,6 +220,7 @@ size_t LogConfiguration::add_output(LogOutput* output) {
   _outputs[idx] = output;
   return idx;
 }
+#endif // !SVM
 
 void LogConfiguration::delete_output(size_t idx) {
   assert(idx > 1 && idx < _n_outputs,
@@ -279,9 +290,11 @@ void LogConfiguration::configure_output(size_t idx, const LogSelectionList& sele
     on_level[level]++;
   }
 
+#ifndef SVM
   // For async logging we have to ensure that all enqueued messages, which may refer to previous decorators,
   // or a soon-to-be-deleted output, are written out first. The flush() call ensures this.
   AsyncLogWriter::flush();
+#endif // !SVM
 
   // It is now safe to set the new decorators for the actual output
   output->set_decorators(decorators);
@@ -309,11 +322,13 @@ void LogConfiguration::disable_outputs() {
     ts->disable_outputs();
   }
 
+#ifndef SVM
   // Handle 'jcmd VM.log disable' and JVM termination.
   // ts->disable_outputs() above has disabled all output_lists with RCU synchronization.
   // Therefore, no new logging message can enter the async buffer for the time being.
   // flush out all pending messages before LogOutput instances die.
   AsyncLogWriter::flush();
+#endif // !SVM
 
   while (idx > 0) {
     LogOutput* out = _outputs[--idx];
@@ -382,6 +397,7 @@ void LogConfiguration::configure_stdout(LogLevelType level, int exact_match, ...
   notify_update_listeners();
 }
 
+#ifndef SVM
 bool LogConfiguration::parse_command_line_arguments(const char* opts) {
   char* copy = os::strdup_check_oom(opts, mtLogging);
 
@@ -559,6 +575,7 @@ bool LogConfiguration::parse_log_arguments(const char* outputstr,
   selections.verify_selections(errstream);
   return true;
 }
+#endif // !SVM
 
 void LogConfiguration::describe_available(outputStream* out) {
   out->print("Available log levels:");
@@ -598,6 +615,7 @@ void LogConfiguration::describe(outputStream* out) {
   describe_current_configuration(out);
 }
 
+#ifndef SVM
 void LogConfiguration::print_command_line_help(outputStream* out) {
   out->print_cr("-Xlog Usage: -Xlog[:[selections][:[output][:[decorators][:output-options]]]]");
   out->print_cr("\t where 'selections' are combinations of tags and levels of the form tag1[+tag2...][*][=level][,...]");
@@ -730,6 +748,7 @@ void LogConfiguration::register_update_listener(UpdateListenerFunction cb) {
                                              mtLogging);
   _listener_callbacks[idx] = cb;
 }
+#endif // !SVM
 
 void LogConfiguration::notify_update_listeners() {
   assert(ConfigurationLock::current_thread_has_lock(), "notify_update_listeners must be called in ConfigurationLock scope (lock held)");
@@ -738,6 +757,7 @@ void LogConfiguration::notify_update_listeners() {
   }
 }
 
+#ifndef SVM
 LogConfiguration::AsyncMode LogConfiguration::_async_mode = AsyncMode::Off;
 
 bool LogConfiguration::parse_async_argument(const char* async_tail) {
@@ -755,3 +775,7 @@ bool LogConfiguration::parse_async_argument(const char* async_tail) {
   }
   return ret;
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

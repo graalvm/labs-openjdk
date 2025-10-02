@@ -32,6 +32,9 @@
 #include "memory/referenceType.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class DiscoveredList;
 class GCTimer;
 class LogStream;
@@ -153,5 +156,8 @@ public:
                                 ReferenceProcessorPhaseTimes* phase_times);
   ~RefProcTotalPhaseTimesTracker();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_REFERENCEPROCESSORPHASETIMES_HPP

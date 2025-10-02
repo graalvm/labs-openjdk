@@ -30,6 +30,9 @@
 // CollectorCounters is a holder class for performance counters
 // that track a collector
 
+
+namespace svm_gc {
+
 class CollectorCounters: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -43,7 +46,9 @@ class CollectorCounters: public CHeapObj<mtGC> {
     // However, it's a good idea to document them here.
     // PerfStringConstant*     _name;
 
+#ifndef SVM
     char*             _name_space;
+#endif // !SVM
 
   public:
 
@@ -59,7 +64,9 @@ class CollectorCounters: public CHeapObj<mtGC> {
 
     inline PerfVariable* last_exit_counter() const  { return _last_exit_time; }
 
+#ifndef SVM
     const char* name_space() const                  { return _name_space; }
+#endif // !SVM
 };
 
 class TraceCollectorStats: public PerfTraceTimedEvent {
@@ -72,5 +79,8 @@ class TraceCollectorStats: public PerfTraceTimedEvent {
 
     ~TraceCollectorStats();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_COLLECTORCOUNTERS_HPP

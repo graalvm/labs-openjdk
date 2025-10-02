@@ -1,0 +1,145 @@
+#
+# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# This code is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 only, as
+# published by the Free Software Foundation.
+#
+# This code is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# version 2 for more details (a copy is included in the LICENSE file that
+# accompanied this code).
+#
+# You should have received a copy of the GNU General Public License version
+# 2 along with this work; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
+#
+
+.PHONY: clean build copy
+
+uname_m := $(shell uname -m)
+ifeq ($(uname_m),x86_64)
+    ARCH_SUFFIX := amd64
+else ifeq ($(uname_m),aarch64)
+    ARCH_SUFFIX := aarch64
+else
+    $(error Unexpected architecture $(uname_m))
+endif
+
+ifndef TARGET_FILE_FORMAT
+    $(error TARGET_FILE_FORMAT is not set)
+endif
+
+ifndef DEBUG_LEVEL
+    $(error DEBUG_LEVEL is not set)
+endif
+
+ifndef COMPRESSED_REFERENCES
+    $(error COMPRESSED_REFERENCES is not set)
+endif
+
+# 'gmake MX_VERBOSE=y' or 'gmake QUIETLY=' gives all the gory details.
+QUIETLY$(MX_VERBOSE) = @
+
+PROJECT_ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+BUILD_ROOT := $(CURDIR)
+
+INCLUDES.amd64 := -I$(PROJECT_ROOT)cpu/x86 -I$(PROJECT_ROOT)os_cpu/linux_x86 -I$(PROJECT_ROOT)mocks/cpu/x86 -I$(PROJECT_ROOT)mocks/os_cpu/linux_x86
+INCLUDES.aarch64 := -I$(PROJECT_ROOT)cpu/aarch64 -I$(PROJECT_ROOT)os_cpu/linux_aarch64 -I$(PROJECT_ROOT)mocks/cpu/aarch64 -I$(PROJECT_ROOT)mocks/os_cpu/linux_aarch64
+INCLUDES.common := -I$(PROJECT_ROOT) -I$(PROJECT_ROOT)os/linux -I$(PROJECT_ROOT)os/posix -I$(PROJECT_ROOT)os/posix/include \
+  -I$(PROJECT_ROOT)share -I$(PROJECT_ROOT)share/include -I$(PROJECT_ROOT)share/precompiled -I$(PROJECT_ROOT)share/utilities \
+  -I$(PROJECT_ROOT)mocks -I$(PROJECT_ROOT)mocks/os/linux -I$(PROJECT_ROOT)mocks/os/posix -I$(PROJECT_ROOT)mocks/share -I$(PROJECT_ROOT)mocks/share/include \
+  -I$(PROJECT_ROOT)svm -I$(PROJECT_ROOT)svm/share
+INCLUDES := $(INCLUDES.common) $(INCLUDES.$(ARCH_SUFFIX))
+
+COMPRESSED_REFERENCE_DEFINES.true := -DSVM_COMPRESSED_REFERENCES
+COMPRESSED_REFERENCE_DEFINES.false :=
+COMPRESSED_REFERENCE_DEFINES := $(COMPRESSED_REFERENCE_DEFINES.$(COMPRESSED_REFERENCES))
+
+DEFINES.amd64 := -DINCLUDE_SUFFIX_CPU=_x86 -DAMD64
+DEFINES.aarch64 := -DINCLUDE_SUFFIX_CPU=_aarch64 -DAARCH64
+DEFINES.common := -DSVM $(COMPRESSED_REFERENCE_DEFINES) -DINCLUDE_SUFFIX_OS=_linux -DINCLUDE_SUFFIX_COMPILER=_gcc -DLINUX -D_LP64=1 -DINCLUDE_JVMCI=1 -DINCLUDE_JFR=0 -DINCLUDE_G1GC=0 \
+  -DINCLUDE_JVMTI=0 -DINCLUDE_SERVICES=0  -DINCLUDE_MANAGEMENT=0 -DINCLUDE_CDS=0 -DINCLUDE_CMSGC=0 -DINCLUDE_EPSILONGC=0 -DINCLUDE_PARALLELGC=0 -DINCLUDE_SERIALGC=0 -DINCLUDE_SHENANDOAHGC=0 -DINCLUDE_ZGC=0 -DINCLUDE_NMT=0 \
+  -DVM_LITTLE_ENDIAN -DIGNORE_CODE_RELATED_OOPS=1 -DTARGET_COMPILER_gcc -DSUPPORTS_CLOCK_MONOTONIC -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_FILE_OFFSET_BITS=64 -D_REENTRANT
+DEFINES := $(DEFINES.common) $(DEFINES.$(ARCH_SUFFIX))
+
+# only use -fno-lifetime-dse if it is supported
+FNO_LIFETIME_DSE := $(shell $(CC) -fno-lifetime-dse -c /dev/null 2>/dev/null && echo -fno-lifetime-dse)
+
+CPPFLAGS.product := -O3 -DPRODUCT -DDEBUG_LEVEL='"product"'
+CPPFLAGS.notproduct := -O3 -DDEBUG_LEVEL='"notproduct"'
+CPPFLAGS.fastdebug := -g -O1 -DASSERT -DDEBUG_LEVEL='"fastdebug"'
+CPPFLAGS.debug := -g -O0 -DASSERT -DDEBUG_LEVEL='"debug"'
+CPPFLAGS := -fPIC -fno-rtti -fno-exceptions -fno-strict-aliasing -fno-omit-frame-pointer -fstack-protector $(FNO_LIFETIME_DSE) -std=c++14 $(CPPFLAGS.$(DEBUG_LEVEL))
+
+TARGET_SPECIFIC_CPPFLAGS.so := -fvisibility=hidden
+TARGET_SPECIFIC_CPPFLAGS.a :=
+CPPFLAGS += $(TARGET_SPECIFIC_CPPFLAGS.$(TARGET_FILE_FORMAT))
+
+LDFLAGS.so := -shared -Wl,-z,noexecstack
+LDFLAGS.a := unused
+LDFLAGS := $(LDFLAGS.$(TARGET_FILE_FORMAT))
+
+TARGET_EXT.so := .so
+TARGET_EXT.a := .a
+TARGET_EXT := $(TARGET_EXT.$(TARGET_FILE_FORMAT))
+
+COMPRESSED_REFERENCES_SUFFIX.true := cr
+COMPRESSED_REFERENCES_SUFFIX.false := ur
+COMPRESSED_REFERENCES_SUFFIX := $(COMPRESSED_REFERENCES_SUFFIX.$(COMPRESSED_REFERENCES))
+
+DEBUG_LEVEL_FILE_SUFFIX.product :=
+DEBUG_LEVEL_FILE_SUFFIX.notproduct := -notproduct
+DEBUG_LEVEL_FILE_SUFFIX.fastdebug := -fastdebug
+DEBUG_LEVEL_FILE_SUFFIX.debug := -debug
+DEBUG_LEVEL_FILE_SUFFIX := $(DEBUG_LEVEL_FILE_SUFFIX.$(DEBUG_LEVEL))
+
+BUILD_DIR := $(BUILD_ROOT)/$(DEBUG_LEVEL)-$(COMPRESSED_REFERENCES_SUFFIX)$(TARGET_EXT)
+TARGET_FILE := $(BUILD_ROOT)/libsvmgc$(DEBUG_LEVEL_FILE_SUFFIX)-$(COMPRESSED_REFERENCES_SUFFIX)$(TARGET_EXT)
+
+CPP_FILES_TO_EXCLUDE.amd64 := aarch64
+CPP_FILES_TO_EXCLUDE.aarch64 := x86
+CPP_FILES_TO_EXCLUDE := $(CPP_FILES_TO_EXCLUDE.$(ARCH_SUFFIX))
+
+S_FILES_TO_EXCLUDE.amd64 := aarch64
+S_FILES_TO_EXCLUDE.aarch64 := x86_64
+S_FILES_TO_EXCLUDE := $(S_FILES_TO_EXCLUDE.$(ARCH_SUFFIX))
+
+CPP_SOURCES := $(shell find $(PROJECT_ROOT) ! -name "*_$(CPP_FILES_TO_EXCLUDE).cpp" -name "*.cpp")
+CPP_OBJECTS := $(CPP_SOURCES:$(PROJECT_ROOT)%.cpp=$(BUILD_DIR)/%.o)
+CPP_DEPENDENCIES=$(CPP_OBJECTS:.o=.d)
+
+ASM_SOURCES += $(shell find $(PROJECT_ROOT) ! -name "*_$(S_FILES_TO_EXCLUDE).S" -name "*.S")
+ASM_OBJECTS := $(ASM_SOURCES:$(PROJECT_ROOT)%.S=$(BUILD_DIR)/%.o)
+
+-include $(CPP_DEPENDENCIES)
+
+build: $(BUILD_DIR) $(TARGET_FILE)
+
+clean:
+	rm -rf $(BUILD_DIR)
+
+$(TARGET_FILE) : $(CPP_OBJECTS) $(ASM_OBJECTS)
+	@echo Linking $(TARGET_FILE)
+ifeq ($(TARGET_FILE_FORMAT),a)
+	$(QUIETLY) $(AR) cr $(TARGET_FILE) $^
+else
+	$(QUIETLY) $(CC) $^ -o $(TARGET_FILE) $(LDFLAGS)
+endif
+
+$(CPP_OBJECTS): $(BUILD_DIR)/%.o: %.cpp
+	$(QUIETLY) mkdir -p $(@D)
+	$(QUIETLY) $(CC) -Wno-format-zero-length -c -MD $(CPPFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
+
+$(ASM_OBJECTS): $(BUILD_DIR)/%.o: %.S
+	$(QUIETLY) mkdir -p $(@D)
+	$(QUIETLY) $(CC) -c $(CPPFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
+
+$(BUILD_DIR):
+	$(QUIETLY) mkdir -p $(BUILD_DIR)

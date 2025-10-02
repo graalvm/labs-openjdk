@@ -32,6 +32,9 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/globals_extension.hpp"
 
+
+namespace svm_gc {
+
 size_t PLAB::min_size() {
   // Make sure that we return something that is larger than AlignmentReserve
   return align_object_size(MAX2(MinTLABSize / HeapWordSize, (size_t)oopDesc::header_size())) + CollectedHeap::lab_alignment_reserve();
@@ -120,3 +123,6 @@ void PLAB::undo_allocation(HeapWord* obj, size_t word_sz) {
     add_undo_waste(obj, word_sz);
   }
 }
+
+} // namespace svm_gc
+

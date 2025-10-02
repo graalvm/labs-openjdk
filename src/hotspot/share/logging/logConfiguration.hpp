@@ -29,6 +29,9 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class LogOutput;
 class LogDecorators;
 class LogSelectionList;
@@ -69,6 +72,7 @@ public:
   };
 
 private:
+#ifndef SVM
   static AsyncMode _async_mode;
 
   // Create a new output. Returns null if failed.
@@ -76,6 +80,7 @@ private:
 
   // Add an output to the list of configured outputs. Returns the assigned index.
   static size_t add_output(LogOutput* out);
+#endif // !SVM
 
   // Delete a configured output. The stderr/stdout outputs can not be removed.
   // Output should be completely disabled before it is deleted.
@@ -84,8 +89,10 @@ private:
   // Disable all logging to all outputs. All outputs except stdout/stderr will be deleted.
   static void disable_outputs();
 
+#ifndef SVM
   // Get output index by name. Returns SIZE_MAX if output not found.
   static size_t find_output(const char* name);
+#endif // !SVM
 
   // Configure output (add or update existing configuration) to log on tag-level combination using specified decorators.
   static void configure_output(size_t idx, const LogSelectionList& tag_level_expression, const LogDecorators& decorators);
@@ -126,6 +133,7 @@ private:
   // LogConfiguration::configure_stdout(LogLevel::<level>, <true/false>, LOG_TAGS(<tags>));
   static void configure_stdout(LogLevelType level, int exact_match, ...);
 
+#ifndef SVM
   // Parse command line configuration. Parameter 'opts' is the string immediately following the -Xlog: argument ("gc" for -Xlog:gc).
   static bool parse_command_line_arguments(const char* opts = "all");
 
@@ -137,10 +145,12 @@ private:
                                   outputStream* errstream);
 
   static bool parse_async_argument(const char* async_tail);
+#endif // !SVM
 
   // Prints log configuration to outputStream, used by JCmd/MBean.
   static void describe(outputStream* out);
 
+#ifndef SVM
   // Prints usage help for command line log configuration.
   static void print_command_line_help(outputStream* out);
 
@@ -152,6 +162,10 @@ private:
   static void set_async_mode(AsyncMode mode) {
     _async_mode = mode;
   }
+#endif // SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGCONFIGURATION_HPP

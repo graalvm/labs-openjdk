@@ -38,6 +38,9 @@
 #include "gc/parallel/objectStartArray.hpp"
 #endif
 
+
+namespace svm_gc {
+
 uint CardTable::_card_shift = 0;
 uint CardTable::_card_size = 0;
 uint CardTable::_card_size_in_words = 0;
@@ -50,7 +53,10 @@ void CardTable::initialize_card_size() {
   _card_shift = log2i_exact(_card_size);
   _card_size_in_words = _card_size / sizeof(HeapWord);
 
+#ifndef SVM
+  // NOTE (chaeubl): when this is called, the logging infrastructure is not initialized yet.
   log_info_p(gc, init)("CardTable entry size: " UINT32_FORMAT,  _card_size);
+#endif // !SVM
 }
 
 size_t CardTable::compute_byte_map_size(size_t num_bytes) {
@@ -262,3 +268,6 @@ void CardTable::print_on(outputStream* st) const {
   st->print_cr("Card table byte_map: [" PTR_FORMAT "," PTR_FORMAT "] _byte_map_base: " PTR_FORMAT,
                p2i(_byte_map), p2i(_byte_map + _byte_map_size), p2i(_byte_map_base));
 }
+
+} // namespace svm_gc
+

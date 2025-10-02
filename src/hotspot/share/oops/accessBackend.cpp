@@ -37,6 +37,9 @@
 #define HIDDEN
 #endif
 
+
+namespace svm_gc {
+
 namespace AccessInternal {
 // These forward copying calls to Copy without exposing the Copy type in headers unnecessarily
 
@@ -165,6 +168,7 @@ namespace AccessInternal {
 
 #ifdef ASSERT
   void check_access_thread_state() {
+#ifndef SVM
     if (VMError::is_error_reported() || DebuggingContext::is_enabled()) {
       return;
     }
@@ -178,6 +182,10 @@ namespace AccessInternal {
     JavaThreadState state = java_thread->thread_state();
     assert(state == _thread_in_vm || state == _thread_in_Java || state == _thread_new,
            "Wrong thread state for accesses: %d", (int)state);
+#endif // !SVM
   }
 #endif
 }
+
+} // namespace svm_gc
+

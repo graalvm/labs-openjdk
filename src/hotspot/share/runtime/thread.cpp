@@ -51,8 +51,24 @@
 #if INCLUDE_JFR
 #include "jfr/jfr.hpp"
 #endif
+#ifdef SVM
+#include "svmOopMap.hpp"
+#include "svmCodeReferenceMapDecoder.hpp"
+#include "svmIsolateThread.hpp"
+#endif // SVM
+
+
+namespace svm_gc {
 
 THREAD_LOCAL Thread* Thread::_thr_current = nullptr;
+
+#ifdef SVM
+bool Thread::is_VM_thread() const {
+  // this method is also called before the VM operation thread is started
+  IsolateThread *isolate_thread = RawAccess<>::load_at(SVMIsolateData::_vm_operation_thread, SVMGlobalData::_offsets._vm_operation_thread._isolate_thread);
+  return this == isolate_thread->java_thread();
+}
+#endif // SVM
 
 // ======= Thread ========
 // Base class for all threads: VMThread, WatcherThread, ConcurrentMarkSweepThread,
@@ -62,10 +78,12 @@ Thread::Thread(MemTag mem_tag) {
 
   DEBUG_ONLY(_run_state = PRE_CALL_RUN;)
 
+#ifndef SVM
   // stack and get_thread
   set_stack_base(nullptr);
   set_stack_size(0);
   set_lgrp_id(-1);
+#endif // !SVM
   DEBUG_ONLY(clear_suspendible_thread();)
   DEBUG_ONLY(clear_indirectly_suspendible_thread();)
   DEBUG_ONLY(clear_indirectly_safepoint_thread();)
@@ -74,25 +92,38 @@ Thread::Thread(MemTag mem_tag) {
   set_osthread(nullptr);
   set_resource_area(new (mem_tag) ResourceArea(mem_tag));
   DEBUG_ONLY(_current_resource_mark = nullptr;)
+#ifndef SVM
   set_handle_area(new (mem_tag) HandleArea(mem_tag, nullptr));
   set_metadata_handles(new (mtClass) GrowableArray<Metadata*>(30, mtClass));
   set_last_handle_mark(nullptr);
+#endif // !SVM
 
   // Initial value of zero ==> never claimed.
   _threads_do_token = 0;
+#ifdef SVM
+  _gc_id = GCId::undefined();
+#endif // SVM
+
+#ifndef SVM
   _threads_hazard_ptr = nullptr;
   _threads_list_ptr = nullptr;
   _nested_threads_hazard_ptr_cnt = 0;
+#endif // !SVM
   _rcu_counter = 0;
 
+#ifndef SVM
   // the handle mark links itself to last_handle_mark
   new HandleMark(this);
+#endif // !SVM
 
   // plain initialization
   DEBUG_ONLY(_owned_locks = nullptr;)
+#ifndef SVM
   NOT_PRODUCT(_skip_gcalot = false;)
   _jvmti_env_iteration_count = 0;
+#endif // !SVM
   set_allocated_bytes(0);
+#ifndef SVM
   _current_pending_raw_monitor = nullptr;
   _vm_error_callbacks = nullptr;
 
@@ -113,6 +144,7 @@ Thread::Thread(MemTag mem_tag) {
   // The stack would act as a cache to avoid calls to ParkEvent::Allocate()
   // and ::Release()
   _ParkEvent   = ParkEvent::Allocate(this);
+#endif // !SVM
 
 #ifdef CHECK_UNHANDLED_OOPS
   if (CheckUnhandledOops) {
@@ -138,6 +170,7 @@ Thread::Thread(MemTag mem_tag) {
   MACOS_AARCH64_ONLY(DEBUG_ONLY(_wx_init = false));
 }
 
+#ifndef SVM
 #ifdef ASSERT
 address Thread::stack_base() const {
   // Note: can't report Thread::name() here as that can require a ResourceMark which we
@@ -147,6 +180,7 @@ address Thread::stack_base() const {
   return _stack_base;
 }
 #endif
+#endif // !SVM
 
 void Thread::initialize_tlab() {
   if (UseTLAB) {
@@ -158,7 +192,9 @@ void Thread::retire_tlab(ThreadLocalAllocStats* stats) {
   // Sampling and serviceability support
   if (tlab().end() != nullptr) {
     incr_allocated_bytes(tlab().used_bytes());
+#ifndef SVM
     heap_sampler().retire_tlab(tlab().top());
+#endif // !SVM
   }
 
   // Retire the TLAB
@@ -166,8 +202,10 @@ void Thread::retire_tlab(ThreadLocalAllocStats* stats) {
 }
 
 void Thread::fill_tlab(HeapWord* start, size_t pre_reserved, size_t new_size) {
+#ifndef SVM
   // Thread allocation sampling support
   heap_sampler().set_tlab_top_at_sample_start(start);
+#endif // !SVM
 
   // Fill the TLAB
   tlab().fill(start, start + pre_reserved, new_size);
@@ -187,6 +225,7 @@ void Thread::clear_thread_current() {
   ThreadLocalStorage::set_thread(nullptr);
 }
 
+#ifndef SVM
 void Thread::record_stack_base_and_size() {
   // Note: at this point, Thread object is not yet initialized. Do not rely on
   // any members being initialized. Do not rely on Thread::current() being set.
@@ -211,6 +250,7 @@ void Thread::register_thread_stack_with_NMT() {
 void Thread::unregister_thread_stack_with_NMT() {
   MemTracker::release_thread_stack(stack_end(), stack_size());
 }
+#endif // !SVM
 
 void Thread::call_run() {
   DEBUG_ONLY(_run_state = CALL_RUN;)
@@ -225,14 +265,16 @@ void Thread::call_run() {
 
   MACOS_AARCH64_ONLY(this->init_wx());
 
-  register_thread_stack_with_NMT();
+  NOT_SVM(register_thread_stack_with_NMT();)
 
   JFR_ONLY(Jfr::on_thread_start(this);)
 
+#ifndef SVM
   log_debug(os, thread)("Thread %zu stack dimensions: "
     PTR_FORMAT "-" PTR_FORMAT " (%zuk).",
     os::current_thread_id(), p2i(stack_end()),
     p2i(stack_base()), stack_size()/1024);
+#endif // !SVM
 
   // Perform <ChildClass> initialization actions
   DEBUG_ONLY(_run_state = PRE_RUN;)
@@ -282,6 +324,7 @@ Thread::~Thread() {
 
   // deallocate data structures
   delete resource_area();
+#ifndef SVM
   // since the handle marks are using the handle area, we have to deallocated the root
   // handle mark before deallocating the thread's handle area,
   assert(last_handle_mark() != nullptr, "check we have an element");
@@ -294,6 +337,7 @@ Thread::~Thread() {
 
   delete handle_area();
   delete metadata_handles();
+#endif // !SVM
 
   // osthread() can be null, if creation of thread failed.
   if (osthread() != nullptr) os::free_thread(osthread());
@@ -313,14 +357,15 @@ Thread::~Thread() {
 // the current thread, it is not on a ThreadsList, or not at safepoint.
 void Thread::check_for_dangling_thread_pointer(Thread *thread) {
   assert(!thread->is_Java_thread() ||
-         JavaThread::cast(thread)->is_handshake_safe_for(Thread::current()) ||
-         !JavaThread::cast(thread)->on_thread_list() ||
-         SafepointSynchronize::is_at_safepoint() ||
-         ThreadsSMRSupport::is_a_protected_JavaThread_with_lock(JavaThread::cast(thread)),
+         NOT_SVM(JavaThread::cast(thread)->is_handshake_safe_for(Thread::current()) ||)
+         NOT_SVM(!JavaThread::cast(thread)->on_thread_list() ||)
+         SafepointSynchronize::is_at_safepoint()
+         NOT_SVM(|| ThreadsSMRSupport::is_a_protected_JavaThread_with_lock(JavaThread::cast(thread))),
          "possibility of dangling Thread pointer");
 }
 #endif
 
+#ifndef SVM
 // Is the target JavaThread protected by the calling Thread or by some other
 // mechanism?
 //
@@ -395,11 +440,13 @@ void Thread::set_priority(Thread* thread, ThreadPriority priority) {
   // Can return an error!
   (void)os::set_priority(thread, priority);
 }
+#endif // !SVM
 
 
 void Thread::start(Thread* thread) {
   // Start is different from resume in that its safety is guaranteed by context or
   // being called from a Java method synchronized on the Thread object.
+#ifndef SVM
   if (thread->is_Java_thread()) {
     // Initialize the thread state to RUNNABLE before starting this thread.
     // Can not set it after the thread started because we do not know the
@@ -408,6 +455,7 @@ void Thread::start(Thread* thread) {
     java_lang_Thread::set_thread_status(JavaThread::cast(thread)->threadObj(),
                                         JavaThreadStatus::RUNNABLE);
   }
+#endif // !SVM
   os::start_thread(thread);
 }
 
@@ -425,9 +473,11 @@ bool Thread::claim_par_threads_do(uintx claim_token) {
 }
 
 void Thread::oops_do_no_frames(OopClosure* f, NMethodClosure* cf) {
+#ifndef SVM
   // Do oop for ThreadShadow
   f->do_oop((oop*)&_pending_exception);
   handle_area()->oops_do(f);
+#endif // !SVM
 }
 
 // If the caller is a NamedThread, then remember, in the current scope,
@@ -461,6 +511,7 @@ void Thread::oops_do(OopClosure* f, NMethodClosure* cf) {
   oops_do_frames(f, cf);
 }
 
+#ifndef SVM
 void Thread::metadata_handles_do(void f(Metadata*)) {
   // Only walk the Handles in Thread.
   if (metadata_handles() != nullptr) {
@@ -469,6 +520,7 @@ void Thread::metadata_handles_do(void f(Metadata*)) {
     }
   }
 }
+#endif // !SVM
 
 void Thread::print_on(outputStream* st, bool print_extended_info) const {
   // get_priority assumes osthread initialized
@@ -481,25 +533,31 @@ void Thread::print_on(outputStream* st, bool print_extended_info) const {
     st->print("cpu=%.2fms ",
               (double)os::thread_cpu_time(const_cast<Thread*>(this), true) / 1000000.0
               );
+#ifndef SVM
     st->print("elapsed=%.2fs ",
               (double)_statistical_info.getElapsedTime() / 1000.0
               );
+#endif // !SVM
     if (is_Java_thread() && (PrintExtendedThreadInfo || print_extended_info)) {
       size_t allocated_bytes = (size_t) const_cast<Thread*>(this)->cooked_allocated_bytes();
       st->print("allocated=%zu%s ",
                 byte_size_in_proper_unit(allocated_bytes),
                 proper_unit_for_byte_size(allocated_bytes)
                 );
+#ifndef SVM
       st->print("defined_classes=" INT64_FORMAT " ", _statistical_info.getDefineClassCount());
+#endif // !SVM
     }
 
     st->print("tid=" INTPTR_FORMAT " ", p2i(this));
-    if (!is_Java_thread() || !JavaThread::cast(this)->is_vthread_mounted()) {
+    if (!is_Java_thread() NOT_SVM(|| !JavaThread::cast(this)->is_vthread_mounted())) {
       osthread()->print_on(st);
     }
   }
+#ifndef SVM
   ThreadsSMRSupport::print_info_on(this, st);
   st->print(" ");
+#endif // !SVM
   DEBUG_ONLY(if (WizardMode) print_owned_locks_on(st);)
 }
 
@@ -516,18 +574,22 @@ void Thread::print_on_error(outputStream* st, char* buf, int buflen) const {
   if (os_thr != nullptr) {
     st->fill_to(67);
     if (os_thr->get_state() != ZOMBIE) {
+#ifndef SVM
       // Use raw field members for stack base/size as this could be
       // called before a thread has run enough to initialize them.
       st->print(" [id=%d, stack(" PTR_FORMAT "," PTR_FORMAT ") (" PROPERFMT ")]",
                 osthread()->thread_id(), p2i(_stack_base - _stack_size), p2i(_stack_base),
                 PROPERFMTARGS(_stack_size));
+#endif // !SVM
     } else {
       st->print(" terminated");
     }
   } else {
     st->print(" unknown state (no osThread)");
   }
+#ifndef SVM
   ThreadsSMRSupport::print_info_on(this, st);
+#endif // !SVM
 }
 
 void Thread::print_value_on(outputStream* st) const {
@@ -615,3 +677,6 @@ void Thread::SpinRelease(volatile int * adr) {
   // more than covers this on all platforms.
   *adr = 0;
 }
+
+} // namespace svm_gc
+

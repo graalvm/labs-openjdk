@@ -26,10 +26,16 @@
 #include "gc/shared/gcPolicyCounters.hpp"
 #include "memory/resourceArea.hpp"
 
+
+namespace svm_gc {
+
 GCPolicyCounters::GCPolicyCounters(const char* name, int collectors,
                                    int generations) {
 
   if (UsePerfData) {
+#ifdef SVM
+    Unimplemented();
+#else
     EXCEPTION_MARK;
     ResourceMark rm;
 
@@ -64,5 +70,9 @@ GCPolicyCounters::GCPolicyCounters(const char* name, int collectors,
     _gc_overhead_limit_exceeded_counter =
         PerfDataManager::create_variable(SUN_GC, cname, PerfData::U_Events,
                                          CHECK);
+#endif // SVM
   }
 }
+
+} // namespace svm_gc
+

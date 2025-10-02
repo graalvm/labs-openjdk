@@ -32,6 +32,10 @@
 #include "jfr/utilities/jfrTypes.hpp"
 #include "memory/allocation.inline.hpp"
 
+#ifndef SVM
+
+namespace svm_gc {
+
 static constexpr const u2 excluded_bit = 32768;
 static constexpr const u2 epoch_mask = excluded_bit - 1;
 
@@ -60,5 +64,9 @@ class ThreadIdAccess : AllStatic {
     return JfrTraceIdEpoch::epoch_generation();
   }
 };
+
+} // namespace svm_gc
+
+#endif // !SVM
 
 #endif // SHARE_JFR_SUPPORT_JFRTHREADID_INLINE_HPP

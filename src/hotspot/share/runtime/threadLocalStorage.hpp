@@ -28,6 +28,9 @@
 #include "memory/allStatic.hpp"
 
 // forward-decl as we can't have an include cycle
+
+namespace svm_gc {
+
 class Thread;
 
 // Wrapper class for library-based (as opposed to compiler-based)
@@ -46,5 +49,8 @@ class ThreadLocalStorage : AllStatic {
   static void    init();
   static bool    is_initialized(); // can't use TLS prior to initialization
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_THREADLOCALSTORAGE_HPP

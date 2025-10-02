@@ -37,6 +37,9 @@
 // (2) Active run_to() running     non-null      false          false
 // (3) Active run_to() in at()      null         false          true
 // (4) Active run_to_idle()         null         true           false
+
+namespace svm_gc {
+
 const char* ConcurrentGCBreakpoints::_run_to = nullptr;
 bool ConcurrentGCBreakpoints::_want_idle = false;
 bool ConcurrentGCBreakpoints::_is_stopped = false;
@@ -171,3 +174,6 @@ void ConcurrentGCBreakpoints::notify_idle_to_active() {
   assert_locked_or_safepoint(monitor());
   _is_idle = false;
 }
+
+} // namespace svm_gc
+

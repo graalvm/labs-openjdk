@@ -43,10 +43,9 @@
 #include "utilities/dtrace.hpp"
 #include "utilities/macros.hpp"
 #include "utilities/preserveException.hpp"
-#if INCLUDE_G1GC
-#include "gc/g1/g1CollectedHeap.inline.hpp"
-#include "gc/g1/g1Policy.hpp"
-#endif // INCLUDE_G1GC
+
+
+namespace svm_gc {
 
 bool VM_GC_Sync_Operation::doit_prologue() {
   Heap_lock->lock();
@@ -133,9 +132,11 @@ bool VM_GC_Operation::doit_prologue() {
 
 
 void VM_GC_Operation::doit_epilogue() {
+#ifndef SVM
   // GC thread root traversal likely used OopMapCache a lot, which
   // might have created lots of old entries. Trigger the cleanup now.
   OopMapCache::try_trigger_cleanup();
+#endif // !SVM
   if (Universe::has_reference_pending_list()) {
     Heap_lock->notify_all();
   }
@@ -145,6 +146,7 @@ void VM_GC_Operation::doit_epilogue() {
   }
 }
 
+#ifndef SVM
 bool VM_GC_HeapInspection::doit_prologue() {
   if (_full_gc && (UseZGC || UseShenandoahGC)) {
     // ZGC and Shenandoah cannot perform a synchronous GC cycle from within the VM thread.
@@ -267,11 +269,17 @@ void VM_CollectForMetadataAllocation::doit() {
 
   log_debug(gc)("After Metaspace GC failed to allocate size %zu", _size);
 }
+#endif // !SVM
 
 VM_CollectForAllocation::VM_CollectForAllocation(size_t word_size, uint gc_count_before, GCCause::Cause cause)
     : VM_GC_Operation(gc_count_before, cause), _word_size(word_size), _result(nullptr) {
+#ifndef SVM
   // Only report if operation was really caused by an allocation.
   if (_word_size != 0) {
     AllocTracer::send_allocation_requiring_gc_event(_word_size * HeapWordSize, GCId::peek());
   }
+#endif // !SVM
 }
+
+} // namespace svm_gc
+

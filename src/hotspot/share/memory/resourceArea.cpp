@@ -31,6 +31,9 @@
 
 #ifdef ASSERT
 
+
+namespace svm_gc {
+
 ResourceMark::ResourceMark(ResourceArea* area, Thread* thread) :
     _impl(area),
     _thread(thread),
@@ -57,12 +60,18 @@ void ResourceArea::verify_has_resource_mark() {
   }
 }
 
+
+} // namespace svm_gc
+
 #endif // ASSERT
 
 //------------------------------ResourceMark-----------------------------------
 // The following routines are declared in allocation.hpp and used everywhere:
 
 // Allocation in thread-local resource area
+
+namespace svm_gc {
+
 extern char* resource_allocate_bytes(size_t size, AllocFailType alloc_failmode) {
   return Thread::current()->resource_area()->allocate_bytes(size, alloc_failmode);
 }
@@ -77,3 +86,6 @@ extern char* resource_reallocate_bytes( char *old, size_t old_size, size_t new_s
 extern void resource_free_bytes( Thread* thread, char *old, size_t size ) {
   thread->resource_area()->Afree(old, size);
 }
+
+} // namespace svm_gc
+

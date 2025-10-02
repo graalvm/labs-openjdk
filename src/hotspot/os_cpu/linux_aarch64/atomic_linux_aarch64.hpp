@@ -43,6 +43,9 @@
 // 33661, template methods forget explicit local register asm
 // vars. The problem is that register specifiers attached to local
 // variables are ignored in any template function.
+
+namespace svm_gc {
+
 inline uint64_t bare_atomic_fastcall(address stub, volatile void *ptr, uint64_t arg1, uint64_t arg2 = 0) {
   register uint64_t reg0 __asm__("x0") = (uint64_t)ptr;
   register uint64_t reg1 __asm__("x1") = arg1;
@@ -216,5 +219,8 @@ struct Atomic::PlatformOrderedStore<byte_size, RELEASE_X_FENCE>
   template <typename T>
   void operator()(volatile T* p, T v) const { release_store(p, v); OrderAccess::fence(); }
 };
+
+
+} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_AARCH64_ATOMIC_LINUX_AARCH64_HPP

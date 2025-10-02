@@ -27,7 +27,11 @@
 
 #include "runtime/globals_shared.hpp"
 
-#define TLAB_FLAGS(develop,                                                 \
+#define TLAB_FLAGS(ni_hosted,                                               \
+                   ni_hosted_pd,                                            \
+                   ni_runtime,                                              \
+                   ni_runtime_pd,                                           \
+                   develop,                                                 \
                    develop_pd,                                              \
                    product,                                                 \
                    product_pd,                                              \
@@ -36,50 +40,50 @@
                                                                             \
   /* Thread Local Allocation Buffer */                                      \
                                                                             \
-  product(bool, UseTLAB, true,                                              \
+  ni_hosted(bool, UseTLAB, true,                                            \
           "Use thread-local object allocation")                             \
                                                                             \
-  product(bool, ResizeTLAB, true,                                           \
+  ni_runtime(bool, ResizeTLAB, true,                                        \
           "Dynamically resize TLAB size for threads")                       \
                                                                             \
-  product(bool, ZeroTLAB, false,                                            \
+  ni_runtime(bool, ZeroTLAB, false,                                         \
           "Zero out the newly created TLAB")                                \
                                                                             \
-  product(size_t, MinTLABSize, 2*K,                                         \
+  ni_runtime(size_t, MinTLABSize, 2*K,                                      \
           "Minimum allowed TLAB size (in bytes)")                           \
           range(1, max_uintx/2)                                             \
           constraint(MinTLABSizeConstraintFunc,AfterMemoryInit)             \
                                                                             \
-  product(size_t, TLABSize, 0,                                              \
+  ni_runtime(size_t, TLABSize, 0,                                           \
           "Starting TLAB size (in bytes); zero means set ergonomically")    \
           constraint(TLABSizeConstraintFunc,AfterMemoryInit)                \
                                                                             \
-  product(size_t, YoungPLABSize, 4096,                                      \
+  ni_runtime(size_t, YoungPLABSize, 4096,                                   \
           "Size of young gen promotion LAB's (in HeapWords)")               \
           constraint(YoungPLABSizeConstraintFunc,AfterMemoryInit)           \
                                                                             \
-  product(size_t, OldPLABSize, 1024,                                        \
+  ni_runtime(size_t, OldPLABSize, 1024,                                     \
           "Size of old gen promotion LAB's (in HeapWords)")                 \
           constraint(OldPLABSizeConstraintFunc,AfterMemoryInit)             \
                                                                             \
-  product(uintx, TLABAllocationWeight, 35,                                  \
+  ni_runtime(uintx, TLABAllocationWeight, 35,                               \
           "Allocation averaging weight")                                    \
           range(0, 100)                                                     \
                                                                             \
   /* At GC all TLABs are retired, and each thread's active  */              \
   /* TLAB is assumed to be half full on average. The        */              \
   /* remaining space is waste, proportional to TLAB size.   */              \
-  product(uintx, TLABWasteTargetPercent, 1,                                 \
+  ni_runtime(uintx, TLABWasteTargetPercent, 1,                              \
           "Percentage of Eden that can be wasted (half-full TLABs at GC)")  \
   /* Limit the lower bound of this flag to 1 as it is used  */              \
   /* in a division expression.                              */              \
           range(1, 100)                                                     \
                                                                             \
-  product(uintx, TLABRefillWasteFraction,    64,                            \
+  ni_runtime(uintx, TLABRefillWasteFraction,    64,                         \
           "Maximum TLAB waste at a refill (internal fragmentation)")        \
           range(1, max_juint)                                               \
                                                                             \
-  product(uintx, TLABWasteIncrement,    4,                                  \
+  ni_runtime(uintx, TLABWasteIncrement,    4,                               \
           "Increment allowed waste at slow allocation")                     \
           range(0, max_jint)                                                \
           constraint(TLABWasteIncrementConstraintFunc,AfterMemoryInit)      \
@@ -87,6 +91,12 @@
 
 // end of TLAB_FLAGS
 
+
+namespace svm_gc {
+
 DECLARE_FLAGS(TLAB_FLAGS)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_TLAB_GLOBALS_HPP

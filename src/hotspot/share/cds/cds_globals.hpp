@@ -31,7 +31,11 @@
 // Defines all globals flags used by CDS.
 //
 
-#define CDS_FLAGS(develop,                                                  \
+#define CDS_FLAGS(ni_hosted,                                                \
+                  ni_hosted_pd,                                             \
+                  ni_runtime,                                               \
+                  ni_runtime_pd,                                            \
+                  develop,                                                  \
                   develop_pd,                                               \
                   product,                                                  \
                   product_pd,                                               \
@@ -171,6 +175,12 @@
 
 // end of CDS_FLAGS
 
+
+namespace svm_gc {
+
 DECLARE_FLAGS(CDS_FLAGS)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CDS_CDS_GLOBALS_HPP

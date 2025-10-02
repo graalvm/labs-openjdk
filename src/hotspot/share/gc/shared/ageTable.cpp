@@ -37,12 +37,18 @@
 /* Copyright (c) 1992, 2025, Oracle and/or its affiliates, and Stanford University.
    See the LICENSE file for license information. */
 
+
+namespace svm_gc {
+
 AgeTable::AgeTable(bool global) : _use_perf_data(UsePerfData && global) {
 
   clear();
 
   if (_use_perf_data) {
 
+#ifdef SVM
+    Unimplemented();
+#else
     ResourceMark rm;
     EXCEPTION_MARK;
 
@@ -61,6 +67,7 @@ AgeTable::AgeTable(bool global) : _use_perf_data(UsePerfData && global) {
     const char* cname = PerfDataManager::counter_name(agetable_ns, "size");
     PerfDataManager::create_constant(SUN_GC, cname, PerfData::U_None,
                                      table_size, CHECK);
+#endif // SVM
   }
 }
 
@@ -140,3 +147,6 @@ void AgeTable::print_on(outputStream* st) {
     age++;
   }
 }
+
+} // namespace svm_gc
+

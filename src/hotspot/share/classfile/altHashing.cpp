@@ -54,6 +54,9 @@
 // return a random number, which is one of the possible hash code used for
 // objects.  We don't want to call the synchronizer hash code to install
 // this value because it may safepoint.
+
+namespace svm_gc {
+
 static intptr_t object_hash(Klass* k) {
   intptr_t hc = k->java_mirror()->mark().hash();
   return hc != markWord::no_hash ? hc : os::random();
@@ -241,3 +244,6 @@ uint64_t AltHashing::halfsiphash_64(uint64_t seed, const uint32_t* data, int len
 uint64_t AltHashing::halfsiphash_64(const uint32_t* data, int len) {
   return halfsiphash_64((uint64_t)0, data, len);
 }
+
+} // namespace svm_gc
+

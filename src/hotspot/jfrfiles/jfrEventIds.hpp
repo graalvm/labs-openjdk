@@ -1,0 +1,220 @@
+/*
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ *
+ */
+
+/* AUTOMATICALLY GENERATED FILE - DO NOT EDIT */
+
+#ifndef JFRFILES_JFREVENTIDS_HPP
+#define JFRFILES_JFREVENTIDS_HPP
+
+#include "utilities/macros.hpp"
+#if INCLUDE_JFR
+
+
+namespace svm_gc {
+
+enum JfrEventId {
+  JfrMetadataEvent = 0,
+  JfrCheckpointEvent = 1,
+  JfrDurationEvent = 2,
+  JfrInstantEvent = 3,
+  JfrValueEvent = 4,
+  JfrTextEvent = 5,
+  JfrZThreadDebugEvent = 6,
+  JfrResidentSetSizeEvent = 7,
+  JfrThreadStartEvent = 8,
+  JfrThreadEndEvent = 9,
+  JfrThreadParkEvent = 10,
+  JfrJavaMonitorEnterEvent = 11,
+  JfrJavaMonitorWaitEvent = 12,
+  JfrJavaMonitorNotifyEvent = 13,
+  JfrJavaMonitorInflateEvent = 14,
+  JfrJavaMonitorDeflateEvent = 15,
+  JfrJavaMonitorStatisticsEvent = 16,
+  JfrSyncOnValueBasedClassEvent = 17,
+  JfrContinuationFreezeEvent = 18,
+  JfrContinuationThawEvent = 19,
+  JfrContinuationFreezeFastEvent = 20,
+  JfrContinuationFreezeSlowEvent = 21,
+  JfrContinuationThawFastEvent = 22,
+  JfrContinuationThawSlowEvent = 23,
+  JfrVirtualThreadPinnedEvent = 24,
+  JfrReservedStackActivationEvent = 25,
+  JfrClassLoadEvent = 26,
+  JfrClassDefineEvent = 27,
+  JfrClassRedefinitionEvent = 28,
+  JfrRedefineClassesEvent = 29,
+  JfrRetransformClassesEvent = 30,
+  JfrClassUnloadEvent = 31,
+  JfrIntFlagChangedEvent = 32,
+  JfrUnsignedIntFlagChangedEvent = 33,
+  JfrLongFlagChangedEvent = 34,
+  JfrUnsignedLongFlagChangedEvent = 35,
+  JfrDoubleFlagChangedEvent = 36,
+  JfrBooleanFlagChangedEvent = 37,
+  JfrStringFlagChangedEvent = 38,
+  JfrGCHeapSummaryEvent = 39,
+  JfrGCHeapMemoryUsageEvent = 40,
+  JfrGCHeapMemoryPoolUsageEvent = 41,
+  JfrMetaspaceSummaryEvent = 42,
+  JfrMetaspaceGCThresholdEvent = 43,
+  JfrMetaspaceAllocationFailureEvent = 44,
+  JfrMetaspaceOOMEvent = 45,
+  JfrMetaspaceChunkFreeListSummaryEvent = 46,
+  JfrPSHeapSummaryEvent = 47,
+  JfrG1HeapSummaryEvent = 48,
+  JfrGarbageCollectionEvent = 49,
+  JfrSystemGCEvent = 50,
+  JfrParallelOldGarbageCollectionEvent = 51,
+  JfrYoungGarbageCollectionEvent = 52,
+  JfrOldGarbageCollectionEvent = 53,
+  JfrG1GarbageCollectionEvent = 54,
+  JfrG1MMUEvent = 55,
+  JfrEvacuationInformationEvent = 56,
+  JfrGCReferenceStatisticsEvent = 57,
+  JfrObjectCountAfterGCEvent = 58,
+  JfrG1EvacuationYoungStatisticsEvent = 59,
+  JfrG1EvacuationOldStatisticsEvent = 60,
+  JfrG1BasicIHOPEvent = 61,
+  JfrG1AdaptiveIHOPEvent = 62,
+  JfrPromoteObjectInNewPLABEvent = 63,
+  JfrPromoteObjectOutsidePLABEvent = 64,
+  JfrPromotionFailedEvent = 65,
+  JfrEvacuationFailedEvent = 66,
+  JfrConcurrentModeFailureEvent = 67,
+  JfrGCCPUTimeEvent = 68,
+  JfrGCPhasePauseEvent = 69,
+  JfrGCPhasePauseLevel1Event = 70,
+  JfrGCPhasePauseLevel2Event = 71,
+  JfrGCPhasePauseLevel3Event = 72,
+  JfrGCPhasePauseLevel4Event = 73,
+  JfrGCPhaseConcurrentEvent = 74,
+  JfrGCPhaseConcurrentLevel1Event = 75,
+  JfrGCPhaseConcurrentLevel2Event = 76,
+  JfrGCPhaseParallelEvent = 77,
+  JfrAllocationRequiringGCEvent = 78,
+  JfrTenuringDistributionEvent = 79,
+  JfrG1HeapRegionTypeChangeEvent = 80,
+  JfrJITRestartEvent = 81,
+  JfrCompilationEvent = 82,
+  JfrCompilerPhaseEvent = 83,
+  JfrCompilationFailureEvent = 84,
+  JfrCompilerInliningEvent = 85,
+  JfrCodeCacheFullEvent = 86,
+  JfrDeoptimizationEvent = 87,
+  JfrSafepointBeginEvent = 88,
+  JfrSafepointStateSynchronizationEvent = 89,
+  JfrSafepointEndEvent = 90,
+  JfrSafepointLatencyEvent = 91,
+  JfrExecuteVMOperationEvent = 92,
+  JfrShutdownEvent = 93,
+  JfrObjectAllocationInNewTLABEvent = 94,
+  JfrObjectAllocationOutsideTLABEvent = 95,
+  JfrObjectAllocationSampleEvent = 96,
+  JfrOldObjectSampleEvent = 97,
+  JfrNativeMemoryUsageEvent = 98,
+  JfrNativeMemoryUsageTotalEvent = 99,
+  JfrDumpReasonEvent = 100,
+  JfrDataLossEvent = 101,
+  JfrJVMInformationEvent = 102,
+  JfrOSInformationEvent = 103,
+  JfrVirtualizationInformationEvent = 104,
+  JfrInitialSystemPropertyEvent = 105,
+  JfrInitialEnvironmentVariableEvent = 106,
+  JfrSystemProcessEvent = 107,
+  JfrCPUInformationEvent = 108,
+  JfrCPUTimeStampCounterEvent = 109,
+  JfrCPULoadEvent = 110,
+  JfrThreadCPULoadEvent = 111,
+  JfrThreadContextSwitchRateEvent = 112,
+  JfrCompilerQueueUtilizationEvent = 113,
+  JfrNetworkUtilizationEvent = 114,
+  JfrJavaThreadStatisticsEvent = 115,
+  JfrClassLoadingStatisticsEvent = 116,
+  JfrClassLoaderStatisticsEvent = 117,
+  JfrSymbolTableStatisticsEvent = 118,
+  JfrStringTableStatisticsEvent = 119,
+  JfrThreadAllocationStatisticsEvent = 120,
+  JfrPhysicalMemoryEvent = 121,
+  JfrSwapSpaceEvent = 122,
+  JfrExecutionSampleEvent = 123,
+  JfrNativeMethodSampleEvent = 124,
+  JfrCPUTimeSampleEvent = 125,
+  JfrCPUTimeSamplesLostEvent = 126,
+  JfrThreadDumpEvent = 127,
+  JfrNativeLibraryEvent = 128,
+  JfrNativeLibraryLoadEvent = 129,
+  JfrNativeLibraryUnloadEvent = 130,
+  JfrModuleRequireEvent = 131,
+  JfrModuleExportEvent = 132,
+  JfrCompilerStatisticsEvent = 133,
+  JfrCompilerConfigurationEvent = 134,
+  JfrCodeCacheStatisticsEvent = 135,
+  JfrCodeCacheConfigurationEvent = 136,
+  JfrIntFlagEvent = 137,
+  JfrUnsignedIntFlagEvent = 138,
+  JfrLongFlagEvent = 139,
+  JfrUnsignedLongFlagEvent = 140,
+  JfrDoubleFlagEvent = 141,
+  JfrBooleanFlagEvent = 142,
+  JfrStringFlagEvent = 143,
+  JfrObjectCountEvent = 144,
+  JfrG1HeapRegionInformationEvent = 145,
+  JfrGCConfigurationEvent = 146,
+  JfrGCSurvivorConfigurationEvent = 147,
+  JfrGCTLABConfigurationEvent = 148,
+  JfrGCHeapConfigurationEvent = 149,
+  JfrYoungGenerationConfigurationEvent = 150,
+  JfrZYoungGarbageCollectionEvent = 151,
+  JfrZOldGarbageCollectionEvent = 152,
+  JfrZAllocationStallEvent = 153,
+  JfrZPageAllocationEvent = 154,
+  JfrZRelocationSetEvent = 155,
+  JfrZRelocationSetGroupEvent = 156,
+  JfrZStatisticsCounterEvent = 157,
+  JfrZStatisticsSamplerEvent = 158,
+  JfrZThreadPhaseEvent = 159,
+  JfrZUncommitEvent = 160,
+  JfrShenandoahHeapRegionStateChangeEvent = 161,
+  JfrShenandoahHeapRegionInformationEvent = 162,
+  JfrShenandoahEvacuationInformationEvent = 163,
+  JfrFlushEvent = 164,
+  JfrHeapDumpEvent = 165,
+  JfrFinalizerStatisticsEvent = 166,
+  JfrJavaAgentEvent = 167,
+  JfrNativeAgentEvent = 168,
+  JfrDeprecatedInvocationEvent = 169,
+  JfrMethodTraceEvent = 170,
+  JfrMethodTimingEvent = 171,
+};
+typedef enum JfrEventId JfrEventId;
+
+static const JfrEventId FIRST_EVENT_ID = JfrDurationEvent;
+static const JfrEventId LAST_EVENT_ID = JfrMethodTimingEvent;
+static const int NUMBER_OF_EVENTS = 170;
+static const int NUMBER_OF_RESERVED_EVENTS = 2;
+
+} // namespace svm_gc
+
+#endif // INCLUDE_JFR
+#endif // JFRFILES_JFREVENTIDS_HPP

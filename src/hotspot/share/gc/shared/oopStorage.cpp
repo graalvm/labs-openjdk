@@ -48,6 +48,9 @@
 #include "utilities/population_count.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 OopStorage::AllocationListEntry::AllocationListEntry() : _prev(nullptr), _next(nullptr) {}
 
 OopStorage::AllocationListEntry::~AllocationListEntry() {
@@ -297,6 +300,7 @@ void OopStorage::Block::set_active_index(size_t index) {
   _active_index = index;
 }
 
+#ifndef SVM
 size_t OopStorage::Block::active_index_safe(const Block* block) {
   STATIC_ASSERT(sizeof(intptr_t) == sizeof(block->_active_index));
   // Be careful, because block could be a false positive from block_for_ptr.
@@ -306,6 +310,7 @@ size_t OopStorage::Block::active_index_safe(const Block* block) {
   static_assert(sizeof(size_t) == sizeof(intptr_t), "assumption");
   return static_cast<size_t>(SafeFetchN(reinterpret_cast<intptr_t*>(index_loc), 0));
 }
+#endif // !SVM
 
 unsigned OopStorage::Block::get_index(const oop* ptr) const {
   assert(contains(ptr), PTR_FORMAT " not in block " PTR_FORMAT, p2i(ptr), p2i(this));
@@ -363,6 +368,7 @@ void OopStorage::Block::delete_block(const Block& block) {
   FREE_C_HEAP_ARRAY(char, memory);
 }
 
+#ifndef SVM
 // This can return a false positive if ptr is not contained by some
 // block.  For some uses, it is a precondition that ptr is valid,
 // e.g. contained in some block in owner's _active_array.  Other uses
@@ -391,6 +397,7 @@ OopStorage::Block::block_for_ptr(const OopStorage* owner, const oop* ptr) {
   }
   return nullptr;
 }
+#endif // !SVM
 
 //////////////////////////////////////////////////////////////////////////////
 // Allocation
@@ -649,9 +656,11 @@ public:
   }
 };
 
+#ifndef SVM
 OopStorage::Block* OopStorage::block_for_ptr(const oop* ptr) const {
   return Block::block_for_ptr(this, ptr);
 }
+#endif // !SVM
 
 static void log_release_transitions(uintx releasing,
                                     uintx old_allocated,
@@ -769,21 +778,30 @@ bool OopStorage::reduce_deferred_updates() {
   return true;              // Processed one pending update.
 }
 
+#ifndef SVM
 static inline void check_release_entry(const oop* entry) {
   assert(entry != nullptr, "Releasing null");
   assert(Universe::heap()->contains_null(entry), "Releasing uncleared entry: " PTR_FORMAT, p2i(entry));
 }
+#endif // !SVM
 
 void OopStorage::release(const oop* ptr) {
+#ifdef SVM
+  ShouldNotReachHere();
+#else
   check_release_entry(ptr);
   Block* block = block_for_ptr(ptr);
   assert(block != nullptr, "%s: invalid release " PTR_FORMAT, name(), p2i(ptr));
   log_trace(oopstorage, ref)("%s: releasing " PTR_FORMAT, name(), p2i(ptr));
   block->release_entries(block->bitmask_for_entry(ptr), this);
   Atomic::dec(&_allocation_count);
+#endif // SVM
 }
 
 void OopStorage::release(const oop* const* ptrs, size_t size) {
+#ifdef SVM
+  ShouldNotReachHere();
+#else
   size_t i = 0;
   while (i < size) {
     check_release_entry(ptrs[i]);
@@ -808,6 +826,7 @@ void OopStorage::release(const oop* const* ptrs, size_t size) {
     block->release_entries(releasing, this);
     Atomic::sub(&_allocation_count, count);
   }
+#endif // SVM
 }
 
 OopStorage* OopStorage::create(const char* name, MemTag mem_tag) {
@@ -840,8 +859,10 @@ OopStorage::OopStorage(const char* name, MemTag mem_tag) :
   _active_array->increment_refcount();
   assert(_active_mutex->rank() < _allocation_mutex->rank(),
          "%s: active_mutex must have lower rank than allocation_mutex", _name);
+#ifndef SVM
   assert(Service_lock->rank() < _active_mutex->rank(),
          "%s: active_mutex must have higher rank than Service_lock", _name);
+#endif // !SVM
 }
 
 void OopStorage::delete_empty_block(const Block& block) {
@@ -896,6 +917,7 @@ bool OopStorage::should_report_num_dead() const {
 // Global cleanup request state.
 static volatile bool needs_cleanup_requested = false;
 
+#ifndef SVM
 // Time after which a cleanup is permitted.
 static jlong cleanup_permit_time = 0;
 
@@ -917,6 +939,7 @@ bool OopStorage::has_cleanup_work_and_reset() {
     return false;
   }
 }
+#endif // !SVM
 
 // Record that cleanup is needed, without notifying the Service thread, because
 // we can't lock the Service_lock.  Used by release().
@@ -927,6 +950,7 @@ void OopStorage::record_needs_cleanup() {
   Atomic::release_store_fence(&needs_cleanup_requested, true);
 }
 
+#ifndef SVM
 bool OopStorage::delete_empty_blocks() {
   // ServiceThread might have oopstorage work, but not for this object.
   // But check for deferred updates, which might provide cleanup work.
@@ -992,8 +1016,13 @@ bool OopStorage::delete_empty_blocks() {
   record_needs_cleanup();
   return true;
 }
+#endif // SVM
 
 OopStorage::EntryStatus OopStorage::allocation_status(const oop* ptr) const {
+#ifdef SVM
+  ShouldNotReachHere();
+  return INVALID_ENTRY;
+#else
   if (ptr == nullptr) return INVALID_ENTRY;
   const Block* block = block_for_ptr(ptr);
   if (block != nullptr) {
@@ -1012,6 +1041,7 @@ OopStorage::EntryStatus OopStorage::allocation_status(const oop* ptr) const {
     }
   }
   return INVALID_ENTRY;
+#endif // SVM
 }
 
 size_t OopStorage::allocation_count() const {
@@ -1141,6 +1171,7 @@ void OopStorage::BasicParState::report_num_dead() const {
 
 const char* OopStorage::name() const { return _name; }
 
+#ifndef SVM
 bool OopStorage::print_containing(const oop* addr, outputStream* st) {
   if (addr != nullptr) {
     Block* block = block_for_ptr(addr);
@@ -1160,6 +1191,7 @@ bool OopStorage::Block::print_containing(const oop* addr, outputStream* st) {
   }
   return false;
 }
+#endif // !SVM
 
 #ifndef PRODUCT
 
@@ -1178,3 +1210,6 @@ void OopStorage::print_on(outputStream* st) const {
 }
 
 #endif // !PRODUCT
+
+} // namespace svm_gc
+

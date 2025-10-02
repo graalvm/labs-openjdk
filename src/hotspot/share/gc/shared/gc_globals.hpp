@@ -45,8 +45,18 @@
 #if INCLUDE_ZGC
 #include "gc/z/z_globals.hpp"
 #endif
+#ifdef SVM
+#include "compiler/compiler_globals_pd.hpp"
+#include CPU_HEADER(globals)
+#include OS_HEADER(globals)
+#include OS_CPU_HEADER(globals)
+#endif // SVM
 
-#define GC_FLAGS(develop,                                                   \
+#define GC_FLAGS(ni_hosted,                                                 \
+                 ni_hosted_pd,                                              \
+                 ni_runtime,                                                \
+                 ni_runtime_pd,                                             \
+                 develop,                                                   \
                  develop_pd,                                                \
                  product,                                                   \
                  product_pd,                                                \
@@ -54,6 +64,10 @@
                  constraint)                                                \
                                                                             \
   EPSILONGC_ONLY(GC_EPSILON_FLAGS(                                          \
+    ni_hosted,                                                              \
+    ni_hosted_pd,                                                           \
+    ni_runtime,                                                             \
+    ni_runtime_pd,                                                          \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
@@ -62,6 +76,10 @@
     constraint))                                                            \
                                                                             \
   G1GC_ONLY(GC_G1_FLAGS(                                                    \
+    ni_hosted,                                                              \
+    ni_hosted_pd,                                                           \
+    ni_runtime,                                                             \
+    ni_runtime_pd,                                                          \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
@@ -70,6 +88,10 @@
     constraint))                                                            \
                                                                             \
   PARALLELGC_ONLY(GC_PARALLEL_FLAGS(                                        \
+    ni_hosted,                                                              \
+    ni_hosted_pd,                                                           \
+    ni_runtime,                                                             \
+    ni_runtime_pd,                                                          \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
@@ -78,6 +100,10 @@
     constraint))                                                            \
                                                                             \
   SERIALGC_ONLY(GC_SERIAL_FLAGS(                                            \
+    ni_hosted,                                                              \
+    ni_hosted_pd,                                                           \
+    ni_runtime,                                                             \
+    ni_runtime_pd,                                                          \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
@@ -86,6 +112,10 @@
     constraint))                                                            \
                                                                             \
   SHENANDOAHGC_ONLY(GC_SHENANDOAH_FLAGS(                                    \
+    ni_hosted,                                                              \
+    ni_hosted_pd,                                                           \
+    ni_runtime,                                                             \
+    ni_runtime_pd,                                                          \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
@@ -94,6 +124,10 @@
     constraint))                                                            \
                                                                             \
   ZGC_ONLY(GC_Z_FLAGS(                                                      \
+    ni_hosted,                                                              \
+    ni_hosted_pd,                                                           \
+    ni_runtime,                                                             \
+    ni_runtime_pd,                                                          \
     develop,                                                                \
     develop_pd,                                                             \
     product,                                                                \
@@ -101,12 +135,34 @@
     range,                                                                  \
     constraint))                                                            \
                                                                             \
+  /* svm-specific */                                                        \
+                                                                            \
+  ni_runtime(bool, VerboseGC, false,                                        \
+          "Print more information about the heap "                          \
+          "before and after each collection.")                              \
+                                                                            \
+  ni_runtime(size_t, ReservedAddressSpaceSize, 0,                           \
+          "The number of bytes that should be reserved for "                \
+          "the heap address space.")                                        \
+                                                                            \
+  ni_runtime(bool, ReportFatalErrorOnOutOfMemoryError, false,               \
+          "Report a fatal error on the first occurrence of an "             \
+          "out-of-memory  error that is thrown because the Java heap "      \
+          "is out of memory.")                                              \
+                                                                            \
+  ni_hosted(bool, TreatRuntimeCodeInfoReferencesAsWeak, true,               \
+          "Determines if references from runtime-compiled code to Java "    \
+          "heap objects should be treated as strong or weak.")              \
+                                                                            \
+  ni_hosted(bool, VerifyHeap, false,                                        \
+          "Verify the heap before and after each collection.")              \
+                                                                            \
   /* gc */                                                                  \
                                                                             \
   product(bool, UseSerialGC, false,                                         \
           "Use the Serial garbage collector")                               \
                                                                             \
-  product(bool, UseG1GC, false,                                             \
+  product(bool, UseG1GC, trueIfG1IsIncluded,                                \
           "Use the Garbage-First garbage collector")                        \
                                                                             \
   product(bool, UseParallelGC, false,                                       \
@@ -123,11 +179,11 @@
                                                                             \
   /* notice: the max range value here is INT_MAX not UINT_MAX  */           \
   /* to protect from overflows                                 */           \
-  product(uint, ParallelGCThreads, 0,                                       \
+  ni_runtime(uint, ParallelGCThreads, 0,                                    \
           "Number of parallel threads parallel gc will use")                \
           range(0, INT_MAX)                                                 \
                                                                             \
-  product(bool, UseDynamicNumberOfGCThreads, true,                          \
+  ni_runtime(bool, UseDynamicNumberOfGCThreads, true,                       \
           "Dynamically choose the number of threads up to a maximum of "    \
           "ParallelGCThreads parallel collectors will use for garbage "     \
           "collection work")                                                \
@@ -136,12 +192,12 @@
              "Inject thread creation failures for "                         \
              "UseDynamicNumberOfGCThreads")                                 \
                                                                             \
-  product(size_t, HeapSizePerGCThread, ScaleForWordSize(32*M),              \
+  ni_runtime(size_t, HeapSizePerGCThread, ScaleForWordSize(32*M),           \
           "Size of heap (bytes) per GC thread used in calculating the "     \
           "number of GC threads")                                           \
           constraint(VMPageSizeConstraintFunc, AtParse)                     \
                                                                             \
-  product(uint, ConcGCThreads, 0,                                           \
+  ni_runtime(uint, ConcGCThreads, 0,                                        \
           "Number of threads concurrent gc will use")                       \
                                                                             \
   product(bool, AlwaysTenure, false,                                        \
@@ -151,57 +207,57 @@
           "Never tenure objects in eden, may tenure on overflow "           \
           "(ParallelGC only)")                                              \
                                                                             \
-  product(bool, ExplicitGCInvokesConcurrent, false,                         \
+  ni_runtime(bool, ExplicitGCInvokesConcurrent, false,                      \
           "A System.gc() request invokes a concurrent collection; "         \
           "(effective only when using concurrent collectors)")              \
                                                                             \
-  product(uint, ParallelGCBufferWastePct, 10,                               \
+  ni_runtime(uint, ParallelGCBufferWastePct, 10,                            \
           "Wasted fraction of parallel allocation buffer")                  \
           range(0, 100)                                                     \
                                                                             \
-  product(uint, TargetPLABWastePct, 10,                                     \
+  ni_runtime(uint, TargetPLABWastePct, 10,                                  \
           "Target wasted space in last buffer as percent of overall "       \
           "allocation")                                                     \
           range(1, 100)                                                     \
                                                                             \
-  product(uint, PLABWeight, 75,                                             \
+  ni_runtime(uint, PLABWeight, 75,                                          \
           "Percentage (0-100) used to weight the current sample when "      \
           "computing exponentially decaying average for ResizePLAB")        \
           range(0, 100)                                                     \
                                                                             \
-  product(bool, ResizePLAB, true,                                           \
+  ni_runtime(bool, ResizePLAB, true,                                        \
           "Dynamically resize (survivor space) promotion LAB's")            \
                                                                             \
-  product(int, ParGCArrayScanChunk, 50,                                     \
+  ni_runtime(int, ParGCArrayScanChunk, 50,                                  \
           "Scan a subset of object array and push remainder, if array is "  \
           "bigger than this")                                               \
           range(1, INT_MAX/3)                                               \
                                                                             \
                                                                             \
-  product(bool, AlwaysPreTouch, false,                                      \
+  ni_runtime(bool, AlwaysPreTouch, false,                                   \
           "Force all freshly committed pages to be pre-touched")            \
                                                                             \
   product(bool, AlwaysPreTouchStacks, false, DIAGNOSTIC,                    \
           "Force java thread stacks to be fully pre-touched")               \
                                                                             \
-  product_pd(size_t, PreTouchParallelChunkSize,                             \
+  ni_runtime_pd(size_t, PreTouchParallelChunkSize,                          \
           "Per-thread chunk size for parallel memory pre-touch.")           \
           range(4*K, SIZE_MAX / 2)                                          \
                                                                             \
   /* where does the range max value of (max_jint - 1) come from? */         \
-  product(size_t, MarkStackSizeMax, NOT_LP64(4*M) LP64_ONLY(512*M),         \
+  ni_runtime(size_t, MarkStackSizeMax, NOT_LP64(4*M) LP64_ONLY(512*M),      \
           "Maximum size of marking stack in bytes.")                        \
           range(1, (INT_MAX - 1))                                           \
                                                                             \
-  product(size_t, MarkStackSize, NOT_LP64(64*K) LP64_ONLY(4*M),             \
+  ni_runtime(size_t, MarkStackSize, NOT_LP64(64*K) LP64_ONLY(4*M),          \
           "Size of marking stack in bytes.")                                \
           constraint(MarkStackSizeConstraintFunc,AfterErgo)                 \
           range(1, (INT_MAX - 1))                                           \
                                                                             \
-  product(bool, ParallelRefProcEnabled, false,                              \
+  ni_runtime(bool, ParallelRefProcEnabled, false,                           \
           "Enable parallel reference processing whenever possible")         \
                                                                             \
-  product(bool, ParallelRefProcBalancingEnabled, true,                      \
+  ni_runtime(bool, ParallelRefProcBalancingEnabled, true,                   \
           "Enable balancing of reference processing queues")                \
                                                                             \
   product(size_t, ReferencesPerThread, 1000, EXPERIMENTAL,                  \
@@ -210,7 +266,7 @@
                "ParallelRefProcEnabled is true. Specify 0 to disable and "  \
                "use all threads.")                                          \
                                                                             \
-  product(uint, InitiatingHeapOccupancyPercent, 45,                         \
+  ni_runtime(uint, InitiatingHeapOccupancyPercent, 45,                      \
           "The percent occupancy (IHOP) of the current old generation "     \
           "capacity above which a concurrent mark cycle will be initiated " \
           "Its value may change over time if adaptive IHOP is enabled, "    \
@@ -267,32 +323,32 @@
   product(bool, AlwaysActAsServerClassMachine, false,                       \
           "Always act like a server-class machine")                         \
                                                                             \
-  product_pd(uint64_t, MaxRAM,                                              \
+  ni_runtime_pd(uint64_t, MaxRAM,                                           \
           "Real memory size (in bytes) used to set maximum heap size")      \
           range(0, 0XFFFFFFFFFFFFFFFF)                                      \
                                                                             \
   product(bool, AggressiveHeap, false,                                      \
           "Optimize heap options for long-running memory intensive apps")   \
                                                                             \
-  product(size_t, ErgoHeapSizeLimit, 0,                                     \
+  ni_runtime(size_t, ErgoHeapSizeLimit, 0,                                  \
           "Maximum ergonomically set heap size (in bytes); zero means use " \
           "MaxRAM * MaxRAMPercentage / 100")                                \
           range(0, max_uintx)                                               \
                                                                             \
-  product(double, MaxRAMPercentage, 25.0,                                   \
+  ni_runtime(double, MaxRAMPercentage, 25.0,                                \
           "Maximum percentage of real memory used for maximum heap size")   \
           range(0.0, 100.0)                                                 \
                                                                             \
-  product(double, MinRAMPercentage, 50.0,                                   \
+  ni_runtime(double, MinRAMPercentage, 50.0,                                \
           "Minimum percentage of real memory used for maximum heap"         \
           "size on systems with small physical memory size")                \
           range(0.0, 100.0)                                                 \
                                                                             \
-  product(double, InitialRAMPercentage, 1.5625,                             \
+  ni_runtime(double, InitialRAMPercentage, 1.5625,                          \
           "Percentage of real memory used for initial heap size")           \
           range(0.0, 100.0)                                                 \
                                                                             \
-  product(int, ActiveProcessorCount, -1,                                    \
+  ni_runtime(int, ActiveProcessorCount, -1,                                 \
           "Specify the CPU count the VM should use and report as active")   \
                                                                             \
   develop(uintx, MaxVirtMemFraction, 2,                                     \
@@ -381,17 +437,17 @@
           "Decay factor to TenuredGenerationSizeIncrement")                 \
           range(1, max_uintx)                                               \
                                                                             \
-  product(uintx, MaxGCPauseMillis, max_uintx - 1,                           \
+  ni_runtime(uintx, MaxGCPauseMillis, max_uintx - 1,                        \
           "Adaptive size policy maximum GC pause time goal in millisecond, "\
           "or (G1 Only) the maximum GC time per MMU time slice")            \
           range(1, max_uintx - 1)                                           \
           constraint(MaxGCPauseMillisConstraintFunc,AfterErgo)              \
                                                                             \
-  product(uintx, GCPauseIntervalMillis, 0,                                  \
+  ni_runtime(uintx, GCPauseIntervalMillis, 0,                               \
           "Time slice for MMU specification")                               \
           constraint(GCPauseIntervalMillisConstraintFunc,AfterErgo)         \
                                                                             \
-  product(uint, GCTimeRatio, 99,                                            \
+  ni_runtime(uint, GCTimeRatio, 99,                                         \
           "Adaptive size policy application time to GC time ratio")         \
           range(0, UINT_MAX)                                                \
                                                                             \
@@ -432,11 +488,11 @@
           "Number of consecutive collections before gc time limit fires")   \
           range(1, max_uintx)                                               \
                                                                             \
-  product(intx, PrefetchCopyIntervalInBytes, -1,                            \
+  ni_runtime(intx, PrefetchCopyIntervalInBytes, -1,                         \
           "How far ahead to prefetch destination area (<= 0 means off)")    \
           range(-1, max_jint)                                               \
                                                                             \
-  product(intx, PrefetchScanIntervalInBytes, -1,                            \
+  ni_runtime(intx, PrefetchScanIntervalInBytes, -1,                         \
           "How far ahead to prefetch scan area (<= 0 means off)")           \
           range(-1, max_jint)                                               \
                                                                             \
@@ -447,13 +503,13 @@
   product(bool, VerifyBeforeExit, trueInDebug, DIAGNOSTIC,                  \
           "Verify system before exiting")                                   \
                                                                             \
-  product(bool, VerifyBeforeGC, false, DIAGNOSTIC,                          \
+  ni_runtime(bool, VerifyBeforeGC, false, DIAGNOSTIC,                       \
           "Verify memory system before GC")                                 \
                                                                             \
-  product(bool, VerifyAfterGC, false, DIAGNOSTIC,                           \
+  ni_runtime(bool, VerifyAfterGC, false, DIAGNOSTIC,                        \
           "Verify memory system after GC")                                  \
                                                                             \
-  product(bool, VerifyDuringGC, false, DIAGNOSTIC,                          \
+  ni_runtime(bool, VerifyDuringGC, false, DIAGNOSTIC,                       \
           "Verify memory system during GC (between phases)")                \
                                                                             \
   product(int, VerifyArchivedFields, 0, DIAGNOSTIC,                         \
@@ -482,10 +538,10 @@
   product(bool, UseCondCardMark, false,                                     \
           "Check for already marked card before updating card table")       \
                                                                             \
-  product(bool, DisableExplicitGC, false,                                   \
+  ni_runtime(bool, DisableExplicitGC, false,                                \
           "Ignore calls to System.gc()")                                    \
                                                                             \
-  product(bool, PrintGC, false,                                             \
+  ni_runtime(bool, PrintGC, false,                                          \
           "Print message at garbage collection. "                           \
           "Deprecated, use -Xlog:gc instead.")                              \
                                                                             \
@@ -512,15 +568,15 @@
           "to move")                                                        \
                                                                             \
   /* gc parameters */                                                       \
-  product(size_t, MinHeapSize, 0,                                           \
+  ni_runtime(size_t, MinHeapSize, 0,                                        \
           "Minimum heap size (in bytes); zero means use ergonomics")        \
           constraint(MinHeapSizeConstraintFunc,AfterErgo)                   \
                                                                             \
-  product(size_t, InitialHeapSize, 0,                                       \
+  ni_runtime(size_t, InitialHeapSize, 0,                                    \
           "Initial heap size (in bytes); zero means use ergonomics")        \
           constraint(InitialHeapSizeConstraintFunc,AfterErgo)               \
                                                                             \
-  product(size_t, MaxHeapSize, ScaleForWordSize(96*M),                      \
+  ni_runtime(size_t, MaxHeapSize, ScaleForWordSize(96*M),                   \
           "Maximum heap size (in bytes)")                                   \
           constraint(MaxHeapSizeConstraintFunc,AfterErgo)                   \
                                                                             \
@@ -528,11 +584,11 @@
           "Soft limit for maximum heap size (in bytes)")                    \
           constraint(SoftMaxHeapSizeConstraintFunc,AfterMemoryInit)         \
                                                                             \
-  product(size_t, NewSize, ScaleForWordSize(1*M),                           \
+  ni_runtime(size_t, NewSize, ScaleForWordSize(1*M),                        \
           "Initial new generation size (in bytes)")                         \
           constraint(NewSizeConstraintFunc,AfterErgo)                       \
                                                                             \
-  product(size_t, MaxNewSize, max_uintx,                                    \
+  ni_runtime(size_t, MaxNewSize, max_uintx,                                 \
           "Maximum new generation size (in bytes), max_uintx means set "    \
           "ergonomically")                                                  \
           range(0, max_uintx)                                               \
@@ -546,12 +602,12 @@
           "generation; zero means no maximum")                              \
           range(0, max_uintx)                                               \
                                                                             \
-  product(uintx, SurvivorRatio, 8,                                          \
+  ni_runtime(uintx, SurvivorRatio, 8,                                       \
           "Ratio of eden/survivor space size")                              \
           range(1, max_uintx-2)                                             \
           constraint(SurvivorRatioConstraintFunc,AfterMemoryInit)           \
                                                                             \
-  product(uintx, NewRatio, 2,                                               \
+  ni_runtime(uintx, NewRatio, 2,                                            \
           "Ratio of old/new generation sizes")                              \
           range(0, max_uintx-1)                                             \
                                                                             \
@@ -560,16 +616,16 @@
           "non-daemon thread (in bytes)")                                   \
           range(0, max_uintx)                                               \
                                                                             \
-  product(uintx, QueuedAllocationWarningCount, 0,                           \
+  ni_runtime(uintx, QueuedAllocationWarningCount, 0,                        \
           "Number of times an allocation that queues behind a GC "          \
           "will retry before printing a warning")                           \
           range(0, max_uintx)                                               \
                                                                             \
-  product(uintx, VerifyGCStartAt,   0, DIAGNOSTIC,                          \
+  ni_runtime(uintx, VerifyGCStartAt,   0, DIAGNOSTIC,                       \
           "GC invoke count where +VerifyBefore/AfterGC kicks in")           \
           range(0, max_uintx)                                               \
                                                                             \
-  product(uint, MaxTenuringThreshold,    15,                                \
+  ni_runtime(uint, MaxTenuringThreshold,    15,                             \
           "Maximum value for tenuring threshold")                           \
           range(0, markWord::max_age + 1)                                   \
           constraint(MaxTenuringThresholdConstraintFunc,AfterErgo)          \
@@ -579,7 +635,7 @@
           range(0, markWord::max_age + 1)                                   \
           constraint(InitialTenuringThresholdConstraintFunc,AfterErgo)      \
                                                                             \
-  product(uint, TargetSurvivorRatio,    50,                                 \
+  ni_runtime(uint, TargetSurvivorRatio,    50,                              \
           "Desired percentage of survivor space used after scavenge")       \
           range(0, 100)                                                     \
                                                                             \
@@ -604,17 +660,23 @@
   develop(uintx, GCExpandToAllocateDelayMillis, 0,                          \
           "Delay between expansion and allocation (in milliseconds)")       \
                                                                             \
-  product(uint, GCDrainStackTargetSize, 64,                                 \
+  ni_runtime(uint, GCDrainStackTargetSize, 64,                              \
           "Number of entries we will try to leave on the stack "            \
           "during parallel gc")                                             \
           range(0, 8 * 1024)                                                \
                                                                             \
-  product(uint, GCCardSizeInBytes, 512,                                     \
+  ni_hosted(uint, GCCardSizeInBytes, 512,                                   \
           "Card table entry size (in bytes) for card based collectors")     \
           range(128, NOT_LP64(512) LP64_ONLY(1024))                         \
           constraint(GCCardSizeInBytesConstraintFunc,AtParse)
   // end of GC_FLAGS
 
+
+namespace svm_gc {
+
 DECLARE_FLAGS(GC_FLAGS)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GC_GLOBALS_HPP

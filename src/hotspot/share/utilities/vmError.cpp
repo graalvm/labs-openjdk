@@ -81,6 +81,10 @@
 #include <signal.h>
 #endif // PRODUCT
 
+#ifndef SVM
+
+namespace svm_gc {
+
 bool              VMError::coredump_status;
 char              VMError::coredump_message[O_BUFLEN];
 int               VMError::_current_step;
@@ -90,7 +94,15 @@ volatile bool     VMError::_reporting_did_timeout = false;
 volatile jlong    VMError::_step_start_time = -1;
 volatile bool     VMError::_step_did_timeout = false;
 volatile bool     VMError::_step_did_succeed = false;
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+namespace svm_gc {
+
 volatile intptr_t VMError::_first_error_tid = -1;
+#ifndef SVM
 int               VMError::_id;
 const char*       VMError::_message;
 char              VMError::_detail_msg[1024];
@@ -536,12 +548,14 @@ static void report_vm_version(outputStream* st, char* buf, int buflen) {
                  VM_Version::vm_platform_string()
                );
 }
+#endif // !SVM
 
 // Returns true if at least one thread reported a fatal error and fatal error handling is in process.
 bool VMError::is_error_reported() {
   return _first_error_tid != -1;
 }
 
+#ifndef SVM
 // Returns true if the current thread reported a fatal error.
 bool VMError::is_error_reported_in_current_thread() {
   return _first_error_tid == os::current_thread_id();
@@ -1609,6 +1623,7 @@ void VMError::report_and_die(Thread* thread, unsigned int sig, address pc, const
 
   report_and_die(thread, sig, pc, siginfo, context, "%s", "");
 }
+#endif // !SVM
 
 void VMError::report_and_die(Thread* thread, const void* context, const char* filename, int lineno, const char* message,
                              const char* detail_fmt, va_list detail_args)
@@ -1625,6 +1640,36 @@ void VMError::report_and_die(int id, const char* message, const char* detail_fmt
                              Thread* thread, address pc, const void* siginfo, const void* context, const char* filename,
                              int lineno, size_t size)
 {
+#ifdef SVM
+  // NOTE (chaeubl): we want to keep the error handling as simple as possible. For now, it is totally
+  // sufficient to print an error message and to die afterwards. Some diagnostics printing would be nice
+  // but we would need to call into Native Image for that.
+  static char detail_msg[1024];
+  static char buffer[O_BUFLEN];
+  static const int fd_out = 1; // stdout
+
+  intptr_t mytid = os::current_thread_id();
+  if (_first_error_tid == -1 &&
+      Atomic::cmpxchg(&_first_error_tid, (intptr_t)-1, mytid) == -1) {
+    fdStream out(fd_out);
+    out.set_scratch_buffer(buffer, sizeof(buffer));
+
+    jio_vsnprintf(detail_msg, sizeof(detail_msg), detail_fmt, detail_args);
+
+    if (strlen(detail_msg) > 0) {
+      out.print_cr("#  %s: %s", message ? message : "Error", detail_msg);
+    } else if (message) {
+      out.print_cr("#  Error: %s", message);
+    } else {
+      out.print_cr("# Fatal error within GC code.");
+    }
+
+    os::die();
+  } else {
+    // Wait until the other thread finished the error reporting.
+    os::infinite_sleep();
+  }
+#else
   // A single scratch buffer to be used from here on.
   // Do not rely on it being preserved across function calls.
   static char buffer[O_BUFLEN];
@@ -1952,8 +1997,10 @@ void VMError::report_and_die(int id, const char* message, const char* detail_fmt
     // if os::abort() doesn't abort, try os::die();
   }
   os::die();
+#endif // !SVM
 }
 
+#ifndef SVM
 /*
  * OnOutOfMemoryError scripts/commands executed while VM is a safepoint - this
  * ensures utilities such as jmap can observe the process is a consistent state.
@@ -2174,3 +2221,7 @@ VMErrorCallbackMark::~VMErrorCallbackMark() {
   assert(_thread->_vm_error_callbacks != nullptr, "Popped too far");
   _thread->_vm_error_callbacks = _thread->_vm_error_callbacks->_next;
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

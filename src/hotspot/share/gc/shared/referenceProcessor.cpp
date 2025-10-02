@@ -42,6 +42,9 @@
 #include "runtime/nonJavaThread.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 ReferencePolicy* ReferenceProcessor::_always_clear_soft_ref_policy = nullptr;
 ReferencePolicy* ReferenceProcessor::_default_soft_ref_policy      = nullptr;
 jlong            ReferenceProcessor::_soft_ref_timestamp_clock = 0;
@@ -61,11 +64,15 @@ void ReferenceProcessor::init_statics() {
   java_lang_ref_SoftReference::set_clock(_soft_ref_timestamp_clock);
 
   _always_clear_soft_ref_policy = new AlwaysClearPolicy();
+#ifndef SVM
   if (CompilerConfig::is_c2_or_jvmci_compiler_enabled()) {
+#endif // !SVM
     _default_soft_ref_policy = new LRUMaxHeapPolicy();
+#ifndef SVM
   } else {
     _default_soft_ref_policy = new LRUCurrentHeapPolicy();
   }
+#endif // !SVM
 }
 
 void ReferenceProcessor::enable_discovery() {
@@ -1148,3 +1155,6 @@ RefProcMTDegreeAdjuster::~RefProcMTDegreeAdjuster() {
   // Revert to previous status.
   _rp->set_active_mt_degree(_saved_num_queues);
 }
+
+} // namespace svm_gc
+

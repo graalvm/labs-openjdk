@@ -28,6 +28,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 OopStorage* OopStorageSet::_storages[all_count] = {};
 
 OopStorage* OopStorageSet::create_strong(const char* name, MemTag mem_tag) {
@@ -81,6 +84,7 @@ template OopStorage* OopStorageSet::get_storage(StrongId);
 template OopStorage* OopStorageSet::get_storage(WeakId);
 template OopStorage* OopStorageSet::get_storage(Id);
 
+#ifndef SVM
 bool OopStorageSet::print_containing(const void* addr, outputStream* st) {
   if (addr != nullptr) {
     const void* aligned_addr = align_down(addr, alignof(oop));
@@ -99,6 +103,7 @@ bool OopStorageSet::print_containing(const void* addr, outputStream* st) {
   }
   return false;
 }
+#endif // !SVM
 
 #ifdef ASSERT
 
@@ -108,3 +113,6 @@ void OopStorageSet::verify_initialized(uint index) {
 }
 
 #endif // ASSERT
+
+} // namespace svm_gc
+
