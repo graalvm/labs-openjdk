@@ -103,6 +103,11 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     }
 
     @Override
+    public boolean isHidden() {
+        return false;
+    }
+
+    @Override
     public List<JavaType> getPermittedSubclasses() {
         return null;
     }

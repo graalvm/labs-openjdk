@@ -190,6 +190,11 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     @Override
+    public boolean isHidden() {
+        return (getMiscFlags() & config().jvmAccIsHiddenClass) != 0;
+    }
+
+    @Override
     public List<JavaType> getPermittedSubclasses() {
         if (isArray() || isPrimitive()) {
             return null;

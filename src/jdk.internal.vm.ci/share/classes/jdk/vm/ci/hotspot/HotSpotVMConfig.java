@@ -116,6 +116,7 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
     final int arrayJUShortDataOffset = getFieldOffset("Array<jushort>::_data", Integer.class);
     final int arrayJUShortLengthOffset = getFieldOffset("Array<jushort>::_length", Integer.class, "int");
 
+    final int jvmAccIsHiddenClass = getConstant("KlassFlags::_misc_is_hidden_class", Integer.class);
     final int jvmAccHasFinalizer = getConstant("KlassFlags::_misc_has_finalizer", Integer.class);
     final int jvmFieldFlagInternalShift = getConstant("FieldInfo::FieldFlags::_ff_injected", Integer.class);
     final int jvmFieldFlagStableShift = getConstant("FieldInfo::FieldFlags::_ff_stable", Integer.class);
