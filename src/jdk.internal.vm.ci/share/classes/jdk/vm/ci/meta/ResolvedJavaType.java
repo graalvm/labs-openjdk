@@ -415,6 +415,26 @@ public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated
     ResolvedJavaType getEnclosingType();
 
     /**
+     * Returns a {@link ResolvedJavaMethod} representing the immediately enclosing
+     * method or constructor of the underlying type, if this type represents a local
+     * or anonymous class within a method. Returns {@code null} otherwise.
+     *
+     * In particular, this method returns {@code null} if the underlying
+     * type is a local or anonymous class immediately enclosed by a class or
+     * interface declaration, instance initializer or static initializer.
+     *
+     * Note that in contrast to {@link Class#getEnclosingMethod()}, this returns
+     * both, methods and constructors.
+     *
+     * @return the immediately enclosing method or constructor of the underlying
+     *     class, if this type is a local or anonymous class, otherwise {@code null}.
+     *
+     * @see Class#getEnclosingMethod()
+     * @see Class#getEnclosingConstructor()
+     */
+    ResolvedJavaMethod getEnclosingMethod();
+
+    /**
      * Returns an array reflecting all the constructors declared by this type. This method is
      * similar to {@link Class#getDeclaredConstructors()} in terms of returned constructors. Calling
      * this method forces this type to be {@link #link linked}.

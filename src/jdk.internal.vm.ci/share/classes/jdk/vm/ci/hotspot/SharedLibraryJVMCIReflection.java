@@ -72,6 +72,11 @@ class SharedLibraryJVMCIReflection extends HotSpotJVMCIReflection {
     }
 
     @Override
+    HotSpotResolvedJavaMethod getEnclosingMethod(HotSpotResolvedObjectTypeImpl holder) {
+        throw new HotSpotJVMCIUnsupportedOperationError("requires a call Class.getEnclosingMethod()");
+    }
+
+    @Override
     boolean equals(HotSpotObjectConstantImpl x, HotSpotObjectConstantImpl y) {
         if (x == y) {
             return true;
