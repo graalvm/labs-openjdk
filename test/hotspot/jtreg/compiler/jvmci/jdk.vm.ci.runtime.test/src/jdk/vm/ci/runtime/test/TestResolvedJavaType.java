@@ -756,7 +756,7 @@ public class TestResolvedJavaType extends TypeUniverse {
     private void assertGetPermittedSubclasses(Class<?> clazz) {
         ResolvedJavaType type = metaAccess.lookupJavaType(clazz);
         assertEquals("Sealed status mismatch for class '" + clazz.getName(), clazz.isSealed(), type.isSealed());
-        List<JavaType> actual = type.getPermittedSubclasses();
+        List<? extends JavaType> actual = type.getPermittedSubclasses();
         Class<?>[] expected = clazz.getPermittedSubclasses();
         if (expected == null) {
             assertNull(actual);
@@ -1358,7 +1358,7 @@ public class TestResolvedJavaType extends TypeUniverse {
         "getElementalType",
         "getEnclosingType",
         "lookupType",
-        "isSealed", // tested with getPermittedSubsclasses
+        "isSealed", // tested with getPermittedSubclasses
         "resolveField",
         "$jacocoInit"
     };
