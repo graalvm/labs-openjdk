@@ -926,7 +926,6 @@ DO_THROW(InvalidInstalledCodeException)
 DO_THROW(UnsatisfiedLinkError)
 DO_THROW(UnsupportedOperationException)
 DO_THROW(OutOfMemoryError)
-DO_THROW(NoClassDefFoundError)
 
 #undef DO_THROW
 
@@ -1370,7 +1369,7 @@ JVMCIObject JVMCIEnv::get_jvmci_type(const JVMCIKlassHandle& klass, JVMCI_TRAPS)
   JavaThread* THREAD = JVMCI::compilation_tick(JavaThread::current()); // For exception macros.
   jboolean exception = false;
   if (is_hotspot()) {
-    CompilerThreadCanCallJava ccj(THREAD, true);
+    CompilerThreadCanCallJava ccj(THREAD, true, JVMCIENV);
     JavaValue result(T_OBJECT);
     JavaCallArguments args;
     args.push_long(pointer);

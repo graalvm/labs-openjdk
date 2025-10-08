@@ -262,9 +262,6 @@
   start_class(OutOfMemoryError, java_lang_OutOfMemoryError)                                                   \
     jvmci_constructor(OutOfMemoryError, "(Ljava/lang/String;)V")                                              \
   end_class                                                                                                   \
-  start_class(NoClassDefFoundError, java_lang_NoClassDefFoundError)                                           \
-    jvmci_constructor(NoClassDefFoundError, "(Ljava/lang/String;)V")                                          \
-  end_class                                                                                                   \
   start_class(InvalidInstalledCodeException, jdk_vm_ci_code_InvalidInstalledCodeException)                    \
     jvmci_constructor(InvalidInstalledCodeException, "(Ljava/lang/String;)V")                                 \
   end_class                                                                                                   \

@@ -186,7 +186,7 @@ Handle JavaArgumentUnboxer::next_arg(BasicType expectedType) {
   ResourceMark rm;                                         \
   bool __is_hotspot = env == thread->jni_environment();    \
   bool __block_can_call_java = __is_hotspot || !thread->is_Compiler_thread() || CompilerThread::cast(thread)->can_call_java(); \
-  CompilerThreadCanCallJava ccj(thread, __block_can_call_java); \
+  CompilerThreadCanCallJava ccj(thread, __block_can_call_java, nullptr); \
   JVMCIENV_FROM_JNI(JVMCI::compilation_tick(thread), env); \
 
 // Entry to native method implementation that transitions
@@ -594,7 +594,7 @@ C2V_VMENTRY_0(jboolean, shouldInlineMethod,(JNIEnv* env, jobject, ARGUMENT_PAIR(
 C2V_END
 
 C2V_VMENTRY_NULL(jobject, lookupType, (JNIEnv* env, jobject, jstring jname, ARGUMENT_PAIR(accessing_klass), jint accessing_klass_loader, jboolean resolve))
-  CompilerThreadCanCallJava canCallJava(thread, resolve); // Resolution requires Java calls
+  CompilerThreadCanCallJava canCallJava(thread, resolve, JVMCIENV); // Resolution requires Java calls
   JVMCIObject name = JVMCIENV->wrap(jname);
   const char* str = JVMCIENV->as_utf8_string(name);
   TempNewSymbol class_name = SymbolTable::new_symbol(str);
@@ -1390,7 +1390,7 @@ C2V_VMENTRY(void, reprofile, (JNIEnv* env, jobject, ARGUMENT_PAIR(method)))
   if (method_data == nullptr) {
     method_data = get_profiling_method_data(method, CHECK);
   } else {
-    CompilerThreadCanCallJava canCallJava(THREAD, true);
+    CompilerThreadCanCallJava canCallJava(THREAD, true, JVMCIENV);
     method_data->reinitialize();
   }
 C2V_END
@@ -2097,7 +2097,7 @@ C2V_VMENTRY(void, ensureInitialized, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass)
 C2V_END
 
 C2V_VMENTRY(void, ensureLinked, (JNIEnv* env, jobject, ARGUMENT_PAIR(klass)))
-  CompilerThreadCanCallJava canCallJava(thread, true); // Linking requires Java calls
+  CompilerThreadCanCallJava canCallJava(thread, true, JVMCIENV); // Linking requires Java calls
   Klass* klass = UNPACK_PAIR(Klass, klass);
   if (klass == nullptr) {
     JVMCI_THROW(NullPointerException);
@@ -2908,7 +2908,7 @@ C2V_VMENTRY_0(jlong, translate, (JNIEnv* env, jobject, jobject obj_handle, jbool
     return 0L;
   }
   PEER_JVMCIENV_FROM_THREAD(THREAD, !JVMCIENV->is_hotspot());
-  CompilerThreadCanCallJava canCallJava(thread, PEER_JVMCIENV->is_hotspot());
+  CompilerThreadCanCallJava canCallJava(thread, PEER_JVMCIENV->is_hotspot(), nullptr);
   PEER_JVMCIENV->check_init(JVMCI_CHECK_0);
 
   JVMCIEnv* thisEnv = JVMCIENV;
@@ -3221,7 +3221,7 @@ C2V_VMENTRY(void, callSystemExit, (JNIEnv* env, jobject, jint status))
       vm_exit_during_initialization();
     }
   }
-  CompilerThreadCanCallJava canCallJava(thread, true);
+  CompilerThreadCanCallJava canCallJava(thread, true, JVMCIENV);
   JavaValue result(T_VOID);
   JavaCallArguments jargs(1);
   jargs.push_int(status);

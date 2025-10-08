@@ -116,7 +116,7 @@ public class VMSupport {
     public static void decodeAndThrowThrowable(int format, long buffer, boolean inJVMHeap, boolean debug) throws Throwable {
         if (format != 0) {
             if (format == 4) {
-                throw new TranslatedException(new OutOfMemoryError("in VM code and current thread cannot call Java"));
+                throw new OutOfMemoryError("in VM code and current thread cannot call Java");
             }
             String context = String.format("while encoding an exception to translate it %s the JVM heap",
                     inJVMHeap ? "to" : "from");

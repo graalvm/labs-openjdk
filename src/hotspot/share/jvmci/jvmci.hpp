@@ -60,6 +60,7 @@ typedef struct _jmetadata *jmetadata;
 class CompilerThreadCanCallJava : StackObj {
  private:
   CompilerThread* _current; // Only non-null if state of thread changed
+  JVMCIEnv* _env;           // For translating an exception from HotSpot to JNI
 public:
   // If the current thread is a CompilerThread associated with
   // a JVMCI compiler where CompilerThread::_can_call_java != new_state,
@@ -67,7 +68,7 @@ public:
   // Returns nullptr if no change was made, otherwise the current CompilerThread
   static CompilerThread* update(JavaThread* current, bool new_state);
 
-  CompilerThreadCanCallJava(JavaThread* current, bool new_state);
+  CompilerThreadCanCallJava(JavaThread* current, bool new_state, JVMCIEnv* env);
 
   // Resets CompilerThread::_can_call_java of the current thread if the
   // constructor changed it.

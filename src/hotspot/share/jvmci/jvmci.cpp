@@ -69,12 +69,17 @@ CompilerThread* CompilerThreadCanCallJava::update(JavaThread* current, bool new_
   return nullptr;
 }
 
-CompilerThreadCanCallJava::CompilerThreadCanCallJava(JavaThread* current, bool new_state) {
+CompilerThreadCanCallJava::CompilerThreadCanCallJava(JavaThread* current, bool new_state, JVMCIEnv* env) {
   _current = CompilerThreadCanCallJava::update(current, new_state);
+  _env = env;
 }
 
 CompilerThreadCanCallJava::~CompilerThreadCanCallJava() {
   if (_current != nullptr) {
+    if (_current->_can_call_java && _env != nullptr && !_env->is_hotspot() && _current->has_pending_exception()) {
+      // Convert pending HotSpot exception while still inside scope that can call Java
+      JVMCIEnv::transfer_pending_exception_to_jni(_current, nullptr, _env);
+    }
     _current->_can_call_java = !_current->_can_call_java;
   }
 }
@@ -209,7 +214,7 @@ void JVMCI::ensure_box_caches_initialized(TRAPS) {
 
   // Class resolution and initialization below
   // requires calling into Java
-  CompilerThreadCanCallJava ccj(THREAD, true);
+  CompilerThreadCanCallJava ccj(THREAD, true, nullptr);
 
   for (unsigned i = 0; i < sizeof(box_classes) / sizeof(Symbol*); i++) {
     Klass* k = SystemDictionary::resolve_or_fail(box_classes[i], true, CHECK);
