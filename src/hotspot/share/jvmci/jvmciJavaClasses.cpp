@@ -408,43 +408,6 @@ extern "C" {
   jlong    JNICALL JVM_ReadSystemPropertiesInfo(JNIEnv *env, jclass c, jintArray offsets_handle);
 }
 
-// Dumps symbols for public <init>() and <init>(String) methods of
-// non-abstract Throwable subtypes known by the VM. This is to
-// support the use of reflection in jdk.vm.ci.hotspot.TranslatedException.create().
-class ThrowableInitDumper : public SymbolClosure {
- private:
-  fileStream* _st;
- public:
-  ThrowableInitDumper(fileStream* st)     { _st = st; }
-  void do_symbol(Symbol** p) {
-    JavaThread* THREAD = JavaThread::current(); // For exception macros.
-    Symbol* name = *p;
-    if (name == nullptr) {
-      return;
-    }
-    Klass* k = SystemDictionary::resolve_or_null(name, CHECK_EXIT);
-    if (k != nullptr && k->is_instance_klass()) {
-      InstanceKlass* iklass = InstanceKlass::cast(k);
-      if (iklass->is_subclass_of(vmClasses::Throwable_klass()) && iklass->is_public() && !iklass->is_abstract()) {
-        const char* class_name = nullptr;
-        Array<Method*>* methods = iklass->methods();
-        for (int i = 0; i < methods->length(); i++) {
-          Method* m = methods->at(i);
-          if (m->name() == vmSymbols::object_initializer_name() &&
-              m->is_public() &&
-              (m->signature() == vmSymbols::void_method_signature() || m->signature() == vmSymbols::string_void_signature())) {
-            if (class_name == nullptr) {
-              class_name = name->as_C_string();
-              _st->print_cr("class %s", class_name);
-            }
-            _st->print_cr("method %s %s %s", class_name, m->name()->as_C_string(), m->signature()->as_C_string());
-          }
-        }
-      }
-    }
-  }
-};
-
 #define IN_CLASS(fullClassName) current_class_name = vmSymbols::fullClassName()->as_C_string()
 /**
  * Initializes the JNI method and field ids used in JNIJVMCI.
@@ -530,8 +493,6 @@ void JNIJVMCI::initialize_ids(JNIEnv* env) {
     fileStream* st = JVMCIGlobals::get_jni_config_file();
 
     DUMP_ALL_NATIVE_METHODS(vmSymbols::jdk_vm_ci_hotspot_CompilerToVM());
-    ThrowableInitDumper dumper(st);
-    vmSymbols::symbols_do(&dumper);
 
     st->flush();
     tty->print_cr("Dumped JVMCI shared library JNI configuration to %s", JVMCILibDumpJNIConfig);

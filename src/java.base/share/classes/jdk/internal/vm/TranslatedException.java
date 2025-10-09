@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,13 +41,19 @@ import java.util.zip.GZIPOutputStream;
 
 /**
  * Support for translating exceptions between the HotSpot heap and libjvmci heap.
- *
- * Successfully translated exceptions are wrapped in a TranslatedException instance.
- * This allows callers to distiguish between a translated exception and an error
+ * <p>
+ * Apart from {@link OutOfMemoryError}s, successfully translated exceptions have
+ * {@link #TRANSLATED_MARKER} as the first element in their stack trace. This
+ * allows a caller to distinguish between a translated exception and an error
  * that arose during translation.
  */
 @SuppressWarnings("serial")
 public final class TranslatedException extends Exception {
+
+    /**
+     * Marker frame prepended to outermost stack of a translated exception.
+     */
+    public static final StackTraceElement TRANSLATED_MARKER = new StackTraceElement(TranslatedException.class.getName(), "translated", null, -2);
 
     /**
      * The value returned by {@link #encodeThrowable(Throwable)} when encoding
@@ -114,7 +119,7 @@ public final class TranslatedException extends Exception {
     private static void debugPrintStackTrace(Throwable throwable, boolean debug) {
         if (debug) {
             System.err.print("DEBUG: ");
-            throwable.printStackTrace();
+            throwable.printStackTrace(System.err);
         }
     }
 
@@ -130,26 +135,71 @@ public final class TranslatedException extends Exception {
         return throwable;
     }
 
+    /**
+     * Creates an exception if {@code className} is one of the supported
+     * core exceptions for translation.
+     *
+     * @param className class name of exception to create
+     * @param message the detailed message for the exception
+     * @return {@code null} if {@code className} is unsupported
+     */
+    private static Throwable newThrowable(String className, String message) {
+        return switch (className) {
+            // Exceptions
+            case "java.lang.ArithmeticException" -> new ArithmeticException(message);
+            case "java.lang.ArrayIndexOutOfBoundsException" -> new ArrayIndexOutOfBoundsException(message);
+            case "java.lang.ArrayStoreException" -> new ArrayStoreException(message);
+            case "java.lang.ClassCastException" -> new ClassCastException(message);
+            case "java.lang.ClassNotFoundException" -> new ClassNotFoundException(message);
+            case "java.lang.CloneNotSupportedException" -> new CloneNotSupportedException(message);
+            case "java.lang.IllegalAccessException" -> new IllegalAccessException(message);
+            case "java.lang.IllegalArgumentException" -> new IllegalArgumentException(message);
+            case "java.lang.IndexOutOfBoundsException" -> new IndexOutOfBoundsException(message);
+            case "java.lang.InstantiationException" -> new InstantiationException(message);
+            case "java.lang.NegativeArraySizeException" -> new NegativeArraySizeException(message);
+            case "java.lang.NoSuchFieldException" -> new NoSuchFieldException(message);
+            case "java.lang.NoSuchMethodException" -> new NoSuchMethodException(message);
+            case "java.lang.NullPointerException" -> new NullPointerException(message);
+            case "java.lang.RuntimeException" -> new RuntimeException(message);
+            case "java.lang.StringIndexOutOfBoundsException" -> new StringIndexOutOfBoundsException(message);
+            case "java.lang.UnsupportedOperationException" -> new UnsupportedOperationException(message);
+
+            // Errors
+            case "java.lang.AbstractMethodError" -> new AbstractMethodError(message);
+            case "java.lang.BootstrapMethodError" -> new BootstrapMethodError(message);
+            case "java.lang.ClassCircularityError" -> new ClassCircularityError(message);
+            case "java.lang.ClassFormatError" -> new ClassFormatError(message);
+            case "java.lang.IllegalAccessError" -> new IllegalAccessError(message);
+            case "java.lang.IncompatibleClassChangeError" -> new IncompatibleClassChangeError(message);
+            case "java.lang.InstantiationError" -> new InstantiationError(message);
+            case "java.lang.InternalError" -> new InternalError(message);
+            case "java.lang.LinkageError" -> new LinkageError(message);
+            case "java.lang.NoClassDefFoundError" -> new NoClassDefFoundError(message);
+            case "java.lang.NoSuchFieldError" -> new NoSuchFieldError(message);
+            case "java.lang.NoSuchMethodError" -> new NoSuchMethodError(message);
+            case "java.lang.OutOfMemoryError" -> new OutOfMemoryError(message);
+            case "java.lang.StackOverflowError" -> new StackOverflowError(message);
+            case "java.lang.UnsatisfiedLinkError" -> new UnsatisfiedLinkError(message);
+            default -> null;
+        };
+    }
+
     private static Throwable create(String className, String message, Throwable cause, boolean debug) {
-        // Try create with reflection first.
         try {
-            Class<?> cls = Class.forName(className);
-            if (cause != null) {
-                // Handle known exception types whose cause must
-                // be set in the constructor
-                if (cls == InvocationTargetException.class) {
-                    return new InvocationTargetException(cause, message);
-                }
-                if (cls == ExceptionInInitializerError.class) {
-                    return new ExceptionInInitializerError(cause);
-                }
+            if (className.equals(InvocationTargetException.class.getName())) {
+                return new InvocationTargetException(cause, message);
             }
-            if (message == null) {
-                Constructor<?> cons = cls.getConstructor();
-                return initCause((Throwable) cons.newInstance(), cause, debug);
+            if (className.equals(ExceptionInInitializerError.class.getName())) {
+                return new ExceptionInInitializerError(cause);
             }
-            Constructor<?> cons = cls.getDeclaredConstructor(String.class);
-            return initCause((Throwable) cons.newInstance(message), cause, debug);
+            if (className.equals(AssertionError.class.getName())) {
+                return initCause(new AssertionError(cause), cause,debug);
+            }
+            Throwable throwable = newThrowable(className, message);
+            if (throwable != null) {
+                return initCause(throwable, cause,debug);
+            }
+            return initCause(translationFailure("%s [%s]", message, className), cause, debug);
         } catch (Throwable translationFailure) {
             debugPrintStackTrace(translationFailure, debug);
             return initCause(translationFailure("%s [%s]", message, className), cause, debug);
@@ -190,7 +240,7 @@ public final class TranslatedException extends Exception {
                 }
             }
 
-            // Encode from inner most cause outwards
+            // Encode from innermost cause outwards
             Collections.reverse(throwables);
 
             for (Throwable current : throwables) {
@@ -201,8 +251,7 @@ public final class TranslatedException extends Exception {
                     stackTrace = new StackTraceElement[0];
                 }
                 dos.writeInt(stackTrace.length);
-                for (int i = 0; i < stackTrace.length; i++) {
-                    StackTraceElement frame = stackTrace[i];
+                for (StackTraceElement frame : stackTrace) {
                     if (frame != null) {
                         dos.writeUTF(emptyIfNull(frame.getClassLoaderName()));
                         dos.writeUTF(emptyIfNull(frame.getModuleName()));
@@ -294,13 +343,20 @@ public final class TranslatedException extends Exception {
                     // Remove null entries at end of stackTrace
                     stackTrace = Arrays.copyOf(stackTrace, stackTraceIndex);
                 }
+                if (dis.available() == 0) {
+                    // Prepend the marker frame to the outermost stack trace
+                    StackTraceElement[] newStackTrace = new StackTraceElement[stackTrace.length + 1];
+                    System.arraycopy(stackTrace, 0, newStackTrace, 1, stackTrace.length);
+                    newStackTrace[0] = TRANSLATED_MARKER;
+                    stackTrace = newStackTrace;
+                }
                 throwable.setStackTrace(stackTrace);
                 cause = throwable;
             }
-            return new TranslatedException(throwable);
+            return throwable;
         } catch (Throwable translationFailure) {
             debugPrintStackTrace(translationFailure, debug);
-            return translationFailure("error decoding exception: %s", encodedThrowable);
+            return translationFailure("error decoding exception: %s", Arrays.toString(encodedThrowable));
         }
     }
 }

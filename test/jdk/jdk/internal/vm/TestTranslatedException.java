@@ -30,10 +30,7 @@
  */
 package jdk.internal.vm.test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 
 import org.testng.Assert;
@@ -44,16 +41,14 @@ import jdk.internal.vm.TranslatedException;
 import jdk.internal.vm.VMSupport;
 
 public class TestTranslatedException {
-    @SuppressWarnings("serial")
     public static class Untranslatable extends RuntimeException {
         public Untranslatable(String message, Throwable cause) {
             super(message, cause);
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Test
-    public void encodeDecodeTest() throws Exception {
+    public void encodeDecodeTest() {
         Throwable throwable = new ExceptionInInitializerError(new InvocationTargetException(new Untranslatable("test exception", new NullPointerException()), "invoke"));
         for (int i = 0; i < 10; i++) {
             throwable = new ExceptionInInitializerError(new InvocationTargetException(new RuntimeException(String.valueOf(i), throwable), "invoke"));
@@ -101,8 +96,8 @@ public class TestTranslatedException {
         try {
             VMSupport.decodeAndThrowThrowable(4, 0L, true, false);
             throw new AssertionError("expected decodeAndThrowThrowable to throw an exception");
-        } catch (TranslatedException decoded) {
-            Assert.assertEquals(decoded.getCause().getClass(), OutOfMemoryError.class);
+        } catch (OutOfMemoryError decoded) {
+            // Expected
         } catch (Throwable decoded) {
             throw new AssertionError("unexpected exception: " + decoded);
         }
@@ -136,13 +131,12 @@ public class TestTranslatedException {
         }
     }
 
-    private void encodeDecode(Throwable throwable) throws Exception {
+    private void encodeDecode(Throwable throwable) {
         Unsafe unsafe = Unsafe.getUnsafe();
         int bufferSize = 512;
         int format = 0;
-        long buffer = 0L;
         while (true) {
-            buffer = unsafe.allocateMemory(bufferSize);
+            long buffer = unsafe.allocateMemory(bufferSize);
             try {
                 int res = VMSupport.encodeThrowable(throwable, buffer, bufferSize);
                 if (res < 0) {
@@ -152,7 +146,7 @@ public class TestTranslatedException {
                         VMSupport.decodeAndThrowThrowable(format, buffer, true, false);
                         throw new AssertionError("expected decodeAndThrowThrowable to throw an exception");
                     } catch (Throwable decoded) {
-                        assertThrowableEquals(throwable, decoded.getCause());
+                        assertThrowableEquals(throwable, decoded);
                     }
                     return;
                 }
@@ -178,10 +172,18 @@ public class TestTranslatedException {
                 }
                 StackTraceElement[] originalStack = original.getStackTrace();
                 StackTraceElement[] decodedStack = decoded.getStackTrace();
-                Assert.assertEquals(originalStack.length, decodedStack.length);
-                for (int i = 0, n = originalStack.length; i < n; ++i) {
+                int decodedStartIndex;
+                if (decoded == decodedIn) {
+                    Assert.assertEquals(decodedStack[0], TranslatedException.TRANSLATED_MARKER);
+                    Assert.assertEquals(decodedStack.length, originalStack.length + 1);
+                    decodedStartIndex = 1;
+                } else {
+                    Assert.assertEquals(decodedStack.length, originalStack.length);
+                    decodedStartIndex = 0;
+                }
+                for (int i = 0; i < originalStack.length; ++i) {
                     StackTraceElement originalStackElement = originalStack[i];
-                    StackTraceElement decodedStackElement = decodedStack[i];
+                    StackTraceElement decodedStackElement = decodedStack[i + decodedStartIndex];
                     Assert.assertEquals(decodedStackElement.getClassLoaderName(), originalStackElement.getClassLoaderName());
                     Assert.assertEquals(decodedStackElement.getModuleName(), originalStackElement.getModuleName());
                     Assert.assertEquals(decodedStackElement.getClassName(), originalStackElement.getClassName());
