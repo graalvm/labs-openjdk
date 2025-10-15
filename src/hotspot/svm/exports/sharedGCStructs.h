@@ -23,34 +23,48 @@
  * questions.
  */
 
-#ifndef SVM_TYPES_HPP
-#define SVM_TYPES_HPP
+#ifndef SVM_SHARED_GC_STRUCTS_HPP
+#define SVM_SHARED_GC_STRUCTS_HPP
 
+#include <sys/types.h>
 
+#ifdef __cplusplus
 namespace svm_gc {
+#endif
 
-class IsolateThread;
-class StackFramesPerThread;
-class StackFrames;
-class CodeInfosPerThread;
-class VM_OperationData;
-class VM_OperationWrapperData;
-class oopDesc;
+// forward declarations
+typedef struct CodeInfo CodeInfo;
 
-typedef void(*queueVmOperationFunc)(address, IsolateThread*, VM_OperationData*, VM_OperationWrapperData*);
-typedef void(*vmOperationStatusFunc)(address, IsolateThread*, VM_OperationWrapperData*, int);
-typedef bool(*vmOperationDataFunc)(address, IsolateThread*, VM_OperationWrapperData*);
-typedef StackFramesPerThread*(*fetchThreadStackFramesFunc)(address, IsolateThread*);
-typedef void*(*freeThreadStackFramesFunc)(address, IsolateThread*, StackFramesPerThread*);
-typedef StackFrames*(*fetchContinuationStackFramesFunc)(address, oopDesc*);
-typedef void*(*freeContinuationStackFramesFunc)(address, StackFrames*);
-typedef CodeInfosPerThread*(*fetchCodeInfosFunc)(address, IsolateThread*);
-typedef void*(*freeCodeInfosFunc)(address, IsolateThread*, CodeInfosPerThread*);
-typedef void*(*threadStateTransitionFunc)(IsolateThread*);
-typedef bool*(*fastThreadStateTransitionFunc)(IsolateThread*);
-typedef void(*cleanRuntimeCodeCacheFunc)(address, IsolateThread*);
+// data structures for frames that are currently on the stack
+struct StackFrame {
+  u_char *stack_pointer;
+  u_char *encoded_reference_map;
+  size_t reference_map_index;
+};
 
+struct StackFrames {
+  size_t count;
+  struct StackFrame frames[0]; // variable-sized array
+};
 
+struct StackFramesPerThread {
+  size_t count;
+  struct StackFrames *threads[0]; // variable-sized array
+};
+
+// data structures for JIT-compiled code that is currently on the stack
+struct CodeInfos {
+  size_t count;
+  struct CodeInfo *code_infos[0]; // variable-sized array
+};
+
+struct CodeInfosPerThread {
+  size_t count;
+  struct CodeInfos *threads[0]; // variable-sized array
+};
+
+#ifdef __cplusplus
 } // namespace svm_gc
+#endif
 
-#endif // SVM_TYPES_HPP
+#endif // SVM_SHARED_GC_STRUCTS_HPP

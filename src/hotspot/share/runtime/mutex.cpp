@@ -119,13 +119,13 @@ void Mutex::lock_contended(Thread* self) {
     if (thread->has_status_vm()) {
       while (true) {
         // do a transition to native thread status so that we can safely block below without preventing a safepoint
-        SVMGlobalData::_transition_vm_to_native(heap_base, thread);
+        SVMGlobalData::_transition_vm_to_native(thread);
 
         _lock.lock();
 
         // do a transition back to VM state so that this thread can be sure that no safepoints are happening concurrently
         assert(thread->has_status_native_or_safepoint(), "must be");
-        if (SVMGlobalData::_try_fast_transition_native_to_vm(heap_base, thread)) {
+        if (SVMGlobalData::_try_fast_transition_native_to_vm(thread)) {
           // The fast path succeeded, so we have the lock and we are back in VM state.
           assert(thread->has_status_vm(), "must be");
           break;
@@ -134,7 +134,7 @@ void Mutex::lock_contended(Thread* self) {
           // try to lock it again after the safepoint ends. Otherwise, we could end up with a deadlock between this thread
           // and the VM thread.
           _lock.unlock();
-          SVMGlobalData::_slow_transition_native_to_vm(heap_base, thread);
+          SVMGlobalData::_slow_transition_native_to_vm(thread);
           assert(thread->has_status_vm(), "must be");
         }
       }

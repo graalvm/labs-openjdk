@@ -35,6 +35,8 @@ char** SVMIsolateData::_argv = 0;
 size_t SVMIsolateData::_max_heap_address_space_size = 0;
 
 char* SVMIsolateData::_heap_base = nullptr;
+typeArrayOop SVMIsolateData::_image_heap_region_types = nullptr;
+typeArrayOop SVMIsolateData::_image_heap_region_free_spaces = nullptr;
 objArrayOop SVMIsolateData::_static_object_fields = nullptr;
 typeArrayOop SVMIsolateData::_static_primitive_fields = nullptr;
 oop SVMIsolateData::_vm_operation_thread = nullptr;
@@ -46,6 +48,8 @@ bool SVMIsolateData::_during_teardown = false;
 size_t SVMGlobalData::_heap_base_alignment = 0;
 size_t SVMGlobalData::_null_regions_size = 0;
 size_t SVMGlobalData::_image_heap_size = 0;
+size_t SVMGlobalData::_image_heap_used = 0;
+size_t SVMGlobalData::_image_heap_waste = 0;
 char* SVMGlobalData::_image_build_hosted_args = 0;
 char* SVMGlobalData::_image_build_runtime_args = 0;
 
@@ -54,6 +58,8 @@ jlong SVMGlobalData::_container_memory_limit_in_bytes = 0;
 int SVMGlobalData::_container_active_processor_count = 0;
 
 SVMOffsets SVMGlobalData::_offsets;
+int SVMGlobalData::_closed_image_heap_regions = -1;
+int SVMGlobalData::_open_image_heap_regions = -1;
 SVMOopMap* SVMGlobalData::_thread_locals_reference_map = nullptr;
 bool SVMGlobalData::_use_string_inlining = false;
 bool SVMGlobalData::_closed_type_world = false;

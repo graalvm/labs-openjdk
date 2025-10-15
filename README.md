@@ -81,7 +81,10 @@ In some code parts, `Unimplemented()` serves as a placeholder for GC-specific fu
   - `src/hotspot/share/gc/shared/hSpaceCounters.cpp`
   - `src/hotspot/share/gc/shared/ageTable.cpp`
 
-Besides that, the length of 0 for `GCThreadLocalData` in `src/hotspot/share/gc/shared/gcThreadLocalData.hpp` is a placeholder as well.
+Besides that, there are a few places where values are hardcoded at the moment.
+Those need to be replaced with the correct GC-specific values:
+- the length of `GCThreadLocalData` in `src/hotspot/share/gc/shared/gcThreadLocalData.hpp` is hardcoded to 0
+- `log_of_heap_region_grain_bytes` in `src/hotspot/svm/svmToGC.cpp` is hardcoded to 20
 
 ## Build
 

@@ -45,7 +45,7 @@
 #endif
 #ifdef SVM
 #include "svmIsolateThread.hpp"
-#include "exports/sharedGCStructs.hpp"
+#include "exports/sharedGCStructs.h"
 #endif // SVM
 
 

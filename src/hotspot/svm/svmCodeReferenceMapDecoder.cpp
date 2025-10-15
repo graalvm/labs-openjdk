@@ -25,7 +25,7 @@
 
 #include "code/compressedStream.hpp"
 #include "compiler/oopMap.hpp"
-#include "exports/sharedGCStructs.hpp"
+#include "exports/sharedGCStructs.h"
 #include "svmCodeReferenceMapDecoder.hpp"
 
 /**

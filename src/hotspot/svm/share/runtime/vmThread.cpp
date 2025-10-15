@@ -104,7 +104,7 @@ void VMThread::execute(VM_Operation* op) {
 
   assert(isolate_thread == nullptr || isolate_thread->has_status_vm(), "isolate thread must be in VM state");
   if (isolate_thread != nullptr && !current_thread->is_VM_thread()) {
-    SVMGlobalData::_transition_vm_to_native(heap_base, isolate_thread);
+    SVMGlobalData::_transition_vm_to_native(isolate_thread);
   }
 
   VM_OperationData *op_data = op->data();
@@ -131,7 +131,7 @@ void VMThread::execute(VM_Operation* op) {
 
       if (isolate_thread != nullptr) {
         // The fast transition is always possible because no one can request a safepoint while the VM operation thread is blocked.
-        bool in_vm = SVMGlobalData::_try_fast_transition_native_to_vm(heap_base, isolate_thread);
+        bool in_vm = SVMGlobalData::_try_fast_transition_native_to_vm(isolate_thread);
         assert(in_vm && isolate_thread->has_status_vm(), "must be back in VM state");
       }
 
@@ -141,7 +141,7 @@ void VMThread::execute(VM_Operation* op) {
     } else {
       if (isolate_thread != nullptr) {
         // The fast transition is always possible because no one can request a safepoint while the VM operation thread is blocked.
-        bool in_vm = SVMGlobalData::_try_fast_transition_native_to_vm(heap_base, isolate_thread);
+        bool in_vm = SVMGlobalData::_try_fast_transition_native_to_vm(isolate_thread);
         assert(in_vm && isolate_thread->has_status_vm(), "must be back in VM state");
       }
 

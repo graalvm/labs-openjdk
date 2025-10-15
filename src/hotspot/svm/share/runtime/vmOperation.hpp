@@ -62,7 +62,7 @@ namespace svm_gc {
 
 class VM_Operation;
 
-// The layout of this class must match the NativeVMOperationData on the Java-side.
+// The layout of this class must match the NativeGCVMOperationData on the Java-side.
 // It must always be allocated as a part of a VM_Operation (i.e., it must never exist on its own)
 // and it must not contain a vtable. The blackbox fields are only accessed on native-image side.
 class VM_OperationData {

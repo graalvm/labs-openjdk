@@ -26,7 +26,8 @@
 #ifndef SVM_TO_GC_HPP
 #define SVM_TO_GC_HPP
 
-#include "exports/sharedGCStructs.hpp"
+#include "exports/sharedGCStructs.h"
+#include "exports/shenandoahGCStructs.h"
 #include "svmGlobalData.hpp"
 #include "svmIsolateThread.hpp"
 #include "svmTypes.hpp"
@@ -49,22 +50,22 @@ class InstanceStackChunkKlass;
 class InstancePodKlass;
 class nmethod;
 
-static struct GCConstants gc_constants;
+static struct ShenandoahInitState shenandoah_init_state;
 
 extern "C" {
   EXPORT_FOR_SVM void svm_gc_parse_options(int actual_native_image_version, int argc, char *argv[], char *image_build_hosted_args, char *image_build_runtime_args,
       size_t max_heap_address_space_size, size_t heap_base_alignment, size_t null_regions_size, size_t image_heap_size,
-      bool use_compressed_references, int compressed_reference_shift, bool is_containerized, jlong container_memory_limit_in_bytes, int container_active_processor_count, HeapOptions *result);
+      int compressed_reference_shift, bool is_containerized, jlong container_memory_limit_in_bytes, int container_active_processor_count, ShenandoahHeapOptions *result);
 
-  EXPORT_FOR_SVM GCConstants* svm_gc_create(IsolateThread *isolate_thread, char *heap_base,
+  EXPORT_FOR_SVM ShenandoahInitState* svm_gc_create(IsolateThread *isolate_thread, char *heap_base,
+      int closed_image_heap_regions, int open_image_heap_regions, typeArrayOop image_heap_region_types, typeArrayOop image_heap_region_free_spaces,
       Klass *dynamic_hub_klass, InstanceKlass *filler_object_klass, TypeArrayKlass *filler_array_klass, Klass *string_klass, Klass *system_klass,
       objArrayOop static_object_fields, typeArrayOop static_primitive_fields, oop vm_operation_thread, oop safepoint, oop runtime_code_info_memory,
       int reference_map_compressed_offset_shift, SVMOopMap *thread_locals_reference_map,
-      objArrayOop klasses_assumed_reachable_for_code_unloading, bool use_perf_data, bool use_string_inlining, bool closed_type_world,
+      objArrayOop klasses_assumed_reachable_for_code_unloading, bool perf_data_support, bool use_string_inlining, bool closed_type_world,
       bool use_interface_hashing, int interface_hashing_max_id, int dynamic_hub_hashing_interface_mask, int dynamic_hub_hashing_shift_offset,
       char *offsets, int offsets_length,
-      queueVmOperationFunc collect_for_allocation_op, queueVmOperationFunc execute_pause_remark_op, queueVmOperationFunc execute_pause_cleanup_op,
-      queueVmOperationFunc collect_full_op, queueVmOperationFunc verify_heap_op, queueVmOperationFunc try_initiate_conc_mark_op,
+      queueVmOperationFunc collect_for_allocation_op, queueVmOperationFunc collect_full_op,
       vmOperationStatusFunc wait_for_vm_operation_execution_status, vmOperationStatusFunc update_vm_operation_execution_status, vmOperationDataFunc is_vm_operation_finished,
       fetchThreadStackFramesFunc fetch_thread_stack_frames, freeThreadStackFramesFunc free_thread_stack_frames,
       fetchContinuationStackFramesFunc fetch_continuation_stack_frames, freeContinuationStackFramesFunc free_continuation_stack_frames,
@@ -111,12 +112,6 @@ extern "C" {
 
   EXPORT_FOR_SVM void svm_gc_dirty_all_references_of(stackChunkOop stackChunk);
 
-  EXPORT_FOR_SVM void svm_gc_verify_oop(oop obj);
-
-  EXPORT_FOR_SVM bool svm_gc_validate_object(oop parent, oop child);
-
-  EXPORT_FOR_SVM void svm_gc_log_printf(char* format, jlong v1, jlong v2, jlong v3);
-
   EXPORT_FOR_SVM jlong svm_gc_millis_since_last_whole_heap_examined();
 
   EXPORT_FOR_SVM bool svm_gc_has_reference_pending_list();
@@ -129,6 +124,8 @@ extern "C" {
 
   EXPORT_FOR_SVM void svm_gc_wake_up_reference_pending_list_waiters();
 
+  EXPORT_FOR_SVM void svm_gc_get_region_boundaries(ShenandoahRegionBoundaries *region_boundaries);
+
   EXPORT_FOR_SVM void svm_gc_register_object_fields(nmethod* nm);
 
   EXPORT_FOR_SVM void svm_gc_register_code_constants(nmethod* nm);
@@ -137,9 +134,11 @@ extern "C" {
 
   EXPORT_FOR_SVM void svm_gc_register_deopt_metadata(nmethod* nm);
 
-  EXPORT_FOR_SVM void svm_gc_get_internal_state(GCInternalState *gc_internal_data);
+  EXPORT_FOR_SVM void svm_gc_get_internal_state(ShenandoahInternalState *gc_internal_data);
 
   EXPORT_FOR_SVM const char* svm_gc_get_current_thread_name();
+
+  EXPORT_FOR_SVM bool svm_gc_get_region_info(int region_index, ShenandoahRegionInfo *region_info);
 
   EXPORT_FOR_SVM jlong svm_gc_get_thread_allocated_memory(IsolateThread *thread);
 

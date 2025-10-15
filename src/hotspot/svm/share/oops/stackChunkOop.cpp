@@ -37,7 +37,7 @@
 #include "runtime/smallRegisterMap.inline.hpp"
 #include "runtime/stackChunkFrameStream.inline.hpp"
 #ifdef SVM
-#include "exports/sharedGCStructs.hpp"
+#include "exports/sharedGCStructs.h"
 #include "svmCodeReferenceMapDecoder.hpp"
 #endif // SVM
 

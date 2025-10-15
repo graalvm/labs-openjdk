@@ -185,6 +185,8 @@ struct SVMGlobalData {
 
   // values that are set after SVM mapped the image heap
   static SVMOffsets _offsets;
+  static int _closed_image_heap_regions;
+  static int _open_image_heap_regions;
   static SVMOopMap* _thread_locals_reference_map;
   static bool _use_string_inlining;
   static bool _closed_type_world;
@@ -223,6 +225,8 @@ struct SVMIsolateData {
 
   // values that are set after SVM mapped the image heap
   static char* _heap_base;
+  static typeArrayOop _image_heap_region_types;
+  static typeArrayOop _image_heap_region_free_spaces;
   static objArrayOop _static_object_fields;
   static typeArrayOop _static_primitive_fields;
   static oop _vm_operation_thread;
