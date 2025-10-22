@@ -293,6 +293,9 @@ const int ObjectAlignmentInBytes = 8;
   product(bool, UseInlineCaches, true,                                      \
           "Use Inline Caches for virtual calls ")                           \
                                                                             \
+  develop(bool, VerifyInlineCaches, true,                                   \
+          "Verify Inline Caches")                                           \
+                                                                            \
   product(bool, InlineArrayCopy, true, DIAGNOSTIC,                          \
           "Inline arraycopy native that is known to be part of "            \
           "base library DLL")                                               \
@@ -484,6 +487,9 @@ const int ObjectAlignmentInBytes = 8;
                                                                             \
   develop(bool, ZapFillerObjects, trueInDebug,                              \
           "Zap filler objects")                                             \
+                                                                            \
+  develop(bool, ZapCHeap, trueInDebug,                                      \
+          "Zap allocated/freed C heap space")                               \
                                                                             \
   develop(bool, ZapTLAB, trueInDebug,                                       \
           "Zap allocated TLABs")                                            \
@@ -2009,6 +2015,7 @@ const int ObjectAlignmentInBytes = 8;
   develop(uint, BinarySearchThreshold, 16,                                  \
           "Minimal number of elements in a sorted collection to prefer"     \
           "binary search over simple linear search." )                      \
+                                                                            \
 
 // end of RUNTIME_FLAGS
 
