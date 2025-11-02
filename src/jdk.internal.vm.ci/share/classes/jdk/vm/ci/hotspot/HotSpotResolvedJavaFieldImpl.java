@@ -26,6 +26,7 @@ import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.UnresolvedJavaType;
+import jdk.vm.ci.meta.annotation.AbstractAnnotated;
 import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 import java.lang.annotation.Annotation;
@@ -39,7 +40,7 @@ import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
 /**
  * Represents a field in a HotSpot type.
  */
-class HotSpotResolvedJavaFieldImpl implements HotSpotResolvedJavaField {
+class HotSpotResolvedJavaFieldImpl extends AbstractAnnotated implements HotSpotResolvedJavaField {
 
     private final HotSpotResolvedObjectTypeImpl holder;
     private JavaType type;
@@ -191,7 +192,7 @@ class HotSpotResolvedJavaFieldImpl implements HotSpotResolvedJavaField {
             HotSpotVMConfig config = config();
             final long metaspaceAnnotations = UNSAFE.getAddress(holder.getKlassPointer() + config.instanceKlassAnnotationsOffset);
             if (metaspaceAnnotations != 0) {
-                int annotationsOffset = typeAnnotations? config.annotationsFieldTypeAnnotationsOffset: config.annotationsFieldAnnotationsOffset;
+                int annotationsOffset = typeAnnotations ? config.annotationsFieldTypeAnnotationsOffset : config.annotationsFieldAnnotationsOffset;
                 long fieldsAnnotations = UNSAFE.getAddress(metaspaceAnnotations + annotationsOffset);
                 if (fieldsAnnotations != 0) {
                     int indexOffset = ADDRESS_SIZE * index;
@@ -233,7 +234,7 @@ class HotSpotResolvedJavaFieldImpl implements HotSpotResolvedJavaField {
     }
 
     @Override
-    public AnnotationsInfo getDeclaredAnnotationInfo() {
+    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
         if (!hasAnnotations(false)) {
             return null;
         }

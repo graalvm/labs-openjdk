@@ -23,10 +23,11 @@
 package jdk.vm.ci.hotspot;
 
 import jdk.vm.ci.meta.JavaType;
-import java.lang.reflect.RecordComponent;
-
 import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
+import jdk.vm.ci.meta.annotation.AbstractAnnotated;
 import jdk.vm.ci.meta.annotation.AnnotationsInfo;
+
+import java.lang.reflect.RecordComponent;
 
 import static jdk.vm.ci.hotspot.CompilerToVM.compilerToVM;
 import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
@@ -34,7 +35,7 @@ import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 /**
  * Represents a {@linkplain RecordComponent component} in a HotSpot record.
  */
-final class HotSpotResolvedJavaRecordComponent implements ResolvedJavaRecordComponent {
+final class HotSpotResolvedJavaRecordComponent extends AbstractAnnotated implements ResolvedJavaRecordComponent {
 
     private final HotSpotResolvedObjectTypeImpl declaringRecord;
     private final String name;
@@ -76,6 +77,7 @@ final class HotSpotResolvedJavaRecordComponent implements ResolvedJavaRecordComp
     public JavaType getType() {
         return type;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof HotSpotResolvedJavaRecordComponent that) {
@@ -90,7 +92,7 @@ final class HotSpotResolvedJavaRecordComponent implements ResolvedJavaRecordComp
     }
 
     @Override
-    public AnnotationsInfo getDeclaredAnnotationInfo() {
+    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
         byte[] bytes = compilerToVM().getRawAnnotationBytes('r', declaringRecord, declaringRecord.getKlassPointer(), index, CompilerToVM.DECLARED_ANNOTATIONS);
         return AnnotationsInfo.make(bytes, getDeclaringRecord().getConstantPool(), getDeclaringRecord());
     }

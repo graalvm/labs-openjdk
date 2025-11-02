@@ -23,11 +23,12 @@
 package jdk.vm.ci.hotspot;
 
 import jdk.vm.ci.meta.JavaType;
+import jdk.vm.ci.meta.annotation.AbstractAnnotated;
 
 /**
  * Common base class for all HotSpot {@link JavaType} implementations.
  */
-public abstract class HotSpotJavaType implements JavaType {
+public abstract class HotSpotJavaType extends AbstractAnnotated implements JavaType {
 
     private final String name;
 

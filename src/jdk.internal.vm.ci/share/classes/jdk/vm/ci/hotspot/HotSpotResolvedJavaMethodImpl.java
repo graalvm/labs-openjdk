@@ -779,7 +779,7 @@ final class HotSpotResolvedJavaMethodImpl extends HotSpotMethod implements HotSp
     }
 
     @Override
-    public AnnotationsInfo getDeclaredAnnotationInfo() {
+    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
         if (!hasAnnotations(config().constMethodHasMethodAnnotations)) {
             return null;
         }

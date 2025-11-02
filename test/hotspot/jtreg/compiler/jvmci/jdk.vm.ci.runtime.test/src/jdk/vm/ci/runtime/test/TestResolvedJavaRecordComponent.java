@@ -124,7 +124,7 @@ public class TestResolvedJavaRecordComponent extends FieldUniverse {
         for (RecordComponent rc : recordComponents.keySet()) {
             ResolvedJavaRecordComponent jrc = metaAccess.lookupJavaRecordComponent(rc);
             byte[] rawAnnotations = getFieldValue(recordComponentAnnotations, rc);
-            TestResolvedJavaType.checkRawAnnotations(jrc, "getDeclaredAnnotationInfo", rawAnnotations, jrc.getDeclaredAnnotationInfo());
+            TestResolvedJavaType.checkRawAnnotations(jrc, "getDeclaredAnnotationInfo", rawAnnotations, jrc.getDeclaredAnnotationInfo(null));
         }
     }
 

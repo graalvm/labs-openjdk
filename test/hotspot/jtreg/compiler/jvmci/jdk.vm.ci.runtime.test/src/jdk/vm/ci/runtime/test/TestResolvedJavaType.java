@@ -1421,7 +1421,7 @@ public class TestResolvedJavaType extends TypeUniverse {
     public static void checkDeclaredAnnotationInfo(Class<?> clazz) {
         Annotated type = metaAccess.lookupJavaType(clazz);
         byte[] rawAnnotations = invokeMethod(classGetRawAnnotations, clazz);
-        checkRawAnnotations(type, "getDeclaredAnnotationInfo", rawAnnotations, type.getDeclaredAnnotationInfo());
+        checkRawAnnotations(type, "getDeclaredAnnotationInfo", rawAnnotations, type.getDeclaredAnnotationInfo(null));
     }
 
     // @formatter:off
