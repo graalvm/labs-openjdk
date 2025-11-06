@@ -32,22 +32,22 @@ public interface ResolvedJavaRecordComponent extends Annotated {
     /**
      * Gets the {@link ResolvedJavaType} object representing the class which declares this record component.
      */
-     ResolvedJavaType getDeclaringRecord();
+    ResolvedJavaType getDeclaringRecord();
 
     /**
      * Gets a {@code ResolvedJavaMethod} that represents the accessor for this record
      * component.
      */
-     default ResolvedJavaMethod getAccessor() {
-         for (ResolvedJavaMethod method : getDeclaringRecord().getDeclaredMethods(false)) {
-             if (method.getName().equals(getName()) &&
-                     method.getSignature().getParameterCount(false) == 0 &&
-                     method.getSignature().getReturnType(null).getName().equals(getType().getName())) {
-                 return method;
-             }
-         }
-         return null;
-     }
+    default ResolvedJavaMethod getAccessor() {
+        for (ResolvedJavaMethod method : getDeclaringRecord().getDeclaredMethods(false)) {
+            if (method.getName().equals(getName()) &&
+                    method.getSignature().getParameterCount(false) == 0 &&
+                    method.getSignature().getReturnType(null).getName().equals(getType().getName())) {
+                return method;
+            }
+        }
+        return null;
+    }
 
     /**
      * Returns the name of this record component.

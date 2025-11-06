@@ -204,7 +204,7 @@ public class TestResolvedJavaField extends FieldUniverse {
         for (Field f : fields.keySet()) {
             ResolvedJavaField field = metaAccess.lookupJavaField(f);
             byte[] rawAnnotations = getFieldValue(fieldAnnotations, f);
-            TestResolvedJavaType.checkRawAnnotations(field, "getDeclaredAnnotationInfo", rawAnnotations, field.getDeclaredAnnotationInfo());
+            TestResolvedJavaType.checkRawAnnotations(field, "getDeclaredAnnotationInfo", rawAnnotations, field.getDeclaredAnnotationInfo(null));
         }
     }
 

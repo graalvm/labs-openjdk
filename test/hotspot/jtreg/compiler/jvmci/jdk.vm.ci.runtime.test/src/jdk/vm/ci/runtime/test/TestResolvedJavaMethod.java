@@ -550,7 +550,7 @@ public class TestResolvedJavaMethod extends MethodUniverse {
         for (Method m : methods.keySet()) {
             ResolvedJavaMethod method = metaAccess.lookupJavaMethod(m);
             byte[] rawAnnotations = getFieldValue(methodAnnotations, m);
-            TestResolvedJavaType.checkRawAnnotations(method, "getDeclaredAnnotationInfo", rawAnnotations, method.getDeclaredAnnotationInfo());
+            TestResolvedJavaType.checkRawAnnotations(method, "getDeclaredAnnotationInfo", rawAnnotations, method.getDeclaredAnnotationInfo(null));
         }
     }
 
@@ -696,7 +696,7 @@ public class TestResolvedJavaMethod extends MethodUniverse {
                                 try {
                                     oopMap = m.getOopMapAt(bci + 1);
                                     throw new AssertionError("expected exception for illegal bci %d in %s: %s".formatted(bci + 1, m.format("%H.%n(%p)"), oopMap));
-                                } catch(IllegalArgumentException e) {
+                                } catch (IllegalArgumentException e) {
                                     // expected
                                 }
                             }

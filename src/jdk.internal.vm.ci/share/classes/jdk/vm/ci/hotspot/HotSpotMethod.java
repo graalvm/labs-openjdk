@@ -22,17 +22,18 @@
  */
 package jdk.vm.ci.hotspot;
 
-import static java.util.FormattableFlags.ALTERNATE;
-import static java.util.FormattableFlags.LEFT_JUSTIFY;
-import static java.util.FormattableFlags.UPPERCASE;
+import jdk.vm.ci.meta.JavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.annotation.AbstractAnnotated;
 
 import java.util.Formattable;
 import java.util.Formatter;
 
-import jdk.vm.ci.meta.JavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaMethod;
+import static java.util.FormattableFlags.ALTERNATE;
+import static java.util.FormattableFlags.LEFT_JUSTIFY;
+import static java.util.FormattableFlags.UPPERCASE;
 
-abstract class HotSpotMethod implements JavaMethod, Formattable {
+abstract class HotSpotMethod extends AbstractAnnotated implements JavaMethod, Formattable {
 
     public static String applyFormattingFlagsAndWidth(String s, int flags, int width) {
         if (flags == 0 && width < 0) {
