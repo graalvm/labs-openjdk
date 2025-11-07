@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,26 +21,10 @@
  * questions.
  */
 
-
 /*
  * @test
- * @key stress randomness
- *
- * @summary converted from VM Testbase vm/gc/compact/Compact_NonbranchyTree_TwoFields.
- * VM Testbase keywords: [gc, stress, stressopt, nonconcurrent]
- * VM Testbase readme:
- * Refer to vm/gc/compact/README for more information about the test.
- * The source for the test can be found in vm/gc/compact/Compact.java.
- * This testcase uses nonbranchy trees for first phase, object with
- * two fields of nonbranchy trees for second phases and multiple threads.
- *
- * @library /vmTestbase
- *          /test/lib
- * @run main/othervm/timeout=480
- *      -XX:-UseGCOverheadLimit
- *      vm.gc.compact.Compact
- *      -gp nonbranchyTree(high)
- *      -gp1 twofields(nonbranchyTree(high))
- *      -ms high
+ * @bug 8346884
+ * @summary Test for `@since` in jdk.editpad module
+ * @library /test/lib /test/jdk/tools/sincechecker
+ * @run main SinceChecker jdk.editpad
  */
-
