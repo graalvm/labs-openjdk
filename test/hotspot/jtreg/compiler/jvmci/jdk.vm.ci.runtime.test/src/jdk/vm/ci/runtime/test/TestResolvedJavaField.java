@@ -55,7 +55,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -64,7 +63,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -105,27 +103,6 @@ public class TestResolvedJavaField extends FieldUniverse {
             boolean expected = e.getKey().isSynthetic();
             boolean actual = e.getValue().isSynthetic();
             assertEquals(expected, actual);
-        }
-    }
-
-    @Test
-    public void getAnnotationsTest() {
-        for (Map.Entry<Field, ResolvedJavaField> e : fields.entrySet()) {
-            Annotation[] expected = e.getKey().getAnnotations();
-            Annotation[] actual = e.getValue().getAnnotations();
-            assertArrayEquals(expected, actual);
-        }
-    }
-
-    @Test
-    public void getAnnotationTest() {
-        for (Map.Entry<Field, ResolvedJavaField> e : fields.entrySet()) {
-            for (Annotation expected : e.getKey().getAnnotations()) {
-                if (expected != null) {
-                    Annotation actual = e.getValue().getAnnotation(expected.annotationType());
-                    assertEquals(expected, actual);
-                }
-            }
         }
     }
 
@@ -306,7 +283,6 @@ public class TestResolvedJavaField extends FieldUniverse {
             assertTrue(field.getName().equals("fieldWithUnresolvableType"));
             field.getType();
             field.toString();
-            field.getAnnotations();
         }
     }
 

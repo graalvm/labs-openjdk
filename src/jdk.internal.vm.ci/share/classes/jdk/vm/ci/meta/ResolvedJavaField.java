@@ -24,14 +24,13 @@ package jdk.vm.ci.meta;
 
 import jdk.vm.ci.meta.annotation.Annotated;
 
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Modifier;
 
 /**
  * Represents a reference to a resolved Java field. Fields, like methods and types, are resolved
  * through {@link ConstantPool constant pools}.
  */
-public interface ResolvedJavaField extends JavaField, ModifiersProvider, AnnotatedElement, Annotated {
+public interface ResolvedJavaField extends JavaField, ModifiersProvider, Annotated {
 
     /**
      * {@inheritDoc}

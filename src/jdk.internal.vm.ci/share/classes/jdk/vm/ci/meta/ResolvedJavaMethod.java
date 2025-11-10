@@ -25,9 +25,6 @@ package jdk.vm.ci.meta;
 import jdk.vm.ci.meta.annotation.Annotated;
 import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -36,13 +33,13 @@ import java.lang.reflect.Type;
  * Represents a resolved Java method. Methods, like fields and types, are resolved through
  * {@link ConstantPool constant pools}.
  */
-public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersProvider, AnnotatedElement, Annotated {
+public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersProvider, Annotated {
 
     /**
      * Returns the method's bytecode. The returned bytecode does not contain breakpoints or non-Java
      * bytecodes. This will return {@code null} if {@link #getCodeSize()} returns {@code <= 0} or if
      * {@link #hasBytecodes()} returns {@code false}.
-     *
+     * <p>
      * The contained constant pool indexes may not be the ones found in the original class file but
      * they can be used with the JVMCI API (e.g. methods in {@link ConstantPool}).
      *
@@ -107,7 +104,7 @@ public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersP
 
     /**
      * Returns {@code true} if this method is a default method; returns {@code false} otherwise.
-     *
+     * <p>
      * A default method is a public non-abstract instance method, that is, a non-static method with
      * a body, declared in an interface type.
      *
@@ -188,7 +185,7 @@ public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersP
     /**
      * A {@code Parameter} provides information about method parameters.
      */
-    class Parameter implements AnnotatedElement {
+    class Parameter {
         private final String name;
         private final ResolvedJavaMethod method;
         private final int modifiers;
@@ -285,21 +282,6 @@ public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersP
         }
 
         @Override
-        public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
-            return method.getParameterAnnotations(annotationClass)[index];
-        }
-
-        @Override
-        public Annotation[] getAnnotations() {
-            return method.getParameterAnnotations()[index];
-        }
-
-        @Override
-        public Annotation[] getDeclaredAnnotations() {
-            return getAnnotations();
-        }
-
-        @Override
         public String toString() {
             Type type = getParameterizedType();
             String typename = type.getTypeName();
@@ -308,7 +290,7 @@ public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersP
             }
 
             final StringBuilder sb = new StringBuilder(Modifier.toString(getModifiers()));
-            if (sb.length() != 0) {
+            if (!sb.isEmpty()) {
                 sb.append(' ');
             }
             return sb.append(typename).append(' ').append(getName()).toString();
@@ -337,14 +319,6 @@ public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersP
     default Parameter[] getParameters() {
         return null;
     }
-
-    /**
-     * Returns an array of arrays that represent the annotations on the formal parameters, in
-     * declaration order, of this method.
-     *
-     * @see Method#getParameterAnnotations()
-     */
-    Annotation[][] getParameterAnnotations();
 
     /**
      * Returns an array of {@link Type} objects that represent the formal parameter types, in
@@ -399,57 +373,14 @@ public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersP
      */
     boolean isInVirtualMethodTable(ResolvedJavaType resolved);
 
-    /**
-     * Gets the annotation of a particular type for a formal parameter of this method.
-     *
-     * @param annotationClass the Class object corresponding to the annotation type
-     * @param parameterIndex the index of a formal parameter of {@code method}
-     * @return the annotation of type {@code annotationClass} for the formal parameter present, else
-     *         null
-     * @throws IndexOutOfBoundsException if {@code parameterIndex} does not denote a formal
-     *             parameter
-     */
-    default <T extends Annotation> T getParameterAnnotation(Class<T> annotationClass, int parameterIndex) {
-        if (parameterIndex >= 0) {
-            Annotation[][] parameterAnnotations = getParameterAnnotations();
-            for (Annotation a : parameterAnnotations[parameterIndex]) {
-                if (a.annotationType() == annotationClass) {
-                    return annotationClass.cast(a);
-                }
-            }
-        }
-        return null;
-    }
-
     default JavaType[] toParameterTypes() {
         JavaType receiver = isStatic() || isConstructor() ? null : getDeclaringClass();
         return getSignature().toParameterTypes(receiver);
     }
 
     /**
-     * Gets the annotations of a particular type for the formal parameters of this method.
-     *
-     * @param annotationClass the Class object corresponding to the annotation type
-     * @return the annotation of type {@code annotationClass} (if any) for each formal parameter
-     *         present
-     */
-    @SuppressWarnings("unchecked")
-    default <T extends Annotation> T[] getParameterAnnotations(Class<T> annotationClass) {
-        Annotation[][] parameterAnnotations = getParameterAnnotations();
-        T[] result = (T[]) Array.newInstance(annotationClass, parameterAnnotations.length);
-        for (int i = 0; i < parameterAnnotations.length; i++) {
-            for (Annotation a : parameterAnnotations[i]) {
-                if (a.annotationType() == annotationClass) {
-                    result[i] = annotationClass.cast(a);
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * @see #getCodeSize()
      * @return {@code getCodeSize() > 0}
+     * @see #getCodeSize()
      */
     default boolean hasBytecodes() {
         return getCodeSize() > 0;

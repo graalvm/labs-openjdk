@@ -25,7 +25,6 @@ package jdk.vm.ci.meta;
 import jdk.vm.ci.meta.Assumptions.AssumptionResult;
 import jdk.vm.ci.meta.annotation.Annotated;
 
-import java.lang.reflect.AnnotatedElement;
 import java.util.List;
 
 /**
@@ -33,7 +32,7 @@ import java.util.List;
  * thereof. Types, like fields and methods, are resolved through {@link ConstantPool constant pools}
  * .
  */
-public interface ResolvedJavaType extends JavaType, ModifiersProvider, AnnotatedElement, Annotated {
+public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated {
     /**
      * Checks whether this type has a finalizer method.
      *
@@ -252,7 +251,6 @@ public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated
      * Returns {@code true} if and only if the underlying class is a hidden class.
      *
      * @return {@code true} if and only if this class is a hidden class
-     *
      * @see Class#isHidden()
      */
     boolean isHidden();

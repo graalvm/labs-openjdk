@@ -1023,30 +1023,6 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
 
     private static final Annotation[] NO_ANNOTATIONS = {};
 
-    @Override
-    public Annotation[] getAnnotations() {
-        if (!mayHaveAnnotations(true)) {
-            return NO_ANNOTATIONS;
-        }
-        return runtime().reflection.getAnnotations(this);
-    }
-
-    @Override
-    public Annotation[] getDeclaredAnnotations() {
-        if (!mayHaveAnnotations(false)) {
-            return NO_ANNOTATIONS;
-        }
-        return runtime().reflection.getDeclaredAnnotations(this);
-    }
-
-    @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
-        if (!mayHaveAnnotations(true)) {
-            return null;
-        }
-        return runtime().reflection.getAnnotation(this, annotationClass);
-    }
-
     /**
      * Performs a fast-path check that this type is resolved in the context of a given accessing
      * class. A negative result does not mean this type is not resolved with respect to

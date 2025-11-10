@@ -22,15 +22,14 @@
  */
 package jdk.vm.ci.hotspot;
 
-import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.Type;
-
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+
+import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
 /**
  * Implementation of {@link HotSpotJVMCIReflection} when running in a JVMCI shared library.
@@ -104,88 +103,8 @@ class SharedLibraryJVMCIReflection extends HotSpotJVMCIReflection {
         return null;
     }
 
-    // Substituted by Target_jdk_vm_ci_hotspot_SharedLibraryJVMCIReflection
-    static Annotation[] getClassAnnotations(String className) {
-        throw new InternalError("missing substitution: " + className);
-    }
-
-    // Substituted by Target_jdk_vm_ci_hotspot_SharedLibraryJVMCIReflection
-    static Annotation[][] getParameterAnnotations(String className, String methodName) {
-        throw new InternalError("missing substitution: " + className + " " + methodName);
-    }
-
-    @Override
-    Annotation[] getAnnotations(HotSpotResolvedObjectTypeImpl holder) {
-        Annotation[] annotations = getClassAnnotations(holder.getName());
-        return annotations == null ? new Annotation[0] : annotations;
-    }
-
-    @Override
-    Annotation[] getDeclaredAnnotations(HotSpotResolvedObjectTypeImpl holder) {
-        throw new HotSpotJVMCIUnsupportedOperationError("unimplemented");
-    }
-
-    @Override
-    <T extends Annotation> T getAnnotation(HotSpotResolvedObjectTypeImpl holder, Class<T> annotationClass) {
-        throw new HotSpotJVMCIUnsupportedOperationError("unimplemented");
-    }
-
-    @Override
-    Annotation[][] getParameterAnnotations(HotSpotResolvedJavaMethodImpl javaMethod) {
-        Annotation[][] annotations = getParameterAnnotations(javaMethod.getDeclaringClass().getName(), javaMethod.getName());
-        if (annotations == null) {
-            return new Annotation[javaMethod.signature.getParameterCount(false)][0];
-        }
-        return annotations;
-    }
-
     @Override
     Type[] getGenericParameterTypes(HotSpotResolvedJavaMethodImpl javaMethod) {
-        throw new HotSpotJVMCIUnsupportedOperationError("unimplemented");
-    }
-
-    @Override
-    Annotation[] getFieldAnnotations(HotSpotResolvedJavaFieldImpl javaField) {
-        throw new HotSpotJVMCIUnsupportedOperationError("unimplemented");
-    }
-
-    @Override
-    Annotation[] getMethodAnnotations(HotSpotResolvedJavaMethodImpl javaMethod) {
-        Annotation[] annotations = getMethodAnnotationsInternal(javaMethod);
-        return annotations == null ? new Annotation[0] : annotations;
-    }
-
-    @Override
-    <T extends Annotation> T getMethodAnnotation(HotSpotResolvedJavaMethodImpl javaMethod, Class<T> annotationClass) {
-        Annotation[] methodAnnotations = getMethodAnnotations(javaMethod);
-        if (methodAnnotations != null) {
-            for (Annotation ann : methodAnnotations) {
-                if (annotationClass.isInstance(ann)) {
-                    return annotationClass.cast(ann);
-                }
-            }
-        }
-        return null;
-    }
-
-    // Substituted by Target_jdk_vm_ci_hotspot_SharedLibraryJVMCIReflection
-    @SuppressWarnings("unused")
-    private static Annotation[] getMethodAnnotationsInternal(ResolvedJavaMethod javaMethod) {
-        throw new InternalError("missing substitution");
-    }
-
-    @Override
-    Annotation[] getMethodDeclaredAnnotations(HotSpotResolvedJavaMethodImpl javaMethod) {
-        throw new HotSpotJVMCIUnsupportedOperationError("unimplemented");
-    }
-
-    @Override
-    Annotation[] getFieldDeclaredAnnotations(HotSpotResolvedJavaFieldImpl javaMethod) {
-        throw new HotSpotJVMCIUnsupportedOperationError("unimplemented");
-    }
-
-    @Override
-    <T extends Annotation> T getFieldAnnotation(HotSpotResolvedJavaFieldImpl javaField, Class<T> annotationClass) {
         throw new HotSpotJVMCIUnsupportedOperationError("unimplemented");
     }
 

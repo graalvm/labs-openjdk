@@ -85,7 +85,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -305,45 +304,11 @@ public class TestResolvedJavaMethod extends MethodUniverse {
                 assertEquals(exp.getName(), act.getName());
                 assertEquals(exp.isNamePresent(), act.isNamePresent());
                 assertEquals(exp.getModifiers(), act.getModifiers());
-                assertArrayEquals(exp.getAnnotations(), act.getAnnotations());
                 assertEquals(exp.getType().getName(), act.getType().toClassName());
                 assertEquals(exp.getParameterizedType(), act.getParameterizedType());
                 assertEquals(metaAccess.lookupJavaMethod(exp.getDeclaringExecutable()), act.getDeclaringMethod());
             }
         }
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
-    @interface TestAnnotation {
-        long value();
-    }
-
-    @Test
-    @TestAnnotation(value = 1000L)
-    public void getAnnotationTest() throws NoSuchMethodException {
-        ResolvedJavaMethod method = metaAccess.lookupJavaMethod(getClass().getDeclaredMethod("getAnnotationTest"));
-        TestAnnotation annotation = method.getAnnotation(TestAnnotation.class);
-        assertNotNull(annotation);
-        assertEquals(1000L, annotation.value());
-    }
-
-    @Test
-    @TestAnnotation(value = 1000L)
-    public void getAnnotationsTest() throws NoSuchMethodException {
-        ResolvedJavaMethod method = metaAccess.lookupJavaMethod(getClass().getDeclaredMethod("getAnnotationsTest"));
-        Annotation[] annotations = method.getAnnotations();
-        assertNotNull(annotations);
-        assertEquals(2, annotations.length);
-        TestAnnotation annotation = null;
-        for (Annotation a : annotations) {
-            if (a instanceof TestAnnotation) {
-                annotation = (TestAnnotation) a;
-                break;
-            }
-        }
-        assertNotNull(annotation);
-        assertEquals(1000L, annotation.value());
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -355,22 +320,11 @@ public class TestResolvedJavaMethod extends MethodUniverse {
     @Target(ElementType.PARAMETER)
     @interface Special {
         String elementWithDefault() default "NO_NAME";
+
         long elementWithoutDefault();
     }
 
     private static native void methodWithAnnotatedParameters(@NonNull HashMap<String, String> p1, @Special(elementWithoutDefault = 42) @NonNull Class<? extends Annotation> p2);
-
-    @Test
-    public void getParameterAnnotationsTest() throws NoSuchMethodException {
-        ResolvedJavaMethod method = metaAccess.lookupJavaMethod(getClass().getDeclaredMethod("methodWithAnnotatedParameters", HashMap.class, Class.class));
-        Annotation[][] annotations = method.getParameterAnnotations();
-        assertEquals(2, annotations.length);
-        assertEquals(1, annotations[0].length);
-        assertEquals(NonNull.class, annotations[0][0].annotationType());
-        assertEquals(2, annotations[1].length);
-        assertEquals(Special.class, annotations[1][0].annotationType());
-        assertEquals(NonNull.class, annotations[1][1].annotationType());
-    }
 
     @Test
     public void getGenericParameterTypesTest() throws NoSuchMethodException {
