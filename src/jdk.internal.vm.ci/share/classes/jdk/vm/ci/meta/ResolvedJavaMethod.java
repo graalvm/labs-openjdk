@@ -424,15 +424,11 @@ public interface ResolvedJavaMethod extends JavaMethod, InvokeTarget, ModifiersP
      * Gets the class file info for the parameter annotations on this method
      * or {@code null} if no such info exists.
      */
-    default AnnotationsInfo getParameterAnnotationInfo() {
-        return null;
-    }
+    AnnotationsInfo getParameterAnnotationInfo();
 
     /**
      * Gets the class file info for the default value of the annotation element represented
      * by this method or {@code null} if no such info exists.
      */
-    default AnnotationsInfo getAnnotationDefaultInfo() {
-        return null;
-    }
+    AnnotationsInfo getAnnotationDefaultInfo();
 }
