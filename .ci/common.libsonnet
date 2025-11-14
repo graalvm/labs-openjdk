@@ -1,56 +1,57 @@
-# One-off snapshots metadata
-local one_off_release = {
-    name: '25.1',
-    version: 'b10',
-    candidate_jvmci_release: '25.0.1+8-jvmci-25.1-b10',
-    github_upload_labsjdk_ce: 'true',
-    java_versions: [25],
-    musl: [25],
-    llvm: [25],
-};
-
-
 {
+    # The JVMCI releases that can be built from this repo.
+    jvmci_releases:: [
+        self.JVMCIRelease(name='25.1', build='b10', jdk_version='25.0.1+8')
+    ],
 
- labsjdk_builder_version:: '243066362288ec0c8557bf96140c2578630448cd',
+    # Specifies a JVMCI release.
+    #
+    # name:
+    #    The release name (see GR-70870). The value is an arbitrary string.
+    #    It may look like a version (e.g. "25.1") but can just as easily be
+    #    something like "Feature".
+    #    See: jdk.graal.compiler.hotspot.JVMCIVersionCheck.Version#releaseName
+    #
+    # build:
+    #    The JVMCI build number string (e.g. "b03" or "b10")
+    #    See: jdk.graal.compiler.hotspot.JVMCIVersionCheck.Version#jvmciBuild
+    #
+    # jdk_version:
+    #    The JDK version info to include in artifact names (e.g. "25.0.1+8")
+    #
+    JVMCIRelease(name, build, jdk_version):: {
+        name: name,
+        build: build
+    },
 
-# This function is used to clone closed and open JDK repository
-# Always checkout  branch jdk25 for labsjdk-ee repository
-# Always checkout the revision defined in MAIN_REVISION environement variable for labsjdk-ce repository
- clone(defs, repo, release, dst_dir, is_windows=false, is_closed=false):: [
-    ['git', 'clone', '--config', 'core.autocrlf=input', '--quiet', defs.bitbucket_base_url + repo + '.git', dst_dir],
-] + (if is_closed then [
-    ['git', '-C', dst_dir, 'checkout', 'jdk25'],
-] else [
-    ['git', '-C', dst_dir, 'checkout', '${MAIN_REVISION}'],
-]),
+    # Version of the labsjdk-builder scripts to use
+    labsjdk_builder_version:: '243066362288ec0c8557bf96140c2578630448cd',
 
-# This function is used to clone labsjdk-builder repository
- clone_labsjdk_builder(defs, is_windows=false):: (if !is_windows then [
-    ['set-export', 'LABSJDK_BUILDER_DIR', '${PWD}/labsjdk-builder'],
-] else [
-    ['set-export', 'LABSJDK_BUILDER_DIR', '${PWD}' + '\\' + 'labsjdk-builder'],
-]) + [
-    ['git', 'clone', '--quiet', '--config', 'core.autocrlf=input', defs.labsjdk_builder_url, '${LABSJDK_BUILDER_DIR}'],
-    ['git', '-C', '${LABSJDK_BUILDER_DIR}', 'checkout', self.labsjdk_builder_version],
-],
+    # Clones a JDK repository
+    # If `!is_closed`, then the cloned repo is checked out to branch ${MAIN_REVISION}.
+    # If `is_closed`, then the cloned repo is checked out to branch jdk25.
+    clone(defs, repo, release, dst_dir, is_windows=false, is_closed=false):: [
+        ['git', 'clone', '--config', 'core.autocrlf=input', '--quiet', defs.bitbucket_base_url + repo + '.git', dst_dir],
+    ] + (if is_closed then [
+        ['git', '-C', dst_dir, 'checkout', 'jdk25'],
+    ] else [
+        ['git', '-C', dst_dir, 'checkout', '${MAIN_REVISION}'],
+    ]),
+
+    # Clones the labsjdk-builder repository to ${PWD}/labsjdk-builder
+    clone_labsjdk_builder(defs, is_windows=false):: (if !is_windows then [
+        ['set-export', 'LABSJDK_BUILDER_DIR', '${PWD}/../labsjdk-builder'],
+    ] else [
+        ['set-export', 'LABSJDK_BUILDER_DIR', '${PWD}\\..\\labsjdk-builder'],
+    ]) + [
+        ['git', 'clone', '--quiet', '--config', 'core.autocrlf=input', defs.labsjdk_builder_url, '${LABSJDK_BUILDER_DIR}'],
+        ['git', '-C', '${LABSJDK_BUILDER_DIR}', 'checkout', self.labsjdk_builder_version],
+    ],
 
     # Returns the value of the `name` field if it exists in `obj` otherwise `default`.
     get(obj, name, default=null)::
         if obj == null then default else
         if std.objectHas(obj, name) then obj[name] else default,
-
-    # Specifies a JVMCI release currently in development and
-    JVMCIRelease(name, version, java_versions, candidate_jvmci_release, github_upload_labsjdk_ce, has_musl_static_libs, has_llvm_libs):: {
-        name: name,
-        version: version,
-        java_versions: java_versions,
-        candidate_jvmci_release: candidate_jvmci_release,
-        github_upload_labsjdk_ce: github_upload_labsjdk_ce,
-        has_musl_static_libs: has_musl_static_libs,
-        has_llvm_libs: has_llvm_libs,
-    },
-    jvmci_releases:: [self.JVMCIRelease(one_off_release.name, one_off_release.version, one_off_release.java_versions, one_off_release.candidate_jvmci_release, one_off_release.github_upload_labsjdk_ce, true, false)],
 
     # Returns true if `str` contains `needle` as a substring.
     contains(str, needle):: std.findSubstr(needle, str) != [],
@@ -274,6 +275,4 @@ local one_off_release = {
         name+: '-aarch64',
         arch:: 'aarch64',
     },
-
-
 }
