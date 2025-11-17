@@ -22,23 +22,21 @@
  */
 package jdk.vm.ci.hotspot;
 
-import static jdk.vm.ci.hotspot.CompilerToVM.compilerToVM;
-import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
+import jdk.vm.ci.common.JVMCIError;
+import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaType;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 
-import jdk.vm.ci.common.JVMCIError;
-import jdk.vm.ci.meta.JavaConstant;
-import jdk.vm.ci.meta.JavaKind;
-import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaType;
+import static jdk.vm.ci.hotspot.CompilerToVM.compilerToVM;
+import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
 /**
  * Implementation of {@link HotSpotJVMCIReflection} in terms of standard JDK reflection API. This is
@@ -66,24 +64,6 @@ final class HotSpotJDKReflection extends HotSpotJVMCIReflection {
         Class<?> javaMirror = getMirror(holder);
         return javaMirror.isAssignableFrom(getMirror(otherType));
 
-    }
-
-    @Override
-    Annotation[] getAnnotations(HotSpotResolvedObjectTypeImpl holder) {
-        Class<?> javaMirror = getMirror(holder);
-        return javaMirror.getAnnotations();
-    }
-
-    @Override
-    Annotation[] getDeclaredAnnotations(HotSpotResolvedObjectTypeImpl holder) {
-        Class<?> javaMirror = getMirror(holder);
-        return javaMirror.getDeclaredAnnotations();
-    }
-
-    @Override
-    <T extends Annotation> T getAnnotation(HotSpotResolvedObjectTypeImpl holder, Class<T> annotationClass) {
-        Class<?> javaMirror = getMirror(holder);
-        return javaMirror.getAnnotation(annotationClass);
     }
 
     @Override
@@ -133,43 +113,8 @@ final class HotSpotJDKReflection extends HotSpotJVMCIReflection {
     }
 
     @Override
-    Annotation[][] getParameterAnnotations(HotSpotResolvedJavaMethodImpl javaMethod) {
-        return getMethod(javaMethod).getParameterAnnotations();
-    }
-
-    @Override
     Type[] getGenericParameterTypes(HotSpotResolvedJavaMethodImpl javaMethod) {
         return getMethod(javaMethod).getGenericParameterTypes();
-    }
-
-    @Override
-    Annotation[] getFieldAnnotations(HotSpotResolvedJavaFieldImpl javaField) {
-        return getField(javaField).getAnnotations();
-    }
-
-    @Override
-    Annotation[] getMethodAnnotations(HotSpotResolvedJavaMethodImpl javaMethod) {
-        return getMethod(javaMethod).getAnnotations();
-    }
-
-    @Override
-    Annotation[] getMethodDeclaredAnnotations(HotSpotResolvedJavaMethodImpl javaMethod) {
-        return getMethod(javaMethod).getDeclaredAnnotations();
-    }
-
-    @Override
-    Annotation[] getFieldDeclaredAnnotations(HotSpotResolvedJavaFieldImpl javaField) {
-        return getField(javaField).getDeclaredAnnotations();
-    }
-
-    @Override
-    <T extends Annotation> T getMethodAnnotation(HotSpotResolvedJavaMethodImpl javaMethod, Class<T> annotationClass) {
-        return getMethod(javaMethod).getAnnotation(annotationClass);
-    }
-
-    @Override
-    <T extends Annotation> T getFieldAnnotation(HotSpotResolvedJavaFieldImpl javaField, Class<T> annotationClass) {
-        return getField(javaField).getAnnotation(annotationClass);
     }
 
     @Override
@@ -191,8 +136,7 @@ final class HotSpotJDKReflection extends HotSpotJVMCIReflection {
     @Override
     ResolvedJavaType asJavaType(HotSpotObjectConstantImpl object) {
         Object value = resolveObject(object);
-        if (value instanceof Class) {
-            Class<?> javaClass = (Class<?>) value;
+        if (value instanceof Class<?> javaClass) {
             return runtime().fromClass(javaClass);
         }
         if (value instanceof ResolvedJavaType) {
@@ -306,11 +250,7 @@ final class HotSpotJDKReflection extends HotSpotJVMCIReflection {
 
     /**
      * Gets a {@link Field} object corresponding to {@code field}. This method guarantees the same
-     * {@link Field} object is returned if called twice on the same {@code field} value. This is
-     * required to ensure the results of {@link HotSpotResolvedJavaFieldImpl#getAnnotations()} and
-     * {@link HotSpotResolvedJavaFieldImpl#getAnnotation(Class)} are stable (i.e., for a given field
-     * {@code f} and annotation class {@code a}, the same object is returned for each call to
-     * {@code f.getAnnotation(a)}).
+     * {@link Field} object is returned if called twice on the same {@code field} value.
      */
     static Field getField(HotSpotResolvedJavaFieldImpl field) {
         HotSpotResolvedObjectTypeImpl declaringClass = field.getDeclaringClass();

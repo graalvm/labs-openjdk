@@ -34,7 +34,6 @@ import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.UnresolvedJavaType;
 import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
@@ -251,21 +250,6 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
 
     @Override
     public List<? extends ResolvedJavaRecordComponent> getRecordComponents() {
-        return null;
-    }
-
-    @Override
-    public Annotation[] getAnnotations() {
-        return new Annotation[0];
-    }
-
-    @Override
-    public Annotation[] getDeclaredAnnotations() {
-        return new Annotation[0];
-    }
-
-    @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         return null;
     }
 

@@ -1,9 +1,11 @@
-# To process this file using Jsonnet commandline interpreter
-# Use the following command: jsonnet .ci/ci.jsonnet
+# This file is rendered into JSON with:
+#
+#    sjsonnet .ci/ci.jsonnet
+#
+# See: https://github.com/databricks/sjsonnet/releases
 
-# https://github.com/graalvm/labs-openjdk/blob/master/doc/testing.md
+# JDK tests to run
 local run_test_spec = 'test/hotspot/jtreg/compiler/jvmci test/jdk/tools/jlink/plugins/SaveJlinkArgfilesPluginTest.java';
-
 
 local common = import 'common.libsonnet';
 
@@ -33,7 +35,7 @@ local common = import 'common.libsonnet';
         notify_emails: [defs.build_failure_notify],
         publishArtifacts: [
             {
-                name: 'jdk-%s-%s-%s_tlda' % [release.name, major_java_version, release.version],
+                name: 'jdk-%s-%s-%s_tlda' % [release.name, major_java_version, release.build],
                 dir: '.',
                 patterns: [prebuild_artifact_url],
             },
@@ -55,7 +57,7 @@ local common = import 'common.libsonnet';
                     '--fingerprint=' + 'prebuild.fingerprint',
                     '--graalvm-version=%s' % release.name,
                     '--check-exists',
-                    release.version,
+                    release.build,
                     'labsjdk-ee',
                     'jdk_tlda',
                 ],
@@ -64,7 +66,7 @@ local common = import 'common.libsonnet';
     },
 
 
-    # Creates a builder object.
+    # Creates a builder object. This builds all variants (i.e. jdk, llvm and static libs).
     #
     # number major_java_version: major Java version (e.g. 25)
     # string edition: "ce" or "ee"
@@ -165,7 +167,7 @@ local common = import 'common.libsonnet';
 
         local requireTLDAArtifacts = if edition == 'ee' then [
             {
-                name: 'jdk-%s-%s-%s_tlda' % [release.name, major_java_version, release.version],
+                name: 'jdk-%s-%s-%s_tlda' % [release.name, major_java_version, release.build],
                 dir: '.',
             },
         ] else [],
@@ -180,7 +182,7 @@ local common = import 'common.libsonnet';
             '--log=' + if os == 'windows' then 'info' else 'warn',
             '--java-major-version=' + major_java_version,
             '--java-build-number=' + build_number,
-            '--jvmci-version=' + release.version,
+            '--jvmci-version=' + release.build,
             '--boot-jdk=${BOOT_JDK}',
             '--patches=' + jdk_src_dir + '/patches.tar.gz',
             '--clean-after-build',
@@ -267,7 +269,7 @@ local common = import 'common.libsonnet';
     ] + static_libs_platforms(major_java_version, release, defs),  # For building musl boot JDKs
 
     SourceBuild(java_version, release, defs):: common.LinuxAMD64(defs, java_version) + common.AMD64 + common.OCI + common.DefaultBootJDK + common.Packages + common.mxDependencies + {
-        local jvmci_build_number = release.version,
+        local jvmci_build_number = release.build,
         local repo_name = 'labsjdk-ee',
         local jdk_conf_name = 'linux-x86_64-server-release',
         local src_bundle_suffixes = ['', '-security'],
@@ -305,21 +307,21 @@ local common = import 'common.libsonnet';
                 '--enable-jvm-feature-shenandoahgc',
                 '--with-version-build=${JAVA_VERSION_BUILD}',
                 '--with-version-pre=',
-                '--with-version-opt=LTS-jvmci-' + release.name + '-' + release.version,
+                '--with-version-opt=LTS-jvmci-' + release.name + '-' + release.build,
             ],
             ['make', 'source'],
         ] +
         [self.copy_source_bundle(suffix) for suffix in src_bundle_suffixes] +
         [
             ['zip', '-ur', '../results/jdk-${JAVA_VERSION}+${JAVA_VERSION_BUILD}_src.zip', '$BUILD_MAIN/closed/make/conf/*'],
-            ['tar', 'czf', '../' + 'labsjdk-ee-${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}-src.tar.gz' % [release.name, release.version], '../results'],
+            ['tar', 'czf', '../' + 'labsjdk-ee-${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}-src.tar.gz' % [release.name, release.build], '../results'],
             ['cd', '$JDK_SOURCE/jvmci'],
         ] +
         [self.unzip_source_bundle(suffix) for suffix in src_bundle_suffixes] +
         [
             [ 'sh', 'configure',
                 '--with-version-pre=',
-                '--with-version-opt=jvmci-' + release.version,
+                '--with-version-opt=jvmci-' + release.build,
                 '--with-devkit=$DEVKIT_ROOT',
                 '--with-boot-jdk=$BOOT_JDK',
                 '--with-version-build=${JAVA_VERSION_BUILD}',
@@ -330,10 +332,10 @@ local common = import 'common.libsonnet';
             ['make', 'images', 'static-libs-bundles'],
             [
                 'artifact_uploader.py',
-                '../' + 'labsjdk-ee-${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}-src.tar.gz' % [release.name, release.version],
-                'labsjdk/' + 'labsjdk-ee-${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}-src.tar.gz' % [release.name, release.version],
+                '../' + 'labsjdk-ee-${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}-src.tar.gz' % [release.name, release.build],
+                'labsjdk/' + 'labsjdk-ee-${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}-src.tar.gz' % [release.name, release.build],
                 'labsjdk',
-                '--version', '${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}' % [release.name, release.version],
+                '--version', '${JAVA_VERSION}+${JAVA_VERSION_BUILD}-jvmci-%s-%s-${SNAPSHOT_ID}' % [release.name, release.build],
                 '--jdk', java_version + '',
                 '--revision', ['git', '-C', '$JDK_SOURCE/' + repo_name + '/open', 'rev-parse', 'HEAD'],
                 '--edition', 'ee',
@@ -361,75 +363,8 @@ local common = import 'common.libsonnet';
         ],
     },
 
-    CreateGraalIntegrationPR(release, defs):: common.Linux + common.AMD64 + common.OCI {
-        name: 'graal-integration-automation-release-%s' % release.name,
-        targets: ['ondemand'],
-        notify_emails: [defs.build_failure_notify],
-        packages+: {
-            'pip:requests': '2.25.1',
-            'pip:python-dateutil': '2.8.2',
-        },
-        capabilities+: ['e4_36_256'],
-        docker: {
-          image: defs.linux_docker_image_amd64,
-        },
-        python_version: '3',
-        run: common.clone_labsjdk_builder(defs, false) + [
-            ['set-export', 'BUILD_MAIN', '$PWD'],
-            ['cp', '${LABSJDK_BUILDER_DIR}/update_ci_imports.py', '.'],
-            ['cp', '${LABSJDK_BUILDER_DIR}/util.py', '.'],
-            ['cp', '${LABSJDK_BUILDER_DIR}/snapshot_id.py', '.'],
-            ['cp', '${LABSJDK_BUILDER_DIR}/release_labsjdks.py', '.'],
-            ['git', 'config', '--global', 'user.email', defs.ol_automation_user],
-            ['git', 'config', '--global', 'user.name', 'ol-automation_ww'],
-            ['git', 'clone', '--config', 'core.autocrlf=input', '--branch', 'master', '--quiet', defs.graal_url, '$BUILD_MAIN/graal'],
-            ['git', 'clone', '--config', 'core.autocrlf=input', '--branch', 'master', '--quiet', defs.graal_enterprise_url, '$BUILD_MAIN/graal-enterprise'],
-            ['git', 'clone', '--config', 'core.autocrlf=input', '--branch', 'master', '--quiet', defs.graalos_url, '$BUILD_MAIN/graalos'],
-            ['git', 'clone', '--config', 'core.autocrlf=input', '--quiet', defs.buildbot_ci_url, '$BUILD_MAIN/buildbot-ci'],
-
-            [ 'python3', '-u', '${LABSJDK_BUILDER_DIR}/graal_automation.py',
-                        '--buildbot-ci-path', '$BUILD_MAIN/buildbot-ci/pr_creator.py',
-                        '--graal-path', '$BUILD_MAIN/graal',
-                        '--graal-enterprise-path', '$BUILD_MAIN/graal-enterprise',
-                        '--graalos-path', '$BUILD_MAIN/graalos',
-                        '--target-branch', 'master',
-                        '--candidate-jvmci-release', '%s' % release.candidate_jvmci_release,
-                        '--reviewers',  defs.graal_prs_default_reviewers + ',' + '${BLAME_LIST}',
-            ],
-        ],
-    },
-
-    GraalDeployAutomationJob(release, defs):: common.Linux + common.AMD64 + common.OCI {
-        name: 'labsjdk-deploy-automation-release-%s' % release.name,
-        targets: ['ondemand'],
-        notify_emails: [defs.build_failure_notify],
-        packages+: {
-            'pip:requests': '2.25.1',
-            'pip:python-dateutil': '2.8.2',
-        },
-        docker: {
-          image: defs.linux_docker_image_amd64,
-        },
-        capabilities+: ['e4_36_256'],
-        python_version: '3',
-        run: common.clone_labsjdk_builder(defs, false) + [
-            ['set-export', 'BUILD_MAIN', '$PWD'],
-            ['set-export', 'HTTP_HTTPS_PROXY', defs.proxy_url],
-            ['cp', '${LABSJDK_BUILDER_DIR}/release_labsjdks.py', '.'],
-            ['cp', '${LABSJDK_BUILDER_DIR}/util.py', '.'],
-            ['cp', '${LABSJDK_BUILDER_DIR}/snapshot_id.py', '.'],
-
-            ['python3', '-u', '${LABSJDK_BUILDER_DIR}/deploy_automation.py',
-                '--graal-workdir', '$BUILD_MAIN',
-                '--candidate-jvmci-release', '%s' % release.candidate_jvmci_release,
-                '--graal-integration-branch', 'master',
-                '--allow-missing', 'patches',
-                '--upload-ce-artifact', '%s' % release.github_upload_labsjdk_ce,
-                '--pass-snapshots-file', 'true',
-            ],
-        ],
-    },
-
+    # Only used by gate jobs to test that building labsjdk works.
+    # It omits builds of static libs and llvm and also does no uploading.
     BuildValidation(defs, conf, is_musl_build, graalvm_version):: conf + setupJDKSources(conf) + (if is_musl_build then common.MuslBootJDK else common.DefaultBootJDK) + {
         name: 'gate-build-jdk' + conf.name,
         timelimit: '3:00:00',  # Windows is the long pole
@@ -456,11 +391,7 @@ local common = import 'common.libsonnet';
         run+: (if !is_musl_build then [
             # Checks that each devkit mentioned in this file corresponds to a devkit in make/conf/jib-profiles.js
             ['python3', '-u', conf.path('${PWD}/.ci/check_devkit_versions.py')],
-        ] else []) + [
-            ['set-export', 'LABSJDK_BUILDER_DIR', conf.path('${PWD}/../labsjdk-builder')],
-            ['git', 'clone', '--quiet', '--config', 'core.autocrlf=input', defs.labsjdk_builder_url, '${LABSJDK_BUILDER_DIR}'],
-            ['git', '-C', '${LABSJDK_BUILDER_DIR}', 'checkout', common.labsjdk_builder_version],
-
+        ] else []) + common.clone_labsjdk_builder(defs, conf.os == 'windows') + [
             # This restricts cygwin to be on the PATH only while using jib.
             # It must not be on the PATH when building Graal.
             ['set-export', 'OLD_PATH', '${PATH}'],
@@ -484,14 +415,13 @@ local common = import 'common.libsonnet';
         common.LinuxDockerAMD64Musl(defs),
     ],
 
-    DefineBuilds(defs):: [self.BuildValidation(defs, conf, is_musl_build=false, graalvm_version=25.1) for conf in build_confs(defs)] +
-            [self.BuildValidation(defs, conf, is_musl_build=true, graalvm_version=25.1) for conf in amd64_musl_confs(defs)],
+    DefineBuilds(defs)::
+        [self.BuildValidation(defs, conf, is_musl_build=false, graalvm_version=25.1) for conf in build_confs(defs)] +
+        [self.BuildValidation(defs, conf, is_musl_build=true, graalvm_version=25.1) for conf in amd64_musl_confs(defs)],
 
     CreateBuilds(major_java_version, releases, defs)::
         [self.Prebuild(major_java_version, release, defs) for release in releases] +
-        [self.SourceBuild(major_java_version, release, defs) for release in releases] +
-        [self.CreateGraalIntegrationPR(release, defs) for release in releases] +
-        [self.GraalDeployAutomationJob(release, defs) for release in releases]
+        [self.SourceBuild(major_java_version, release, defs) for release in releases]
 
         + produce_builds(major_java_version, releases, false, false, defs)
         + produce_builds(major_java_version, releases, true, false, defs)

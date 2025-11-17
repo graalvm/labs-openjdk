@@ -40,7 +40,6 @@ import jdk.vm.ci.meta.SpeculationLog;
 import jdk.vm.ci.meta.TriState;
 import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -449,7 +448,6 @@ final class HotSpotResolvedJavaMethodImpl extends HotSpotMethod implements HotSp
     }
 
     /**
-     * @param level
      * @return true if the currently installed code was generated at {@code level}.
      */
     @Override
@@ -504,38 +502,6 @@ final class HotSpotResolvedJavaMethodImpl extends HotSpotMethod implements HotSp
             return new ResolvedJavaMethod.Parameter[0];
         }
         return runtime().reflection.getParameters(this);
-    }
-
-    @Override
-    public Annotation[][] getParameterAnnotations() {
-        if (!hasAnnotations(HotSpotVMConfig.config().constMethodHasParameterAnnotations)) {
-            return new Annotation[signature.getParameterCount(false)][0];
-        }
-        return runtime().reflection.getParameterAnnotations(this);
-    }
-
-    @Override
-    public Annotation[] getAnnotations() {
-        if (!hasAnnotations(config().constMethodHasMethodAnnotations)) {
-            return new Annotation[0];
-        }
-        return runtime().reflection.getMethodAnnotations(this);
-    }
-
-    @Override
-    public Annotation[] getDeclaredAnnotations() {
-        if (!hasAnnotations(config().constMethodHasMethodAnnotations)) {
-            return new Annotation[0];
-        }
-        return runtime().reflection.getMethodDeclaredAnnotations(this);
-    }
-
-    @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
-        if (!hasAnnotations(config().constMethodHasMethodAnnotations)) {
-            return null;
-        }
-        return runtime().reflection.getMethodAnnotation(this, annotationClass);
     }
 
     /**

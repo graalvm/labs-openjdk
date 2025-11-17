@@ -29,11 +29,8 @@ import jdk.vm.ci.meta.UnresolvedJavaType;
 import jdk.vm.ci.meta.annotation.AbstractAnnotated;
 import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-import java.lang.annotation.Annotation;
-
 import static jdk.internal.misc.Unsafe.ADDRESS_SIZE;
 import static jdk.vm.ci.hotspot.CompilerToVM.compilerToVM;
-import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 import static jdk.vm.ci.hotspot.HotSpotVMConfig.config;
 import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
 
@@ -202,30 +199,6 @@ class HotSpotResolvedJavaFieldImpl extends AbstractAnnotated implements HotSpotR
             }
         }
         return false;
-    }
-
-    @Override
-    public Annotation[] getAnnotations() {
-        if (!hasAnnotations(false)) {
-            return new Annotation[0];
-        }
-        return runtime().reflection.getFieldAnnotations(this);
-    }
-
-    @Override
-    public Annotation[] getDeclaredAnnotations() {
-        if (!hasAnnotations(false)) {
-            return new Annotation[0];
-        }
-        return runtime().reflection.getFieldDeclaredAnnotations(this);
-    }
-
-    @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
-        if (!hasAnnotations(false)) {
-            return null;
-        }
-        return runtime().reflection.getFieldAnnotation(this, annotationClass);
     }
 
     @Override
