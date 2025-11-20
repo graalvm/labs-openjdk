@@ -2355,11 +2355,14 @@ static jobject read_field_value(Handle obj, long displacement, jchar type_char, 
   }
 
   // Perform basic sanity checks on the read.  Primitive reads are permitted to read outside the
-  // bounds of their fields but object reads must map exactly onto the underlying oop slot.
+  // bounds of their fields but object reads must map exactly onto the underlying oop slot. This
+  // also ensures that the load is naturally aligned, which is required because the code below
+  // uses volatile reads (see JDK-8275874).
   bool aligned = (displacement % basic_type_elemsize) == 0;
   if (!aligned) {
     JVMCI_THROW_MSG_NULL(IllegalArgumentException, "read is unaligned");
   }
+
   if (obj->is_array()) {
     // Disallow reading after the last element of an array
     size_t array_length = arrayOop(obj())->length();
@@ -2370,6 +2373,7 @@ static jobject read_field_value(Handle obj, long displacement, jchar type_char, 
       JVMCI_THROW_MSG_NULL(IllegalArgumentException, "reading after last array element");
     }
   }
+
   if (basic_type == T_OBJECT) {
     if (obj->is_objArray()) {
       if (displacement < arrayOopDesc::base_offset_in_bytes(T_OBJECT)) {
