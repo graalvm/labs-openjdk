@@ -21,6 +21,7 @@ local common = import 'common.libsonnet';
         logs: [
             '*.log',
             '*/build/*/configure-support/sign-dummy/sign-dummy.signlog',
+            'snapshot-labsjdk-versions.json'
         ],
         deploysArtifacts: true,
         python_version: '3',
@@ -56,6 +57,7 @@ local common = import 'common.libsonnet';
                     '--patches=patches.tar.gz',
                     '--fingerprint=' + 'prebuild.fingerprint',
                     '--graalvm-version=%s' % release.name,
+                    '--labsjdk-versions=snapshot-labsjdk-versions.json',
                     '--check-exists',
                     release.build,
                     'labsjdk-ee',
