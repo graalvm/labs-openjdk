@@ -51,7 +51,7 @@ if __name__ == "__main__":
     ee_version = common_json["jdks"]["labsjdk-ee-latest"]["version"]
 
     if args.labsjdk_versions.startswith("http://") or args.labsjdk_versions.startswith("https://"):
-        from urllib import request, error
+        from urllib import request
         url = args.labsjdk_versions
         with request.urlopen(url, timeout=10) as response:
             if response.status != 200:
