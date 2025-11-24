@@ -702,23 +702,18 @@ public class TestResolvedJavaMethod extends MethodUniverse {
 
     // @formatter:off
     private static final String[] untestedApiMethods = {
-        "newInstance",
         "getDeclaringClass",
         "getEncoding",
         "getProfilingInfo",
         "reprofile",
-        "getCompilerStorage",
         "hasNeverInlineDirective",
         "canBeInlined",
         "shouldBeInlined",
         "getLineNumberTable",
         "isInVirtualMethodTable",
         "toParameterTypes",
-        "getParameterAnnotation",
         "getSpeculationLog",
-        "isFinal",
-        "invoke",
-        "$jacocoInit"
+        "isFinal"
     };
     // @formatter:on
 
