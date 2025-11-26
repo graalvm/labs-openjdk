@@ -35,9 +35,11 @@ public interface MemoryAccessProvider {
      * @param displacement the displacement within the object in bytes
      * @param bits the number of bits to read from memory
      * @return the read value encapsulated in a {@link JavaConstant} object of {@link JavaKind} kind
+     *         or {@code null} in case that the value could not be read
      * @throws IllegalArgumentException if the read is out of bounds of the object or {@code kind}
      *             is {@link JavaKind#Void} or not {@linkplain JavaKind#isPrimitive() primitive}
-     *             kind or {@code bits} is not 8, 16, 32 or 64, or the read is unaligned
+     *             kind or {@code bits} is not 8, 16, 32 or 64, or the value cannot be read safely
+     *             (e.g. unaligned volatile reads on AArch64)
      */
     JavaConstant readPrimitiveConstant(JavaKind kind, Constant base, long displacement, int bits) throws IllegalArgumentException;
 
