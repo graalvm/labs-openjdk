@@ -40,15 +40,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Updates jdks.labsjdk-ce-latest.version and jdks.labsjdk-ee-latest.version values in common.json.")
     parser.add_argument("labsjdk_versions", action="store", help="URL or path to file from which labsjdk versions will be read. " \
                         "The content must be a JSON object with ce and ee fields that specify the new values.")
-    parser.add_argument("common_json", action="store", help="common.json file to process")
+    parser.add_argument("common.json", action="store", nargs="+", help="path to a common.json file to process")
 
     args = parser.parse_args()
-
-    common_json_path = Path(args.common_json)
-    common_json_text = common_json_path.read_text()
-    common_json = json.loads(common_json_text)
-    ce_version = common_json["jdks"]["labsjdk-ce-latest"]["version"]
-    ee_version = common_json["jdks"]["labsjdk-ee-latest"]["version"]
 
     if args.labsjdk_versions.startswith("http://") or args.labsjdk_versions.startswith("https://"):
         from urllib import request
@@ -70,22 +64,29 @@ if __name__ == "__main__":
             new_versions = new_versions[0:1024] + "... (truncated)"
         raise SystemExit(f"Error decoding content of size {size} from {args.labsjdk_versions} as JSON: {e}\nContent:\n{new_versions}")
 
-    try:
-        new_common_json_text = common_json_text\
-            .replace(ce_version, new_versions["ce"])\
-            .replace(ee_version, new_versions["ee"])
-    except KeyError as e:
-        raise SystemExit(f"Error extracting versions from JSON in {args.labsjdk_versions}: Missing value for {e}\nJSON:\n{json.dumps(new_versions, indent=2)}")
-    
-    if new_common_json_text == common_json_text:
-        print(f"No change to {common_json_path}")
-    else:
-        patch = "\n".join((line for line in difflib.unified_diff(
-            common_json_text.split("\n"),
-            new_common_json_text.split("\n"),
-            fromfile=f"a/{common_json_path.name}",
-            tofile=f"b/{common_json_path.name}",
-            lineterm=""
-        )))
-        print(f"Updated {common_json_path} with this patch:\n{patch}")
-        common_json_path.write_text(new_common_json_text)
+    for common_json_path in getattr(args, "common.json"):
+        common_json_path = Path(common_json_path)
+        common_json_text = common_json_path.read_text()
+        common_json = json.loads(common_json_text)
+        ce_version = common_json["jdks"]["labsjdk-ce-latest"]["version"]
+        ee_version = common_json["jdks"]["labsjdk-ee-latest"]["version"]
+
+        try:
+            new_common_json_text = common_json_text\
+                .replace(ce_version, new_versions["ce"])\
+                .replace(ee_version, new_versions["ee"])
+        except KeyError as e:
+            raise SystemExit(f"Error extracting versions from JSON in {args.labsjdk_versions}: Missing value for {e}\nJSON:\n{json.dumps(new_versions, indent=2)}")
+
+        if new_common_json_text == common_json_text:
+            print(f"No change to {common_json_path}")
+        else:
+            patch = "\n".join((line for line in difflib.unified_diff(
+                common_json_text.split("\n"),
+                new_common_json_text.split("\n"),
+                fromfile=f"a/{common_json_path.name}",
+                tofile=f"b/{common_json_path.name}",
+                lineterm=""
+            )))
+            print(f"Updated {common_json_path} with this patch:\n{patch}")
+            common_json_path.write_text(new_common_json_text)
