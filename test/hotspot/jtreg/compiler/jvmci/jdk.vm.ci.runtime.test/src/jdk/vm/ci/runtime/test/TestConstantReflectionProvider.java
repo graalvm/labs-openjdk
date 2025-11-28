@@ -41,7 +41,13 @@ import org.junit.Test;
 import java.lang.reflect.Array;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests for {@link ConstantReflectionProvider}. It assumes an implementation of the interface that
@@ -90,6 +96,31 @@ public class TestConstantReflectionProvider extends TypeUniverse {
         static final Integer INT_CONST = 66;
         static final Byte BYTE_CONST = 123;
         static final Boolean BOOL_CONST = true;
+    }
+
+    @Test
+    public void identityHashCodeTest() {
+        try {
+            constantReflection.identityHashCode(null);
+            fail("Expected NullPointerException");
+        } catch (NullPointerException e) {
+            // Expected
+        }
+        assertEquals(Integer.valueOf(0), constantReflection.identityHashCode(JavaConstant.NULL_POINTER));
+        for (ConstantValue cv : constants()) {
+            if (cv.value.getJavaKind() != JavaKind.Object) {
+                try {
+                    constantReflection.identityHashCode(cv.value);
+                    fail("Expected IllegalArgumentException for " + cv);
+                } catch (IllegalArgumentException e) {
+                    // Expected
+                }
+            } else if (cv.boxed != cv.value) {
+                int expect = System.identityHashCode(cv.boxed);
+                int actual = constantReflection.identityHashCode(cv.value);
+                assertEquals(cv.toString(), expect, actual);
+            }
+        }
     }
 
     @Test
