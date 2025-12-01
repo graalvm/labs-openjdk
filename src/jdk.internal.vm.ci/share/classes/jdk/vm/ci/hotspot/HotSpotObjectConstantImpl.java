@@ -22,13 +22,13 @@
  */
 package jdk.vm.ci.hotspot;
 
-import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
-import static jdk.vm.ci.services.Services.IS_IN_NATIVE_IMAGE;
-
 import jdk.vm.ci.meta.Assumptions;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaType;
+
+import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
+import static jdk.vm.ci.services.Services.IS_IN_NATIVE_IMAGE;
 
 /**
  * Represents a constant non-{@code null} object reference, within the compiler and across the
@@ -58,18 +58,9 @@ abstract class HotSpotObjectConstantImpl implements HotSpotObjectConstant {
     }
 
     @Override
-    public abstract JavaConstant compress();
-
-    @Override
-    public abstract JavaConstant uncompress();
-
-    @Override
     public HotSpotResolvedObjectType getType() {
         return runtime().reflection.getType(this);
     }
-
-    @Override
-    public abstract int getIdentityHashCode();
 
     private boolean isFullyInitializedConstantCallSite() {
         if (!runtime().getConstantCallSite().isInstance(this)) {

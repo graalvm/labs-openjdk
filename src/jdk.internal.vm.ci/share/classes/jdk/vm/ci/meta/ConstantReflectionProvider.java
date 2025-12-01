@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -71,7 +71,7 @@ public interface ConstantReflectionProvider {
     /**
      * Converts the given {@link JavaKind#isPrimitive() primitive} constant to a boxed
      * {@link JavaKind#Object object} constant, according to the Java boxing rules. Returns
-     * {@code null} if the source is is not a primitive constant, or the boxed value is not
+     * {@code null} if the source is not a primitive constant, or the boxed value is not
      * available at this point.
      */
     JavaConstant boxPrimitive(JavaConstant source);
@@ -79,7 +79,7 @@ public interface ConstantReflectionProvider {
     /**
      * Converts the given {@link JavaKind#Object object} constant to a {@link JavaKind#isPrimitive()
      * primitive} constant, according to the Java unboxing rules. Returns {@code null} if the source
-     * is is not an object constant that can be unboxed, or the unboxed value is not available at
+     * is not an object constant that can be unboxed, or the unboxed value is not available at
      * this point.
      */
     JavaConstant unboxPrimitive(JavaConstant source);
@@ -116,4 +116,15 @@ public interface ConstantReflectionProvider {
      * type representation which is typically stored in the object header.
      */
     Constant asObjectHub(ResolvedJavaType type);
+
+    /**
+     * Gets the identity hash code of the object value represented by {@code constant}.
+     * <p>
+     * For the {@link JavaConstant#isNull() null constant}, this method returns zero as specified by
+     * {@link System#identityHashCode(Object)}.
+     *
+     * @throws NullPointerException if {@code constant == null}
+     * @throws IllegalArgumentException if {@code constant.getJavaKind() != JavaKind.Object}
+     */
+    Integer identityHashCode(JavaConstant constant);
 }
