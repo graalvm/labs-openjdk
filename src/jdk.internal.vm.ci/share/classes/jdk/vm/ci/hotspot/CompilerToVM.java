@@ -1141,6 +1141,11 @@ final class CompilerToVM {
     native int getIdentityHashCode(HotSpotObjectConstantImpl object);
 
     /**
+     * @see HotSpotObjectConstant#makeIdentityHashCode
+     */
+    native int makeIdentityHashCode(HotSpotObjectConstantImpl object, int requestedValue);
+
+    /**
      * Converts a constant object representing a boxed primitive into a boxed primitive.
      */
     native Object unboxPrimitive(HotSpotObjectConstantImpl object);

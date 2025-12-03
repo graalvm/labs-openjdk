@@ -49,10 +49,15 @@ public interface HotSpotObjectConstant extends JavaConstant, HotSpotConstant, VM
     HotSpotResolvedObjectType getType();
 
     /**
-     * Gets the {@linkplain System#identityHashCode(Object) identity} has code for the object
-     * represented by this constant.
+     * Gets the identity hash code for the object represented by this constant.
      */
     int getIdentityHashCode();
+
+    /**
+     * Gets the identity hash code of the object represented by this constant, trying
+     * to initialize it to {@code requestedValue} if it is not yet initialized.
+     */
+    int makeIdentityHashCode(int requestedValue);
 
     /**
      * Gets the result of {@link CallSite#getTarget()} for the {@link CallSite} object represented

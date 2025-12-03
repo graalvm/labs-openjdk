@@ -136,6 +136,8 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
     // This is only valid on AMD64.
     final int runtimeCallStackSize = getConstant("frame::arg_reg_save_area_bytes", Integer.class, Architecture.isX64() ? null : 0);
 
+    public final int markWordHashBits = getConstant("markWord::hash_bits", Integer.class);
+    public final int markWordNoHash = getConstant("markWord::no_hash", Integer.class);
 
     final int methodAccessFlagsOffset = getFieldOffset("Method::_access_flags", Integer.class, "AccessFlags");
     final int methodConstMethodOffset = getFieldOffset("Method::_constMethod", Integer.class, "ConstMethod*");

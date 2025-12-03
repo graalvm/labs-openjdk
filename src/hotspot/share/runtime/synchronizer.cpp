@@ -965,7 +965,7 @@ static intptr_t get_next_hash(Thread* current, oop obj) {
   return value;
 }
 
-static intptr_t install_hash_code(Thread* current, oop obj) {
+static intptr_t install_hash_code(Thread* current, oop obj, intptr_t* requested_value = nullptr) {
   assert(UseObjectMonitorTable && LockingMode == LM_LIGHTWEIGHT, "must be");
 
   markWord mark = obj->mark_acquire();
@@ -975,7 +975,7 @@ static intptr_t install_hash_code(Thread* current, oop obj) {
       return hash;
     }
 
-    hash = get_next_hash(current, obj);
+    hash = requested_value != nullptr ? *requested_value : get_next_hash(current, obj);
     const markWord old_mark = mark;
     const markWord new_mark = old_mark.copy_set_hash(hash);
 
@@ -986,11 +986,14 @@ static intptr_t install_hash_code(Thread* current, oop obj) {
   }
 }
 
-intptr_t ObjectSynchronizer::FastHashCode(Thread* current, oop obj) {
+intptr_t ObjectSynchronizer::FastHashCode(Thread* current, oop obj, intptr_t* requested_value) {
+  assert(requested_value == nullptr || 
+    (*requested_value != markWord::no_hash && *requested_value >> markWord::hash_bits == 0),
+    "invalid identity hash: %ld", *requested_value);
   if (UseObjectMonitorTable) {
     // Since the monitor isn't in the object header, the hash can simply be
     // installed in the object header.
-    return install_hash_code(current, obj);
+    return install_hash_code(current, obj, requested_value);
   }
 
   while (true) {
@@ -1007,7 +1010,7 @@ intptr_t ObjectSynchronizer::FastHashCode(Thread* current, oop obj) {
       if (hash != 0) {                     // if it has a hash, just return it
         return hash;
       }
-      hash = get_next_hash(current, obj);  // get a new hash
+      hash = requested_value != nullptr ? *requested_value : get_next_hash(current, obj);  // get a new hash
       temp = mark.copy_set_hash(hash);     // merge the hash into header
                                            // try to install the hash
       test = obj->cas_set_mark(temp, mark);
@@ -1082,7 +1085,7 @@ intptr_t ObjectSynchronizer::FastHashCode(Thread* current, oop obj) {
     assert(mark.is_neutral(), "invariant: header=" INTPTR_FORMAT, mark.value());
     hash = mark.hash();
     if (hash == 0) {                       // if it does not have a hash
-      hash = get_next_hash(current, obj);  // get a new hash
+      hash = requested_value != nullptr ? *requested_value : get_next_hash(current, obj);  // get a new hash
       temp = mark.copy_set_hash(hash)   ;  // merge the hash into header
       assert(temp.is_neutral(), "invariant: header=" INTPTR_FORMAT, temp.value());
       uintptr_t v = Atomic::cmpxchg(monitor->metadata_addr(), mark.value(), temp.value());

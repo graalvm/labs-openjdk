@@ -192,7 +192,7 @@ public class HotSpotConstantReflectionProvider implements ConstantReflectionProv
     }
 
     @Override
-    public Integer identityHashCode(JavaConstant constant) {
+    public int identityHashCode(JavaConstant constant) {
         JavaKind kind = Objects.requireNonNull(constant).getJavaKind();
         if (kind != JavaKind.Object) {
             throw new IllegalArgumentException("Constant has unexpected kind " + kind + ": " + constant);
@@ -200,6 +200,31 @@ public class HotSpotConstantReflectionProvider implements ConstantReflectionProv
             /* System.identityHashCode is specified to return 0 when passed null. */
             return 0;
         }
-        return ((HotSpotObjectConstant) constant).getIdentityHashCode();
+        if (constant instanceof HotSpotObjectConstant hConstant) {
+            return hConstant.getIdentityHashCode();
+        }
+        throw new IllegalArgumentException("Constant has unexpected type " + constant.getClass() + ": " + constant);
+    }
+
+    @Override
+    public int makeIdentityHashCode(JavaConstant constant, int requestedValue) {
+        if (constant == null || constant.isNull()) {
+            throw new NullPointerException();
+        }
+
+        int hashBits = HotSpotVMConfig.config().markWordHashBits;
+        int noHash = HotSpotVMConfig.config().markWordNoHash;
+        int requestedValueBits = 32 - Integer.numberOfLeadingZeros(requestedValue);
+        if (requestedValueBits == noHash || requestedValueBits > hashBits) {
+            throw new IllegalArgumentException("Requested identity hash code is + " + noHash + " or not an unsigned " + hashBits + " bit value: " + requestedValue);
+        }
+        JavaKind kind = constant.getJavaKind();
+        if (kind != JavaKind.Object) {
+            throw new IllegalArgumentException("Constant has unexpected kind " + kind + ": " + constant);
+        }
+        if (!(constant instanceof HotSpotObjectConstant hConstant)) {
+            throw new IllegalArgumentException("Constant has unexpected type " + constant.getClass() + ": " + constant);
+        }
+        return hConstant.makeIdentityHashCode(requestedValue);
     }
 }

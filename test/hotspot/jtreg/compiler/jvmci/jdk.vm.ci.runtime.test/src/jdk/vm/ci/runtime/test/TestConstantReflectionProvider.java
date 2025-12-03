@@ -24,7 +24,8 @@
 /**
  * @test
  * @requires vm.jvmci
- * @library ../../../../../
+ * @library ../../../../../ /test/lib
+ * @build jdk.test.lib.RandomFactory
  * @modules jdk.internal.vm.ci/jdk.vm.ci.meta
  *          jdk.internal.vm.ci/jdk.vm.ci.runtime
  *          java.base/jdk.internal.misc
@@ -33,13 +34,22 @@
 
 package jdk.vm.ci.runtime.test;
 
+import jdk.test.lib.RandomFactory;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -106,7 +116,7 @@ public class TestConstantReflectionProvider extends TypeUniverse {
         } catch (NullPointerException e) {
             // Expected
         }
-        assertEquals(Integer.valueOf(0), constantReflection.identityHashCode(JavaConstant.NULL_POINTER));
+        assertEquals(0, constantReflection.identityHashCode(JavaConstant.NULL_POINTER));
         for (ConstantValue cv : constants()) {
             if (cv.value.getJavaKind() != JavaKind.Object) {
                 try {
@@ -120,6 +130,72 @@ public class TestConstantReflectionProvider extends TypeUniverse {
                 int actual = constantReflection.identityHashCode(cv.value);
                 assertEquals(cv.toString(), expect, actual);
             }
+        }
+    }
+
+    @Test
+    public void makeIdentityHashCodeTest() throws Exception {
+        try {
+            constantReflection.makeIdentityHashCode(null, 0);
+            fail("Expected NullPointerException");
+        } catch (NullPointerException e) {
+            // Expected
+        }
+        try {
+            constantReflection.makeIdentityHashCode(JavaConstant.NULL_POINTER, 0);
+            fail("Expected NullPointerException");
+        } catch (NullPointerException e) {
+            // Expected
+        }
+        try {
+            JavaConstant constant = constantReflection.forString("fresh value");
+            int illegalHotSpotHashCode = -1;
+            constantReflection.makeIdentityHashCode(constant, illegalHotSpotHashCode);
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
+        for (ConstantValue cv : constants()) {
+            if (cv.value.getJavaKind() != JavaKind.Object) {
+                try {
+                    constantReflection.makeIdentityHashCode(cv.value, 0);
+                    fail("Expected IllegalArgumentException for " + cv);
+                } catch (IllegalArgumentException e) {
+                    // Expected
+                }
+            } else if (cv.boxed != cv.value) {
+                int expect = System.identityHashCode(cv.boxed);
+                // Check that changing an initialized identity hash code fails
+                int differentThanExpect = expect == Integer.MAX_VALUE ? 1 : expect + 1;
+                int actual = constantReflection.makeIdentityHashCode(cv.value, differentThanExpect);
+                assertEquals(cv.toString(), expect, actual);
+            }
+        }
+
+        class ConstantsWithUninitializedIdentityHashCodes {
+            static final Object CONST1 = new ArrayList<>();
+            static final Object CONST2 = new ArrayList<>();
+            static final Object CONST3 = new IdentityHashMap<>();
+            static final Object CONST4 = new LinkedHashMap<>();
+            static final Object CONST5 = new TreeMap<>();
+            static final Object CONST6 = new ArrayDeque<>();
+            static final Object CONST7 = new LinkedList<>();
+            static final Object CONST8 = new String[] {"string1", "string2", "string3"};
+            static final Object CONST9 = new Object();
+            static final Object CONST10 = new Object() {};
+        }
+
+        Random random = RandomFactory.getRandom();
+        for (ConstantValue cv : readConstants(ConstantsWithUninitializedIdentityHashCodes.class)) {
+            // Get a random value in the range [1 .. MAX_VALUE]
+            int expect = random.nextInt(Integer.MAX_VALUE) + 1;
+            int actual = constantReflection.makeIdentityHashCode(cv.value, expect);
+            Assert.assertEquals(cv.name, expect, actual);
+
+            // Check that changing an initialized identity hash code fails
+            int differentThanExpect = expect == Integer.MAX_VALUE ? 1 : expect + 1;
+            actual = constantReflection.makeIdentityHashCode(cv.value, differentThanExpect);
+            assertEquals(cv.toString(), expect, actual);
         }
     }
 

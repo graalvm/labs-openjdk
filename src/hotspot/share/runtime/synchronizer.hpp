@@ -148,9 +148,11 @@ public:
   inline static ObjectMonitor* read_monitor(markWord mark);
   inline static ObjectMonitor* read_monitor(Thread* current, oop obj, markWord mark);
 
-  // Returns the identity hash value for an oop
+  // Returns the identity hash value for an oop.
+  // If `requested_value` is non-null and the identity hash is uninitialized,
+  // `*requested_value` is used to try initialize the identity hash.
   // NOTE: It may cause monitor inflation
-  static intptr_t FastHashCode(Thread* current, oop obj);
+  static intptr_t FastHashCode(Thread* current, oop obj, intptr_t* requested_value = nullptr);
 
   // java.lang.Thread support
   static bool current_thread_holds_lock(JavaThread* current, Handle h_obj);
