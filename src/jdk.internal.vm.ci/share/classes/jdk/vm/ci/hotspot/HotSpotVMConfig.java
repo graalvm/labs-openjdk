@@ -22,14 +22,14 @@
  */
 package jdk.vm.ci.hotspot;
 
-import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
-import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
-
-import jdk.vm.ci.common.JVMCIError;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.util.Architecture;
+import jdk.vm.ci.common.JVMCIError;
 
 import java.util.Objects;
+
+import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
+import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
 
 /**
  * Used to access native configuration details.
@@ -136,15 +136,6 @@ class HotSpotVMConfig extends HotSpotVMConfigAccess {
     // This is only valid on AMD64.
     final int runtimeCallStackSize = getConstant("frame::arg_reg_save_area_bytes", Integer.class, Architecture.isX64() ? null : 0);
 
-    private final int markWordNoHashInPlace = getConstant("markWord::no_hash_in_place", Integer.class);
-    private final int markWordNoLockInPlace = getConstant("markWord::no_lock_in_place", Integer.class);
-
-    /**
-     * See {@code markWord::prototype()}.
-     */
-    long prototypeMarkWord() {
-        return markWordNoHashInPlace | markWordNoLockInPlace;
-    }
 
     final int methodAccessFlagsOffset = getFieldOffset("Method::_access_flags", Integer.class, "AccessFlags");
     final int methodConstMethodOffset = getFieldOffset("Method::_constMethod", Integer.class, "ConstMethod*");
