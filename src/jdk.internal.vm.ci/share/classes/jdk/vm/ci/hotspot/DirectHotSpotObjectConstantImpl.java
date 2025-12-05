@@ -24,6 +24,9 @@ package jdk.vm.ci.hotspot;
 
 import jdk.vm.ci.meta.JavaConstant;
 
+import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
+import static jdk.vm.ci.services.Services.IS_IN_NATIVE_IMAGE;
+
 final class DirectHotSpotObjectConstantImpl extends HotSpotObjectConstantImpl {
 
     static JavaConstant forObject(Object object, boolean compressed) {
@@ -68,5 +71,14 @@ final class DirectHotSpotObjectConstantImpl extends HotSpotObjectConstantImpl {
     @Override
     public int getIdentityHashCode() {
         return System.identityHashCode(object);
+    }
+
+    @Override
+    public int makeIdentityHashCode(int requestedValue) {
+        if (IS_IN_NATIVE_IMAGE) {
+            // Cannot set identity hash code of an object in libgraal's heap
+            return System.identityHashCode(object);
+        }
+        return runtime().compilerToVm.makeIdentityHashCode(this, requestedValue);
     }
 }

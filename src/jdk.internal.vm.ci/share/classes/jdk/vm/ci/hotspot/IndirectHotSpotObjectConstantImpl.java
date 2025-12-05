@@ -22,14 +22,13 @@
  */
 package jdk.vm.ci.hotspot;
 
-import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
-import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
+import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.Option;
+import jdk.vm.ci.meta.JavaConstant;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.Option;
-import jdk.vm.ci.meta.JavaConstant;
+import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
 /**
  * Encapsulates a JNI reference to an object in the HotSpot heap.
@@ -177,17 +176,26 @@ final class IndirectHotSpotObjectConstantImpl extends HotSpotObjectConstantImpl 
         return new IndirectHotSpotObjectConstantImpl(this, false);
     }
 
-    @Override
-    public int getIdentityHashCode() {
+    private int makeOrGetIdentityHashCode(boolean make, int value) {
         checkHandle();
         int hash = hashCode;
         if (hash == 0) {
-            hash = runtime().compilerToVm.getIdentityHashCode(this);
-            if (hash == 0) {
-                hash = 31;
+            if (make) {
+                hash = runtime().compilerToVm.makeIdentityHashCode(this, value);
+            } else {
+                hash = runtime().compilerToVm.getIdentityHashCode(this);
             }
-            hashCode = hash;
         }
         return hash;
+    }
+
+    @Override
+    public int getIdentityHashCode() {
+        return makeOrGetIdentityHashCode(false, 0);
+    }
+
+    @Override
+    public int makeIdentityHashCode(int requestedValue) {
+        return makeOrGetIdentityHashCode(true, requestedValue);
     }
 }

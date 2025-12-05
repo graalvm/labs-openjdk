@@ -118,13 +118,38 @@ public interface ConstantReflectionProvider {
     Constant asObjectHub(ResolvedJavaType type);
 
     /**
-     * Gets the identity hash code of the object value represented by {@code constant}.
+     * Gets the identity hash code of the object value represented by {@code constant}, initializing
+     * it first if necessary.
      * <p>
      * For the {@link JavaConstant#isNull() null constant}, this method returns zero as specified by
      * {@link System#identityHashCode(Object)}.
      *
      * @throws NullPointerException if {@code constant == null}
-     * @throws IllegalArgumentException if {@code constant.getJavaKind() != JavaKind.Object}
+     * @throws IllegalArgumentException if {@code constant.getJavaKind() != JavaKind.Object} or
+     *         {@code constant.getClass()} is not supported by this provider
      */
-    Integer identityHashCode(JavaConstant constant);
+    int identityHashCode(JavaConstant constant);
+
+    /**
+     * Gets the identity hash code of the object value represented by {@code constant}, trying
+     * to initialize it to {@code requestedValue} if it was not yet initialized.
+     * <p>
+     * The expected use case of this method is to serialize objects between processes
+     * that execute on the same VM implementation while preserving their identity
+     * hash code. That is, {@code requestedValue} is expected to have been read from
+     * an object in the originating process and so will conform to the constraints for
+     * identity hash codes on this VM. In this use case, it's also expected that the
+     * hash code is set for a deserialized object as soon as it has been deserialized
+     * with no other code executing in between that may initialize the identity hash
+     * code to a different value.
+     *
+     * @return the identity hash code of the object value represented by {@code constant}
+     * @throws NullPointerException if {@code constant.isNull()} or {@code obj == null}
+     * @throws IllegalArgumentException if {@code constant.getJavaKind() != JavaKind.Object},
+     *         {@code requestedValue} is not a valid identity hash code value on this VM
+     *         (e.g. HotSpot uses a 31 bit, unsigned identity hash code and reserves 0 to
+     *         denote uninitialized) or {@code constant.getClass()} is a type not supported
+     *         by this provider
+     */
+    int makeIdentityHashCode(JavaConstant constant, int requestedValue);
 }

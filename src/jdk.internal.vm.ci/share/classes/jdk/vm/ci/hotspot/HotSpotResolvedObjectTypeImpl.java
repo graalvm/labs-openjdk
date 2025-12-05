@@ -1080,12 +1080,6 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     @Override
-    public long prototypeMarkWord() {
-        HotSpotVMConfig config = config();
-        return config.prototypeMarkWord();
-    }
-
-    @Override
     public ResolvedJavaField findInstanceFieldWithOffset(long offset, JavaKind expectedEntryKind) {
         ResolvedJavaField[] declaredFields = getInstanceFields(true);
         return findFieldWithOffset(offset, expectedEntryKind, declaredFields);

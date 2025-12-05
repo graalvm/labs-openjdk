@@ -2161,6 +2161,12 @@ C2V_VMENTRY_0(jint, getIdentityHashCode, (JNIEnv* env, jobject, jobject object))
   return obj->identity_hash();
 C2V_END
 
+C2V_VMENTRY_0(jint, makeIdentityHashCode, (JNIEnv* env, jobject, jobject object, jint value))
+  Handle obj = JVMCIENV->asConstant(JVMCIENV->wrap(object), JVMCI_CHECK_0);
+  intptr_t req_hash = value;
+  return ObjectSynchronizer::FastHashCode(THREAD, obj(), &req_hash);
+C2V_END
+
 C2V_VMENTRY_0(jboolean, isInternedString, (JNIEnv* env, jobject, jobject object))
   Handle str = JVMCIENV->asConstant(JVMCIENV->wrap(object), JVMCI_CHECK_0);
   if (!java_lang_String::is_instance(str())) {
@@ -3494,6 +3500,7 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "lookupNameInPool",                             CC "(" HS_CONSTANT_POOL2 "II)" STRING,                                                FN_PTR(lookupNameInPool)},
   {CC "lookupSignatureInPool",                        CC "(" HS_CONSTANT_POOL2 "II)" STRING,                                                FN_PTR(lookupSignatureInPool)},
   {CC "lookupType",                                   CC "(" STRING HS_KLASS2 "IZ)" HS_RESOLVED_TYPE,                                       FN_PTR(lookupType)},
+  {CC "makeIdentityHashCode",                         CC "(" OBJECTCONSTANT "I)I",                                                          FN_PTR(makeIdentityHashCode)},
   {CC "materializeVirtualObjects",                    CC "(" HS_STACK_FRAME_REF "Z)V",                                                      FN_PTR(materializeVirtualObjects)},
   {CC "methodDataExceptionSeen",                      CC "(JI)I",                                                                           FN_PTR(methodDataExceptionSeen)},
   {CC "methodDataProfileDataSize",                    CC "(JI)I",                                                                           FN_PTR(methodDataProfileDataSize)},
