@@ -43,6 +43,8 @@
 #elif defined(_ALLBSD_SOURCE)
   /* Also defined in net/bsd_close.c */
   #define INTERRUPT_SIGNAL SIGIO
+#elif defined(__COSMOPOLITAN__)
+  #define INTERRUPT_SIGNAL SIGTHR
 #else
   #error "missing platform-specific definition here"
 #endif

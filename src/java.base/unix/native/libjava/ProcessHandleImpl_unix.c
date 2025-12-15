@@ -231,7 +231,12 @@ Java_java_lang_ProcessHandleImpl_waitForProcessExit0(JNIEnv* env,
         siginfo_t siginfo;
         int options = WEXITED |  WNOWAIT;
         memset(&siginfo, 0, sizeof siginfo);
+#ifndef __COSMOPOLITAN__
         while (waitid(P_PID, pid, &siginfo, options) < 0) {
+#else
+        while (1) {
+#endif
+            return -1;
             switch (errno) {
                 case ECHILD:
                     return java_lang_ProcessHandleImpl_NOT_A_CHILD; // No child

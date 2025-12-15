@@ -415,7 +415,9 @@ JNIEXPORT jbyteArray JNICALL Java_sun_jvm_hotspot_debugger_linux_LinuxDebuggerLo
 extern "C"
 JNIEXPORT jlongArray JNICALL Java_sun_jvm_hotspot_debugger_linux_LinuxDebuggerLocal_getThreadIntegerRegisterSet0
   (JNIEnv *env, jobject this_obj, jint lwp_id) {
-
+#if defined(__COSMOPOLITAN__)
+  return NULL;
+#else
   struct user_regs_struct gregs;
   jboolean isCopy;
   jlongArray array;
@@ -601,6 +603,7 @@ JNIEXPORT jlongArray JNICALL Java_sun_jvm_hotspot_debugger_linux_LinuxDebuggerLo
 
   env->ReleaseLongArrayElements(array, regs, 0);
   return array;
+#endif
 }
 #endif
 

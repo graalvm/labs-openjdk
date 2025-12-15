@@ -36,7 +36,11 @@
 
 void *p11FindFunction(JNIEnv *env, jlong jHandle, const char *functionName) {
     void *hModule = (void*)jlong_to_ptr(jHandle);
+#if !defined(__COSMOPOLITAN__)
     void *fAddress = dlsym(hModule, functionName);
+#else
+    void *fAddress = NULL;
+#endif
     if (fAddress == NULL) {
         char errorMessage[256];
         snprintf(errorMessage, sizeof(errorMessage), "Symbol not found: %s", functionName);
@@ -55,6 +59,11 @@ JNIEXPORT jlong JNICALL Java_sun_security_pkcs11_Secmod_nssGetLibraryHandle
         return 0L;
     }
 
+#if defined(__COSMOPOLITAN__)
+    hModule = NULL;
+    p11ThrowIOException(env, dlerror());
+    return 0;
+#else
     // look up existing handle only, do not load
 #if defined(AIX)
     hModule = dlopen(libName, RTLD_LAZY);
@@ -64,6 +73,7 @@ JNIEXPORT jlong JNICALL Java_sun_security_pkcs11_Secmod_nssGetLibraryHandle
     debug_printf("-handle for %s: %u\n", libName, hModule);
     (*env)->ReleaseStringUTFChars(env, jLibName, libName);
     return ptr_to_jlong(hModule);
+#endif
 }
 
 JNIEXPORT jlong JNICALL Java_sun_security_pkcs11_Secmod_nssLoadLibrary
@@ -75,10 +85,14 @@ JNIEXPORT jlong JNICALL Java_sun_security_pkcs11_Secmod_nssLoadLibrary
        return 0L;
     }
 
+#if !defined(__COSMOPOLITAN__)
     debug_printf("-lib %s\n", libName);
     hModule = dlopen(libName, RTLD_LAZY);
-    (*env)->ReleaseStringUTFChars(env, jLibName, libName);
     debug_printf("-handle: %u (0X%X)\n", hModule, hModule);
+#else
+    hModule = NULL;
+#endif
+    (*env)->ReleaseStringUTFChars(env, jLibName, libName);
 
     if (hModule == NULL) {
         p11ThrowIOException(env, dlerror());

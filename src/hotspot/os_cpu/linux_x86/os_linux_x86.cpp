@@ -559,7 +559,11 @@ void os::print_context(outputStream *st, const void *context) {
                  p2i(uc->uc_mcontext.fpregs), p2i(uc));
   } else {
     for (int i = 0; i < 16; ++i) {
+    #ifndef __COSMOPOLITAN__
       const int64_t* xmm_val_addr = (int64_t*)&(uc->uc_mcontext.fpregs->_xmm[i]);
+    #else
+      const int64_t* xmm_val_addr = (int64_t*)&(uc->uc_mcontext.fpregs->xmm[i]);
+    #endif
       st->print_cr("XMM[%d]=" INTPTR_FORMAT " " INTPTR_FORMAT, i, xmm_val_addr[1], xmm_val_addr[0]);
     }
     st->print("  MXCSR=" UINT32_FORMAT_X_0, uc->uc_mcontext.fpregs->mxcsr);

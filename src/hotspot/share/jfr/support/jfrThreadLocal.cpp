@@ -595,11 +595,18 @@ void JfrThreadLocal::set_cpu_timer(timer_t* timer) {
 }
 
 void JfrThreadLocal::unset_cpu_timer() {
+#if !defined(__COSMOPOLITAN__)
   if (_cpu_timer != nullptr) {
     timer_delete(*_cpu_timer);
     JfrCHeapObj::free(_cpu_timer, sizeof(timer_t));
     _cpu_timer = nullptr;
   }
+#else
+  if (_cpu_timer != nullptr) {
+    JfrCHeapObj::free(_cpu_timer, sizeof(timer_t));
+    _cpu_timer = nullptr;
+  }
+#endif
 }
 
 timer_t* JfrThreadLocal::cpu_timer() const {

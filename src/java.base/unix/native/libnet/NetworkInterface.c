@@ -393,7 +393,9 @@ JNIEXPORT jboolean JNICALL Java_java_net_NetworkInterface_boundInetAddress0
         }
         if (find_bound_interface(env, ifs, iaObj, family) != NULL)
             bound = JNI_TRUE;
-    } else if (ipv6_available()) {
+    } 
+#if !defined(__COSMOPOLITAN__)
+    else if (ipv6_available()) {
         // If IPv6 is available then enumerate IPv6 addresses.
         // User can disable ipv6 explicitly by -Djava.net.preferIPv4Stack=true,
         // so we have to call ipv6_available()
@@ -412,7 +414,7 @@ JNIEXPORT jboolean JNICALL Java_java_net_NetworkInterface_boundInetAddress0
         if (find_bound_interface(env, ifs, iaObj, family) != NULL)
             bound = JNI_TRUE;
     }
-
+#endif
 cleanup:
     freeif(ifs);
 
@@ -878,6 +880,7 @@ static netif *enumInterfaces(JNIEnv *env) {
     // If IPv6 is available then enumerate IPv6 addresses.
     // User can disable ipv6 explicitly by -Djava.net.preferIPv4Stack=true,
     // so we have to call ipv6_available()
+#if !defined(__COSMOPOLITAN__)
     if (ipv6_available()) {
         sock = openSocket(env, AF_INET6);
         if (sock < 0) {
@@ -893,6 +896,7 @@ static netif *enumInterfaces(JNIEnv *env) {
             return NULL;
         }
     }
+#endif
 
     return ifs;
 }
@@ -1150,7 +1154,7 @@ static int openSocket(JNIEnv *env, int proto) {
 }
 
 /** Linux **/
-#if defined(__linux__)
+#if defined(__linux__) || defined(__COSMOPOLITAN__)
 
 /*
  * Opens a socket for further ioctl calls. Tries AF_INET socket first and
@@ -1264,6 +1268,7 @@ static netif *enumIPv4Interfaces(JNIEnv *env, int sock, netif *ifs) {
  * Enumerates and returns all IPv6 interfaces on Linux.
  */
 static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
+#if !defined(__COSMOPOLITAN__)
     FILE *f;
     char devname[21], addr6p[8][5];
     int prefix, scope, dad_status, if_idx;
@@ -1299,6 +1304,9 @@ static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
        fclose(f);
     }
     return ifs;
+#else
+    return NULL;
+#endif
 }
 
 /*
@@ -1326,6 +1334,7 @@ static int getMacAddress
   (JNIEnv *env, const char *ifname, const struct in_addr *addr,
    unsigned char *buf)
 {
+#if !defined(__COSMOPOLITAN__)
     struct ifreq ifr;
     int i, sock;
 
@@ -1352,9 +1361,13 @@ static int getMacAddress
     }
 
     return -1;
+#else
+    return -1;
+#endif
 }
 
 static int getMTU(JNIEnv *env, int sock, const char *ifname) {
+#if !defined(__COSMOPOLITAN__)
     struct ifreq if2;
     memset((char *)&if2, 0, sizeof(if2));
     strncpy(if2.ifr_name, ifname, sizeof(if2.ifr_name) - 1);
@@ -1366,6 +1379,9 @@ static int getMTU(JNIEnv *env, int sock, const char *ifname) {
     }
 
     return if2.ifr_mtu;
+#else
+    return -1;
+#endif
 }
 
 static int getFlags(int sock, const char *ifname, int *flags) {

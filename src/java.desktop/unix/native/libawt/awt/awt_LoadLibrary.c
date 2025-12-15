@@ -58,6 +58,9 @@ typedef jint JNICALL JNI_OnLoad_type(JavaVM *vm, void *reserved);
 JNIEXPORT JavaVM *jvm;
 
 JNIEXPORT jboolean JNICALL AWTIsHeadless() {
+#if STATIC_BUILD
+    return JNI_TRUE;
+#else
     static JNIEnv *env = NULL;
     static jboolean isHeadless;
     jmethodID headlessFn;
@@ -80,6 +83,7 @@ JNIEXPORT jboolean JNICALL AWTIsHeadless() {
         }
     }
     return isHeadless;
+#endif
 }
 
 /*
@@ -98,6 +102,10 @@ JNIEXPORT jboolean JNICALL AWTIsHeadless() {
 jint
 AWT_OnLoad(JavaVM *vm, void *reserved)
 {
+#if STATIC_BUILD
+    awtHandle = NULL;
+    return JNI_VERSION_1_2;
+#else
     Dl_info dlinfo;
     char buf[MAXPATHLEN];
     int32_t len;
@@ -153,6 +161,7 @@ AWT_OnLoad(JavaVM *vm, void *reserved)
     }
 
     return JNI_VERSION_1_2;
+#endif
 }
 
 JNIEXPORT jint JNICALL

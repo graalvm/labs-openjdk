@@ -32,7 +32,9 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#if !defined(__COSMOPOLITAN__)
 #include <sys/ptrace.h>
+#endif
 #include <sys/uio.h>
 #include "libproc_impl.h"
 
@@ -67,6 +69,7 @@ static inline uintptr_t align(uintptr_t ptr, size_t size) {
 // before calling process_read_data.
 
 static bool process_read_data(struct ps_prochandle* ph, uintptr_t addr, char *buf, size_t size) {
+#if !defined(__COSMOPOLITAN__)
   long rslt;
   size_t i, words;
   uintptr_t end_addr = addr + size;
@@ -113,6 +116,9 @@ static bool process_read_data(struct ps_prochandle* ph, uintptr_t addr, char *bu
        *(buf++) = *(ptr++);
   }
   return true;
+#else
+  return false;
+#endif
 }
 
 // null implementation for write
@@ -125,13 +131,14 @@ static bool process_write_data(struct ps_prochandle* ph,
 static bool process_get_lwp_regs(struct ps_prochandle* ph, pid_t pid, struct user_regs_struct *user) {
   // we have already attached to all thread 'pid's, just use ptrace call
   // to get regset now. Note that we don't cache regset upfront for processes.
-
+#if !defined(__COSMOPOLITAN__)
 #if defined(_LP64) && defined(PTRACE_GETREGS64)
 #define PTRACE_GETREGS_REQ PTRACE_GETREGS64
 #elif defined(PTRACE_GETREGS)
 #define PTRACE_GETREGS_REQ PTRACE_GETREGS
 #elif defined(PT_GETREGS)
 #define PTRACE_GETREGS_REQ PT_GETREGS
+#endif
 #endif
 
 #if defined(PTRACE_GETREGSET)
@@ -158,12 +165,16 @@ static bool process_get_lwp_regs(struct ps_prochandle* ph, pid_t pid, struct use
 }
 
 static bool ptrace_continue(pid_t pid, int signal) {
+#if !defined(__COSMOPOLITAN__)
   // pass the signal to the process so we don't swallow it
   if (ptrace(PTRACE_CONT, pid, NULL, signal) < 0) {
     print_debug("ptrace(PTRACE_CONT, ..) failed for %d\n", pid);
     return false;
   }
   return true;
+#else
+  return false;
+#endif
 }
 
 // waits until the ATTACH has stopped the process
@@ -172,6 +183,7 @@ static attach_state_t ptrace_waitpid(pid_t pid) {
   int ret;
   int status;
   errno = 0;
+#if !defined(__COSMOPOLITAN__)
   while (true) {
     // Wait for debuggee to stop.
     ret = waitpid(pid, &status, 0);
@@ -213,6 +225,11 @@ static attach_state_t ptrace_waitpid(pid_t pid) {
       }
     } // else
   } // while
+#else
+  errno = ENOSYS;
+  print_error("waitpid() failed. Unexpected error %d\n", errno);
+  return ATTACH_FAIL;
+#endif
 }
 
 // checks the state of the thread/process specified by "pid", by reading
@@ -267,6 +284,7 @@ static bool process_doesnt_exist(pid_t pid) {
 // attach to a process/thread specified by "pid"
 static attach_state_t ptrace_attach(pid_t pid, char* err_buf, size_t err_buf_len) {
   errno = 0;
+#if !defined(__COSMOPOLITAN__)
   if (ptrace(PTRACE_ATTACH, pid, NULL, NULL) < 0) {
     if (errno == EPERM || errno == ESRCH) {
       // Check if the process/thread is exiting or is a zombie
@@ -296,6 +314,11 @@ static attach_state_t ptrace_attach(pid_t pid, char* err_buf, size_t err_buf_len
     }
     return wait_ret;
   }
+#else
+  errno = ENOSYS;
+  print_debug("ptrace not implemented");
+  return ATTACH_FAIL;
+#endif
 }
 
 // -------------------------------------------------------
@@ -410,12 +433,17 @@ static bool read_lib_info(struct ps_prochandle* ph) {
 
 // detach a given pid
 static bool ptrace_detach(pid_t pid) {
+#if !defined(__COSMOPOLITAN__)
   if (pid && ptrace(PTRACE_DETACH, pid, NULL, NULL) < 0) {
     print_debug("ptrace(PTRACE_DETACH, ..) failed for %d\n", pid);
     return false;
   } else {
     return true;
   }
+#else
+  errno = ENOSYS;
+  return false;
+#endif
 }
 
 // detach all pids of a ps_prochandle

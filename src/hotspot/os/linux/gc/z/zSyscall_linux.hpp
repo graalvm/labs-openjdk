@@ -35,8 +35,10 @@
 #define MPOL_F_ADDR        (1<<1)
 #endif
 
+#if !defined(__COSMOPOLITAN__)
 #ifndef MAP_FIXED_NOREPLACE
 #define MAP_FIXED_NOREPLACE 0x100000
+#endif
 #endif
 
 class ZSyscall : public AllStatic {

@@ -41,7 +41,7 @@
 #include <sys/proc_info.h>
 #include <libproc.h>
 #endif
-#elif !defined(_AIX)
+#elif !defined(_AIX) && !defined(__COSMOPOLITAN__)
 #include <sys/swap.h>
 #endif
 #include <sys/resource.h>
@@ -140,7 +140,11 @@ Java_com_sun_management_internal_OperatingSystemImpl_getCommittedVirtualMemorySi
      * XXXBSD: there's no way available to do it in FreeBSD, AFAIK.
      */
     // throw_internal_error(env, "Unimplemented in FreeBSD");
+#ifndef __COSMOPOLITAN__
     return (64 * MB);
+#else
+    return (64 * 1048576);
+#endif
 #endif
 }
 #endif

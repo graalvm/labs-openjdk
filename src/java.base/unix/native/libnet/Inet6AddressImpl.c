@@ -29,7 +29,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#if !defined(__COSMOPOLITAN__)
 #include <netinet/icmp6.h>
+#endif
 
 #if defined(_ALLBSD_SOURCE)
 #include <ifaddrs.h>
@@ -543,6 +545,7 @@ static jboolean
 ping6(JNIEnv *env, jint fd, SOCKETADDRESS *sa, SOCKETADDRESS *netif,
       jint timeout, jint ttl)
 {
+#if !defined(__COSMOPOLITAN__)
     jint n, size = 60 * 1024, tmout2, seq = 1;
     socklen_t len;
     unsigned char sendbuf[1500], recvbuf[1500];
@@ -655,6 +658,7 @@ ping6(JNIEnv *env, jint fd, SOCKETADDRESS *sa, SOCKETADDRESS *netif,
         timeout -= 1000;
     } while (timeout > 0);
     close(fd);
+#endif
     return JNI_FALSE;
 }
 

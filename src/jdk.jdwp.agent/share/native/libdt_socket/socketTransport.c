@@ -270,6 +270,7 @@ static unsigned short getPort(struct sockaddr *sa)
  * On error sets last error and returns -1.
  */
 static long parseScopeId(const char *str) {
+#if !defined(__COSMOPOLITAN__)
     // try to handle scope as interface name
     unsigned long scopeId = if_nametoindex(str);
     if (scopeId == 0) {
@@ -287,6 +288,10 @@ static long parseScopeId(const char *str) {
         return -1;
     }
     return (long)scopeId;
+#else
+    setLastError(JDWPTRANSPORT_ERROR_ILLEGAL_ARGUMENT, "parse scope not implemented");
+    return -1;
+#endif
 }
 
 /*
