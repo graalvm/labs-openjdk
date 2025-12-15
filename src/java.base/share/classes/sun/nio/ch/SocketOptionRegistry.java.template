@@ -90,9 +90,24 @@ class SocketOptionRegistry {
 
     private static class LazyInitialization {
 
+#if !defined(__COSMOPOLITAN__)
         static final Map<RegistryKey,OptionKey> options = options();
+#else
+        static Map<RegistryKey,OptionKey> options = options();
+#endif
 
         private static Map<RegistryKey,OptionKey> options() {
+#if defined(__COSMOPOLITAN__)
+            int SOL_SOCKET = cosmoMagic("SOL_SOCKET");
+            int SO_BROADCAST = cosmoMagic("SO_BROADCAST");
+            int SO_KEEPALIVE = cosmoMagic("SO_KEEPALIVE");
+            int SO_LINGER = cosmoMagic("SO_LINGER");
+            int SO_SNDBUF = cosmoMagic("SO_SNDBUF");
+            int SO_RCVBUF = cosmoMagic("SO_RCVBUF");
+            int SO_REUSEADDR = cosmoMagic("SO_REUSEADDR");
+            int SO_REUSEPORT = cosmoMagic("SO_REUSEPORT");
+            int SO_OOBINLINE = cosmoMagic("SO_OOBINLINE");
+#endif
             Map<RegistryKey,OptionKey> map =
                 new HashMap<RegistryKey,OptionKey>();
             map.put(new RegistryKey(StandardSocketOptions.PREFIX_SO_BROADCAST,
@@ -113,6 +128,12 @@ class SocketOptionRegistry {
             map.put(new RegistryKey(StandardSocketOptions.PREFIX_TCP_NODELAY,
                 Net.UNSPEC), new OptionKey(6, TCP_NODELAY));
 
+#if defined(__COSMOPOLITAN__)
+            int IP_TOS = cosmoMagic("IP_TOS");
+            int IP_MULTICAST_IF = cosmoMagic("IP_MULTICAST_IF");
+            int IP_MULTICAST_TTL = cosmoMagic("IP_MULTICAST_TTL");
+            int IP_MULTICAST_LOOP = cosmoMagic("IP_MULTICAST_LOOP");
+#endif
             // IPPROTO_IP is 0
             map.put(new RegistryKey(StandardSocketOptions.PREFIX_IP_TOS,
                 StandardProtocolFamily.INET), new OptionKey(0, IP_TOS));
@@ -123,7 +144,7 @@ class SocketOptionRegistry {
             map.put(new RegistryKey(StandardSocketOptions.PREFIX_IP_MULTICAST_LOOP,
                 StandardProtocolFamily.INET), new OptionKey(0, IP_MULTICAST_LOOP));
 
-#ifdef AF_INET6
+#if !defined(__COSMOPOLITAN__) && defined(AF_INET6)
             // IPPROTO_IPV6 is 41
             map.put(new RegistryKey(StandardSocketOptions.PREFIX_IP_TOS,
                 StandardProtocolFamily.INET6), new OptionKey(41, IPV6_TCLASS));
@@ -139,6 +160,18 @@ class SocketOptionRegistry {
                 Net.UNSPEC), new OptionKey(SOL_SOCKET, SO_OOBINLINE));
             return map;
         }
+
+#if defined(__COSMOPOLITAN__)
+        /**
+         * cosmoMagic(const char* name)
+         *
+         * @return  link target
+         */
+        private static int cosmoMagic (String name) {
+            return cosmoMagic0(name);
+        }
+        private static native int cosmoMagic0(String name);
+#endif
     }
 
     public static OptionKey findOption(SocketOption<?> name, ProtocolFamily family) {
