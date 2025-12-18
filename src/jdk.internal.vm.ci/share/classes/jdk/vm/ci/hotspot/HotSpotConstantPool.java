@@ -496,9 +496,9 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
 
         /**
          * Lazily resolves and caches the argument at the given index and returns it. The method
-         * {@link CompilerToVM#bootstrapArgumentIndexAt} is used to obtain the constant pool
-         * index of the entry and the method {@link ConstantPool#lookupConstant} is used to
-         * resolve it. If the resolution failed, the index is returned as a
+         * {@link CompilerToVM#bootstrapArgumentIndexAt(HotSpotConstantPool, int, int)} is used to
+         * obtain the constant pool index of the entry and {@link ConstantPool#lookupConstant}
+         * is used to resolve it. If the resolution failed, the index is returned as a
          * {@link PrimitiveConstant}.
          *
          * @param index index of the element to return
@@ -511,15 +511,13 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
             if (res == null) {
                 int argCpi = compilerToVM().bootstrapArgumentIndexAt(cp, bssIndex, index);
                 Object object = cp.lookupConstant(argCpi, false);
-                if (object instanceof PrimitiveConstant primitiveConstant) {
-                    res = runtime().getReflection().boxPrimitive(primitiveConstant);
-                } else if (object instanceof JavaConstant javaConstant) {
-                    res = javaConstant;
-                } else if (object instanceof JavaType type) {
-                    res = runtime().getReflection().forObject(type);
-                } else {
-                    res = JavaConstant.forInt(argCpi);
-                }
+                res = switch (object) {
+                    case PrimitiveConstant primitiveConstant ->
+                            runtime().getReflection().boxPrimitive(primitiveConstant);
+                    case JavaConstant javaConstant -> javaConstant;
+                    case HotSpotResolvedJavaType hsType -> hsType.getJavaMirror();
+                    case null, default -> JavaConstant.forInt(argCpi);
+                };
                 cache[index] = res;
             }
             return res;
