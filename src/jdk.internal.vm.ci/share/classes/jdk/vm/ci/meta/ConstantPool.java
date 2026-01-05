@@ -162,34 +162,29 @@ public interface ConstantPool {
          */
         JavaConstant getType();
 
-        /**
-         * Gets the static arguments with which the bootstrap method will be invoked.
-         *
-         * The {@linkplain JavaConstant#getJavaKind kind} of each argument will be
-         * {@link JavaKind#Object} or {@link JavaKind#Int}. The latter represents an
-         * unresolved {@code CONSTANT_Dynamic_info} entry. To resolve this entry, the
-         * corresponding bootstrap method has to be called first:
-         *
-         * <pre>
-         * List<JavaConstant> args = bmi.getStaticArguments();
-         * List<JavaConstant> resolvedArgs = new ArrayList<>(args.size());
-         * for (JavaConstant c : args) {
-         *     JavaConstant r = c;
-         *     if (c.getJavaKind() == JavaKind.Int) {
-         *         // If needed, access corresponding BootstrapMethodInvocation using
-         *         // cp.lookupBootstrapMethodInvocation(pc.asInt(), -1)
-         *         r = cp.lookupConstant(c.asInt(), true);
-         *     } else {
-         *         assert c.getJavaKind() == JavaKind.Object;
-         *     }
-         *     resolvedArgs.append(r);
-         * }
-         * </pre>
-         *
-         * The other types of entries are already resolved and can be used directly.
-         *
-         * @jvms 5.4.3.6
-         */
+        /// Gets the static arguments with which the bootstrap method will be invoked.
+        /// The [kind][JavaConstant#getJavaKind()] of each argument will be
+        /// [JavaKind#Object] or [JavaKind#Int]. The latter represents an
+        /// unresolved `CONSTANT_Dynamic_info` entry. To resolve this entry, the
+        /// corresponding bootstrap method has to be called first:
+        /// ```
+        /// List<JavaConstant> args = bmi.getStaticArguments();
+        /// List<JavaConstant> resolvedArgs = new ArrayList<>(args.size());
+        /// for (JavaConstant c : args) {
+        ///     JavaConstant r = c;
+        ///     if (c.getJavaKind() == JavaKind.Int) {
+        ///         // If needed, access corresponding BootstrapMethodInvocation using
+        ///         // cp.lookupBootstrapMethodInvocation(pc.asInt(), -1)
+        ///         r = cp.lookupConstant(c.asInt(), true);
+        ///     } else {
+        ///         assert c.getJavaKind() == JavaKind.Object;
+        ///     }
+        ///     resolvedArgs.append(r);
+        /// }
+        /// ```
+        /// The other types of entries are already resolved and can be used directly.
+        ///
+        /// @jvms 5.4.3.6
         List<JavaConstant> getStaticArguments();
 
         /**

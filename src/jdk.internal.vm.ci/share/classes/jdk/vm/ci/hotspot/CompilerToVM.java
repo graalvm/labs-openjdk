@@ -494,7 +494,7 @@ final class CompilerToVM {
      *
      * <pre>
      *     bsm_invocation = [
-     *         ResolvedJavaMethod[] method,
+     *         ResolvedJavaMethod method,
      *         String name,
      *         Object type,             // JavaConstant: reference to Class (condy) or MethodType (indy)
      *         Object staticArguments,  // null: no static arguments
