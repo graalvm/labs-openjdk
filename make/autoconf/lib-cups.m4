@@ -42,37 +42,38 @@ AC_DEFUN_ONCE([LIB_SETUP_CUPS],
     CUPS_CFLAGS=
   else
     CUPS_FOUND=no
+    USING_CUPS=yes
 
     if test "x${with_cups}" = xno || test "x${with_cups_include}" = xno; then
-      AC_MSG_ERROR([It is not possible to disable the use of cups. Remove the --without-cups option.])
+        USING_CUPS=no
     fi
 
-    if test "x${with_cups}" != x; then
+    if test "x${with_cups}" != x && test "x${USING_CUPS}" != xno; then
       AC_MSG_CHECKING([for cups headers])
       if test -s "${with_cups}/include/cups/cups.h"; then
-        CUPS_CFLAGS="-I${with_cups}/include"
+        CUPS_CFLAGS="-I${with_cups}/include -DUSING_CUPS"
         CUPS_FOUND=yes
         AC_MSG_RESULT([$CUPS_FOUND])
       else
         AC_MSG_ERROR([Can't find 'include/cups/cups.h' under ${with_cups} given with the --with-cups option.])
       fi
     fi
-    if test "x${with_cups_include}" != x; then
+    if test "x${with_cups_include}" != x && test "x${USING_CUPS}" != xno; then
       AC_MSG_CHECKING([for cups headers])
       if test -s "${with_cups_include}/cups/cups.h"; then
-        CUPS_CFLAGS="-I${with_cups_include}"
+        CUPS_CFLAGS="-I${with_cups_include} -DUSING_CUPS"
         CUPS_FOUND=yes
         AC_MSG_RESULT([$CUPS_FOUND])
       else
         AC_MSG_ERROR([Can't find 'cups/cups.h' under ${with_cups_include} given with the --with-cups-include option.])
       fi
     fi
-    if test "x$CUPS_FOUND" = xno; then
+    if test "x$CUPS_FOUND" = xno && test "x${USING_CUPS}" != xno; then
       # Are the cups headers installed in the default AIX or /usr/include location?
       if test "x$OPENJDK_TARGET_OS" = "xaix"; then
         AC_CHECK_HEADERS([/opt/freeware/include/cups/cups.h /opt/freeware/include/cups/ppd.h], [
             CUPS_FOUND=yes
-            CUPS_CFLAGS="-I/opt/freeware/include"
+            CUPS_CFLAGS="-I/opt/freeware/include -DUSING_CUPS"
             DEFAULT_CUPS=yes
         ])
       else
@@ -84,8 +85,14 @@ AC_DEFUN_ONCE([LIB_SETUP_CUPS],
       fi
     fi
     if test "x$CUPS_FOUND" = xno; then
-      HELP_MSG_MISSING_DEPENDENCY([cups])
-      AC_MSG_ERROR([Could not find cups! $HELP_MSG ])
+      if test "x${USING_CUPS}" != xno; then
+        HELP_MSG_MISSING_DEPENDENCY([cups])
+        AC_MSG_ERROR([Could not find cups! $HELP_MSG ])
+      else
+        DEFAULT_CUPS=no
+        CUPS_CFLAGS=
+        AC_MSG_RESULT([$CUPS_FOUND])
+      fi
     fi
   fi
 

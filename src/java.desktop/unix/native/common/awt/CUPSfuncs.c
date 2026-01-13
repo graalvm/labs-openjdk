@@ -27,6 +27,7 @@
 #include <jni_util.h>
 #include <jvm_md.h>
 #include <dlfcn.h>
+#ifdef USING_CUPS
 #include <cups/cups.h>
 #include <cups/ppd.h>
 
@@ -707,3 +708,128 @@ Java_sun_print_CUPSPrinter_getResolutions(JNIEnv *env,
     j2d_ppdClose(ppd);
     unlink(filename);
 }
+
+#else /* !USING_CUPS */
+/*
+ * Initialize library functions.
+ * // REMIND : move tab , add dlClose before return
+ */
+JNIEXPORT jboolean JNICALL
+Java_sun_print_CUPSPrinter_initIDs(JNIEnv *env,
+                                         jobject printObj) {
+  return JNI_FALSE;
+}
+
+/*
+ * Gets CUPS server name.
+ *
+ */
+JNIEXPORT jstring JNICALL
+Java_sun_print_CUPSPrinter_getCupsServer(JNIEnv *env,
+                                         jobject printObj)
+{
+    return NULL;
+}
+
+/*
+ * Gets CUPS port name.
+ *
+ */
+JNIEXPORT jint JNICALL
+Java_sun_print_CUPSPrinter_getCupsPort(JNIEnv *env,
+                                         jobject printObj)
+{
+    return (jint) -1;
+}
+
+
+/*
+ * Gets CUPS default printer name.
+ *
+ */
+JNIEXPORT jstring JNICALL
+Java_sun_print_CUPSPrinter_getCupsDefaultPrinter(JNIEnv *env,
+                                                  jobject printObj)
+{
+    return NULL;
+}
+
+/*
+ * Returns list of default local printers
+ */
+JNIEXPORT jobjectArray JNICALL
+Java_sun_print_CUPSPrinter_getCupsDefaultPrinters(JNIEnv *env,
+                                                        jobject printObj)
+{
+    return NULL;
+}
+
+/*
+ * Checks if connection can be made to the server.
+ *
+ */
+JNIEXPORT jboolean JNICALL
+Java_sun_print_CUPSPrinter_canConnect(JNIEnv *env,
+                                      jobject printObj,
+                                      jstring server,
+                                      jint port)
+{
+    return JNI_FALSE;
+}
+
+
+/*
+ * Returns list of media: pages + trays
+ */
+JNIEXPORT jobjectArray JNICALL
+Java_sun_print_CUPSPrinter_getMedia(JNIEnv *env,
+                                         jobject printObj,
+                                         jstring printer)
+{
+    return NULL;
+}
+
+/*
+ * Returns list of output bins
+ */
+JNIEXPORT jobjectArray JNICALL
+Java_sun_print_CUPSPrinter_getOutputBins(JNIEnv *env,
+                                         jobject printObj,
+                                         jstring printer)
+{
+    return NULL;
+}
+
+/*
+ * Returns list of page sizes and imageable area.
+ */
+JNIEXPORT jfloatArray JNICALL
+Java_sun_print_CUPSPrinter_getPageSizes(JNIEnv *env,
+                                         jobject printObj,
+                                         jstring printer)
+{
+    return NULL;
+}
+
+/*
+ * Populates the supplied ArrayList<Integer> with resolutions.
+ * The first pair of elements will be the default resolution.
+ * If resolution isn't supported the list will be empty.
+ * If needed we can add a 2nd ArrayList<String> which would
+ * be populated with the corresponding UI name.
+ * PPD specifies the syntax for resolution as either "Ndpi" or "MxNdpi",
+ * eg 300dpi or 600x600dpi. The former is a shorthand where xres==yres.
+ * We will always expand to the latter as we use a single array list.
+ * Note: getMedia() and getPageSizes() both open the ppd file
+ * This is not going to scale forever so if we add anymore we
+ * should look to consolidate this.
+ */
+JNIEXPORT void JNICALL
+Java_sun_print_CUPSPrinter_getResolutions(JNIEnv *env,
+                                          jobject printObj,
+                                          jstring printer,
+                                          jobject arrayList)
+{
+    return;
+}
+#endif
