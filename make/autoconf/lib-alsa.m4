@@ -36,6 +36,7 @@ AC_DEFUN_ONCE([LIB_SETUP_ALSA],
   AC_ARG_WITH(alsa-lib, [AS_HELP_STRING([--with-alsa-lib],
       [specify directory for the alsa library])])
 
+  USING_ALSA=yes
   if test "x$NEEDS_LIB_ALSA" = xfalse; then
     if (test "x${with_alsa}" != x && test "x${with_alsa}" != xno) || \
         (test "x${with_alsa_include}" != x && test "x${with_alsa_include}" != xno) || \
@@ -44,33 +45,34 @@ AC_DEFUN_ONCE([LIB_SETUP_ALSA],
     fi
     ALSA_CFLAGS=
     ALSA_LIBS=
+    USING_ALSA=no
   else
     ALSA_FOUND=no
 
     if test "x${with_alsa}" = xno || test "x${with_alsa_include}" = xno || test "x${with_alsa_lib}" = xno; then
-      AC_MSG_ERROR([It is not possible to disable the use of alsa. Remove the --without-alsa option.])
+      USING_ALSA=no
     fi
 
-    if test "x${with_alsa}" != x; then
+    if test "x${with_alsa}" != x && test "x${USING_ALSA}" != xno; then
       ALSA_LIBS="-L${with_alsa}/lib -lasound"
-      ALSA_CFLAGS="-I${with_alsa}/include"
+      ALSA_CFLAGS="-I${with_alsa}/include -DUSING_ALSA"
       ALSA_FOUND=yes
     fi
-    if test "x${with_alsa_include}" != x; then
-      ALSA_CFLAGS="-I${with_alsa_include}"
+    if test "x${with_alsa_include}" != x && test "x${USING_ALSA}" != xno; then
+      ALSA_CFLAGS="-I${with_alsa_include} -DUSING_ALSA"
       ALSA_FOUND=yes
     fi
-    if test "x${with_alsa_lib}" != x; then
+    if test "x${with_alsa_lib}" != x && test "x{USING_ALSA}" != xno; then
       ALSA_LIBS="-L${with_alsa_lib} -lasound"
       ALSA_FOUND=yes
     fi
     # Do not try pkg-config if we have a sysroot set.
     if test "x$SYSROOT" = x; then
-      if test "x$ALSA_FOUND" = xno; then
+      if test "x$ALSA_FOUND" = xno && test "x{USING_ALSA}" != xno; then
         PKG_CHECK_MODULES(ALSA, alsa, [ALSA_FOUND=yes], [ALSA_FOUND=no])
       fi
     fi
-    if test "x$ALSA_FOUND" = xno; then
+    if test "x$ALSA_FOUND" = xno && test "x${USING_ALSA}" != xno; then
       # If we have sysroot set, and no explicit library location is set,
       # look at known locations in sysroot.
       if test "x$SYSROOT" != "x" && test "x${with_alsa_lib}" == x; then
@@ -89,11 +91,11 @@ AC_DEFUN_ONCE([LIB_SETUP_ALSA],
         fi
       fi
     fi
-    if test "x$ALSA_FOUND" = xno; then
+    if test "x$ALSA_FOUND" = xno && test "x${USING_ALSA}" != xno; then
       AC_CHECK_HEADERS([alsa/asoundlib.h],
           [
             ALSA_FOUND=yes
-            ALSA_CFLAGS=-Iignoreme
+            ALSA_CFLAGS=-Iignoreme -DUSING_ALSA
             ALSA_LIBS=-lasound
             DEFAULT_ALSA=yes
           ],
@@ -101,11 +103,19 @@ AC_DEFUN_ONCE([LIB_SETUP_ALSA],
       )
     fi
     if test "x$ALSA_FOUND" = xno; then
-      HELP_MSG_MISSING_DEPENDENCY([alsa])
-      AC_MSG_ERROR([Could not find alsa! $HELP_MSG])
+      if test "x$USING_ALSA" != xno; then
+        HELP_MSG_MISSING_DEPENDENCY([alsa])
+        AC_MSG_ERROR([Could not find alsa! $HELP_MSG])
+      else
+        DEFAULT_ALSA=no
+        ALSA_CFLAGS=
+        ALSA_LIBS=
+        USING_ALSA=no
+      fi
     fi
   fi
 
   AC_SUBST(ALSA_CFLAGS)
   AC_SUBST(ALSA_LIBS)
+  AC_SUBST(USING_ALSA)
 ])
