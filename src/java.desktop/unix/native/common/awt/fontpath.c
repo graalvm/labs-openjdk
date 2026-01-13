@@ -85,7 +85,9 @@ static char *fullAixFontPath[] = {
 };
 #endif
 
+#if defined(USING_FONTCONFIG)
 static char **getFontConfigLocations();
+#endif
 
 typedef struct {
     const char *name[MAXFDIRS];
@@ -382,6 +384,7 @@ JNIEXPORT jstring JNICALL Java_sun_awt_FcFontManager_getFontPathNative
 
 #include <dlfcn.h>
 
+#if defined(USING_FONTCONFIG)
 #include <fontconfig/fontconfig.h>
 
 
@@ -1214,3 +1217,24 @@ Java_sun_font_FontConfigManager_getFontConfig
     }
     closeFontConfig(libfontconfig, JNI_TRUE);
 }
+#else /* !USING_FONTCONFIG */
+JNIEXPORT jint JNICALL
+Java_sun_font_FontConfigManager_getFontConfigAASettings
+(JNIEnv *env, jclass obj, jstring localeStr, jstring fcNameStr) {
+    return -1;
+}
+
+JNIEXPORT jint JNICALL
+Java_sun_font_FontConfigManager_getFontConfigVersion
+    (JNIEnv *env, jclass obj) {
+    return 0;
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_font_FontConfigManager_getFontConfig
+(JNIEnv *env, jclass obj, jstring localeStr, jobject fcInfoObj,
+ jobjectArray fcCompFontArray,  jboolean includeFallbacks) {
+    return;
+}
+#endif
