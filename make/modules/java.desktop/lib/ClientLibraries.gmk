@@ -136,8 +136,19 @@ TARGETS += $(BUILD_LIBJAVAJPEG)
 ################################################################################
 ## Build libsplashscreen
 ################################################################################
+SHOULD_BUILD_LIBSPLASHSCREEN := no
 
-ifeq ($(ENABLE_HEADLESS_ONLY), false)
+ifeq ($(call isTargetOs, linux), true)
+  ifeq ($(USING_LIBX11), yes)
+    SHOULD_BUILD_LIBSPLASHSCREEN = yes
+  endif
+else
+  ifeq ($(ENABLE_HEADLESS_ONLY), false)
+    SHOULD_BUILD_LIBSPLASHSCREEN = yes
+  endif
+endif
+
+ifeq ($(SHOULD_BUILD_LIBSPLASHSCREEN), yes)
   LIBSPLASHSCREEN_EXTRA_SRC := \
       common/awt/systemscale \
       #
@@ -420,7 +431,13 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBFONTMANAGER, \
     LIBS_windows := advapi32.lib gdi32.lib user32.lib, \
 ))
 
-TARGETS += $(BUILD_LIBFONTMANAGER)
+ifeq ($(call isTargetOs, linux), true)
+    ifeq ($(USING_LIBX11), yes)
+        TARGETS += $(BUILD_LIBFONTMANAGER)
+    endif
+else
+    TARGETS += $(BUILD_LIBFONTMANAGER)
+endif
 
 ifeq ($(call isTargetOs, macosx), true)
   ##############################################################################

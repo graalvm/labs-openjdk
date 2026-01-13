@@ -34,102 +34,109 @@ AC_DEFUN_ONCE([LIB_SETUP_X11],
     fi
     X_CFLAGS=
     X_LIBS=
+    USING_LIBX11=no
   else
-    x_libraries_orig="$x_libraries"
-
+    USING_LIBX11=yes
+    X_CFLAGS=
+    X_LIBS=
     if test "x${with_x}" = xno; then
-      AC_MSG_ERROR([It is not possible to disable the use of X11. Remove the --without-x option.])
+      USING_LIBX11=no
     fi
 
-    if test "x${with_x}" != x &&  test "x${with_x}" != xyes; then
-      # The user has specified a X11 base directory. Use it for includes and
-      # libraries, unless explicitly overridden.
-      if test "x$x_includes" = xNONE; then
-        x_includes="${with_x}/include"
-      fi
-      if test "x$x_libraries" = xNONE; then
-        x_libraries="${with_x}/lib"
-        x_libraries_orig="$x_libraries"
-      fi
-    else
-      # Check if the user has specified sysroot, but not --with-x, --x-includes or --x-libraries.
-      # Make a simple check for the libraries at the sysroot, and setup --x-includes and
-      # --x-libraries for the sysroot, if that seems to be correct.
-      if test "x$SYSROOT" != "x"; then
+    if test "x${USING_LIBX11}" != xno; then
+      x_libraries_orig="$x_libraries"
+      X_CFLAGS="-DUSING_LIBX11"
+      if test "x${with_x}" != x &&  test "x${with_x}" != xyes; then
+        # The user has specified a X11 base directory. Use it for includes and
+        # libraries, unless explicitly overridden.
         if test "x$x_includes" = xNONE; then
-          if test -f "$SYSROOT/usr/X11R6/include/X11/Xlib.h"; then
-            x_includes="$SYSROOT/usr/X11R6/include"
-          elif test -f "$SYSROOT/usr/include/X11/Xlib.h"; then
-            x_includes="$SYSROOT/usr/include"
-          fi
+          x_includes="${with_x}/include"
         fi
         if test "x$x_libraries" = xNONE; then
-          if test -f "$SYSROOT/usr/X11R6/lib/libX11.so"; then
-            x_libraries="$SYSROOT/usr/X11R6/lib"
-          elif test -f "$SYSROOT/usr/lib64/libX11.so" && test "x$OPENJDK_TARGET_CPU_BITS" = x64; then
-            x_libraries="$SYSROOT/usr/lib64"
-          elif test -f "$SYSROOT/usr/lib/libX11.so"; then
-            x_libraries="$SYSROOT/usr/lib"
-          elif test -f "$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI/libX11.so"; then
-            x_libraries="$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI"
-          elif test -f "$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU_AUTOCONF-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI/libX11.so"; then
-            x_libraries="$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU_AUTOCONF-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI"
+          x_libraries="${with_x}/lib"
+          x_libraries_orig="$x_libraries"
+        fi
+      else
+        # Check if the user has specified sysroot, but not --with-x, --x-includes or --x-libraries.
+        # Make a simple check for the libraries at the sysroot, and setup --x-includes and
+        # --x-libraries for the sysroot, if that seems to be correct.
+        if test "x$SYSROOT" != "x"; then
+          if test "x$x_includes" = xNONE; then
+            if test -f "$SYSROOT/usr/X11R6/include/X11/Xlib.h"; then
+              x_includes="$SYSROOT/usr/X11R6/include"
+            elif test -f "$SYSROOT/usr/include/X11/Xlib.h"; then
+              x_includes="$SYSROOT/usr/include"
+            fi
+          fi
+          if test "x$x_libraries" = xNONE; then
+            if test -f "$SYSROOT/usr/X11R6/lib/libX11.so"; then
+              x_libraries="$SYSROOT/usr/X11R6/lib"
+            elif test -f "$SYSROOT/usr/lib64/libX11.so" && test "x$OPENJDK_TARGET_CPU_BITS" = x64; then
+              x_libraries="$SYSROOT/usr/lib64"
+            elif test -f "$SYSROOT/usr/lib/libX11.so"; then
+              x_libraries="$SYSROOT/usr/lib"
+            elif test -f "$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI/libX11.so"; then
+              x_libraries="$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI"
+            elif test -f "$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU_AUTOCONF-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI/libX11.so"; then
+              x_libraries="$SYSROOT/usr/lib/$OPENJDK_TARGET_CPU_AUTOCONF-$OPENJDK_TARGET_OS-$OPENJDK_TARGET_ABI"
+            fi
           fi
         fi
       fi
+
+      # Now let autoconf do it's magic
+      AC_PATH_X
+      AC_PATH_XTRA
+
+      # AC_PATH_XTRA creates X_LIBS and sometimes adds -R flags. When cross compiling
+      # this doesn't make sense so we remove it; same for sysroot (devkit).
+      if test "x$COMPILE_TYPE" = xcross || (test "x$SYSROOT" != "x" && test "x$x_libraries_orig" = xNONE); then
+        X_LIBS=`$ECHO $X_LIBS | $SED 's/-R \{0,1\}[[^ ]]*//g'`
+      fi
+
+      if test "x$no_x" = xyes; then
+        HELP_MSG_MISSING_DEPENDENCY([x11])
+        AC_MSG_ERROR([Could not find X11 libraries. $HELP_MSG])
+      fi
+
+      AC_LANG_PUSH(C)
+      OLD_CFLAGS="$CFLAGS"
+      CFLAGS="$CFLAGS $SYSROOT_CFLAGS $X_CFLAGS"
+
+      if test "x$OPENJDK_TARGET_OS" = xaix; then
+        # There is no Xrandr extension on AIX. Code is duplicated to avoid autoconf
+        # 2.71+ warning "AC_CHECK_HEADERS: you should use literals"
+        X_CFLAGS="$X_CFLAGS -DNO_XRANDR"
+        AC_CHECK_HEADERS([X11/extensions/shape.h X11/extensions/Xrender.h X11/extensions/XTest.h X11/Intrinsic.h],
+            [X11_HEADERS_OK=yes],
+            [X11_HEADERS_OK=no; break],
+            [
+              # include <X11/Xlib.h>
+              # include <X11/Xutil.h>
+            ]
+        )
+      else
+        AC_CHECK_HEADERS([X11/extensions/shape.h X11/extensions/Xrender.h X11/extensions/XTest.h X11/Intrinsic.h X11/extensions/Xrandr.h],
+            [X11_HEADERS_OK=yes],
+            [X11_HEADERS_OK=no; break],
+            [
+              # include <X11/Xlib.h>
+              # include <X11/Xutil.h>
+            ]
+        )
+      fi
+
+      if test "x$X11_HEADERS_OK" = xno; then
+        HELP_MSG_MISSING_DEPENDENCY([x11])
+        AC_MSG_ERROR([Could not find all X11 headers (shape.h Xrender.h Xrandr.h XTest.h Intrinsic.h). $HELP_MSG])
+      fi
+
+      CFLAGS="$OLD_CFLAGS"
+      AC_LANG_POP(C)
     fi
-
-    # Now let autoconf do it's magic
-    AC_PATH_X
-    AC_PATH_XTRA
-
-    # AC_PATH_XTRA creates X_LIBS and sometimes adds -R flags. When cross compiling
-    # this doesn't make sense so we remove it; same for sysroot (devkit).
-    if test "x$COMPILE_TYPE" = xcross || (test "x$SYSROOT" != "x" && test "x$x_libraries_orig" = xNONE); then
-      X_LIBS=`$ECHO $X_LIBS | $SED 's/-R \{0,1\}[[^ ]]*//g'`
-    fi
-
-    if test "x$no_x" = xyes; then
-      HELP_MSG_MISSING_DEPENDENCY([x11])
-      AC_MSG_ERROR([Could not find X11 libraries. $HELP_MSG])
-    fi
-
-    AC_LANG_PUSH(C)
-    OLD_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $SYSROOT_CFLAGS $X_CFLAGS"
-
-    if test "x$OPENJDK_TARGET_OS" = xaix; then
-      # There is no Xrandr extension on AIX. Code is duplicated to avoid autoconf
-      # 2.71+ warning "AC_CHECK_HEADERS: you should use literals"
-      X_CFLAGS="$X_CFLAGS -DNO_XRANDR"
-      AC_CHECK_HEADERS([X11/extensions/shape.h X11/extensions/Xrender.h X11/extensions/XTest.h X11/Intrinsic.h],
-          [X11_HEADERS_OK=yes],
-          [X11_HEADERS_OK=no; break],
-          [
-            # include <X11/Xlib.h>
-            # include <X11/Xutil.h>
-          ]
-      )
-    else
-      AC_CHECK_HEADERS([X11/extensions/shape.h X11/extensions/Xrender.h X11/extensions/XTest.h X11/Intrinsic.h X11/extensions/Xrandr.h],
-          [X11_HEADERS_OK=yes],
-          [X11_HEADERS_OK=no; break],
-          [
-            # include <X11/Xlib.h>
-            # include <X11/Xutil.h>
-          ]
-      )
-    fi
-
-    if test "x$X11_HEADERS_OK" = xno; then
-      HELP_MSG_MISSING_DEPENDENCY([x11])
-      AC_MSG_ERROR([Could not find all X11 headers (shape.h Xrender.h Xrandr.h XTest.h Intrinsic.h). $HELP_MSG])
-    fi
-
-    CFLAGS="$OLD_CFLAGS"
-    AC_LANG_POP(C)
   fi # NEEDS_LIB_X11
 
   AC_SUBST(X_CFLAGS)
   AC_SUBST(X_LIBS)
+  AC_SUBST(USING_LIBX11)
 ])

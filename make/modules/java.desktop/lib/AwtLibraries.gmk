@@ -153,10 +153,16 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBAWT, \
     STATIC_LIB_EXCLUDE_OBJS := $(LIBAWT_STATIC_EXCLUDE_OBJS), \
 ))
 
-TARGETS += $(BUILD_LIBAWT)
+ifeq ($(call isTargetOs, linux), true)
+  ifeq ($(USING_LIBX11), yes)
+    TARGETS += $(BUILD_LIBAWT)
+  endif
+else
+  TARGETS += $(BUILD_LIBAWT)
+endif
 
 # Mac and Windows only use the native AWT lib, do not build libawt_headless
-ifeq ($(call isTargetOs, windows macosx), false)
+ifeq ($(call isTargetOs, windows macosx)+$(USING_LIBX11), false+yes)
   ##############################################################################
   ## Build libawt_headless
   ##############################################################################
@@ -208,10 +214,16 @@ ifeq ($(call isTargetOs, windows macosx), false)
       STATIC_LIB_EXCLUDE_OBJS := $(LIBAWT_HEADLESS_STATIC_EXCLUDE_OBJS), \
   ))
 
-  TARGETS += $(BUILD_LIBAWT_HEADLESS)
+  ifeq ($(call isTargetOs, linux), true)
+    ifeq ($(USING_LIBX11), yes)
+      TARGETS += $(BUILD_LIBAWT_HEADLESS)
+    endif
+  else
+    TARGETS += $(BUILD_LIBAWT_HEADLESS)
+  endif
 endif
 
-ifeq ($(call isTargetOs, windows macosx)+$(ENABLE_HEADLESS_ONLY), false+false)
+ifeq ($(call isTargetOs, windows macosx)+$(ENABLE_HEADLESS_ONLY)+$(USING_LIBX11), false+false+yes)
   ##############################################################################
   ## Build libawt_xawt
   ##############################################################################
@@ -443,7 +455,13 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBJAWT, \
     LIBS_windows := advapi32.lib $(LIBJAWT_LIBS_windows), \
 ))
 
-TARGETS += $(BUILD_LIBJAWT)
+ifeq ($(call isTargetOs, linux), true)
+  ifeq ($(USING_LIBX11), yes)
+    TARGETS += $(BUILD_LIBJAWT)
+  endif
+else
+  TARGETS += $(BUILD_LIBJAWT)
+endif
 
 ifeq ($(call isTargetOs, windows), true)
   $(eval $(call SetupCopyFiles, COPY_JAWT_LIB, \
