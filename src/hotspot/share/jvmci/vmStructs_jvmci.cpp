@@ -642,7 +642,6 @@
   declare_constant(CodeInstaller::VIRTUAL_OBJECT_ID)                      \
   declare_constant(CodeInstaller::VIRTUAL_OBJECT_ID2)                     \
   declare_constant(CodeInstaller::NULL_CONSTANT)                          \
-  declare_constant(CodeInstaller::RAW_CONSTANT)                           \
   declare_constant(CodeInstaller::PRIMITIVE_0)                            \
   declare_constant(CodeInstaller::PRIMITIVE4)                             \
   declare_constant(CodeInstaller::PRIMITIVE8)                             \

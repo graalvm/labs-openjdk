@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  * Represents a primitive constant value, such as an integer or floating point number, within the
  * compiler and across the compiler/runtime interface.
  */
-public class PrimitiveConstant implements JavaConstant, SerializableConstant {
+public final class PrimitiveConstant implements JavaConstant, SerializableConstant {
 
     private final JavaKind kind;
 
@@ -39,7 +39,7 @@ public class PrimitiveConstant implements JavaConstant, SerializableConstant {
      */
     private final long primitive;
 
-    protected PrimitiveConstant(JavaKind kind, long primitive) {
+    PrimitiveConstant(JavaKind kind, long primitive) {
         this.primitive = primitive;
         this.kind = kind;
 
