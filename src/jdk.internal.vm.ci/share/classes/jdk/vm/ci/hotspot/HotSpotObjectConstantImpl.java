@@ -149,19 +149,18 @@ abstract class HotSpotObjectConstantImpl implements HotSpotObjectConstant {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (o == this) {
             return true;
-        } else if (o instanceof HotSpotObjectConstantImpl) {
-            HotSpotObjectConstantImpl other = (HotSpotObjectConstantImpl) o;
-            return runtime().reflection.equals(this, other);
+        } else if (o instanceof HotSpotObjectConstantImpl other) {
+            return compressed == other.compressed && runtime().reflection.isSameObject(this, other);
         }
         return false;
     }
 
     @Override
-    public int hashCode() {
-        return getIdentityHashCode();
+    public final int hashCode() {
+        return getIdentityHashCode() + (compressed ? 1 : 0);
     }
 
     @Override

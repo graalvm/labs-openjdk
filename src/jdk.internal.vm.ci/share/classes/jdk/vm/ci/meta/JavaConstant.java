@@ -54,6 +54,28 @@ public interface JavaConstant extends Constant, JavaValue {
     JavaKind getJavaKind();
 
     /**
+     * Compares if the value boxed by this object is identical to the value boxed by
+     * {@code other}. If {@code other} is not a JavaConstant, this method returns false.
+     * If {@code other.getJavaKind() == JavaKind.Object}, the boxed object references
+     * are compared for identity (i.e., {@code ==}), not structural equality (i.e.,
+     * {@code equals()}). In JVMCI implementations supporting compressed objects references
+     * (e.g., {@code -XX:+UseCompressedOops} on HotSpot), comparing JavaConstants for objects
+     * also takes into account whether the references are compressed (i.e., a
+     * JavaConstant that boxes a compressed reference is not equal to another
+     * JavaConstant that boxes an uncompressed reference to the same object).
+     */
+    @Override
+    boolean equals(Object other);
+
+    /**
+     * Gets the hash code based on the boxed value. If the boxed value is an object,
+     * the returned value is based on the {@linkplain System#identityHashCode(Object)
+     * identity hash code} of the boxed object.
+     */
+    @Override
+    int hashCode();
+
+    /**
      * Checks whether this constant is null.
      *
      * @return {@code true} if this constant is the null constant
