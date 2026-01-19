@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  * Represents a primitive constant value, such as an integer or floating point number, within the
  * compiler and across the compiler/runtime interface.
  */
-public class PrimitiveConstant implements JavaConstant, SerializableConstant {
+public final class PrimitiveConstant implements JavaConstant, SerializableConstant {
 
     private final JavaKind kind;
 
@@ -39,15 +39,11 @@ public class PrimitiveConstant implements JavaConstant, SerializableConstant {
      */
     private final long primitive;
 
-    protected PrimitiveConstant(JavaKind kind, long primitive) {
+    PrimitiveConstant(JavaKind kind, long primitive) {
         this.primitive = primitive;
         this.kind = kind;
 
         assert kind.isPrimitive() || kind == JavaKind.Illegal;
-    }
-
-    static PrimitiveConstant forTypeChar(char kind, long i) {
-        return JavaConstant.forIntegerKind(JavaKind.fromPrimitiveOrVoidTypeChar(kind), i);
     }
 
     public long getRawValue() {
@@ -101,26 +97,17 @@ public class PrimitiveConstant implements JavaConstant, SerializableConstant {
 
     @Override
     public Object asBoxedPrimitive() {
-        switch (getJavaKind()) {
-            case Byte:
-                return Byte.valueOf((byte) primitive);
-            case Boolean:
-                return Boolean.valueOf(asBoolean());
-            case Short:
-                return Short.valueOf((short) primitive);
-            case Char:
-                return Character.valueOf((char) primitive);
-            case Int:
-                return Integer.valueOf(asInt());
-            case Long:
-                return Long.valueOf(asLong());
-            case Float:
-                return Float.valueOf(asFloat());
-            case Double:
-                return Double.valueOf(asDouble());
-            default:
-                throw new IllegalArgumentException("unexpected kind " + getJavaKind());
-        }
+        return switch (getJavaKind()) {
+            case Byte -> (byte) primitive;
+            case Boolean -> asBoolean();
+            case Short -> (short) primitive;
+            case Char -> (char) primitive;
+            case Int -> asInt();
+            case Long -> asLong();
+            case Float -> asFloat();
+            case Double -> asDouble();
+            default -> throw new IllegalArgumentException("unexpected kind " + getJavaKind());
+        };
     }
 
     @Override
@@ -168,10 +155,9 @@ public class PrimitiveConstant implements JavaConstant, SerializableConstant {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof PrimitiveConstant)) {
+        if (!(o instanceof PrimitiveConstant other)) {
             return false;
         }
-        PrimitiveConstant other = (PrimitiveConstant) o;
         return this.kind.equals(other.kind) && this.primitive == other.primitive;
     }
 

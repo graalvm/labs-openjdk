@@ -96,8 +96,8 @@ final class HotSpotJDKReflection extends HotSpotJVMCIReflection {
     }
 
     @Override
-    boolean equals(HotSpotObjectConstantImpl a, HotSpotObjectConstantImpl b) {
-        return resolveObject(a) == resolveObject(b) && a.isCompressed() == b.isCompressed();
+    boolean isSameObject(HotSpotObjectConstantImpl a, HotSpotObjectConstantImpl b) {
+        return resolveObject(a) == resolveObject(b);
     }
 
     @Override

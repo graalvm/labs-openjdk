@@ -76,25 +76,18 @@ class SharedLibraryJVMCIReflection extends HotSpotJVMCIReflection {
     }
 
     @Override
-    boolean equals(HotSpotObjectConstantImpl x, HotSpotObjectConstantImpl y) {
+    boolean isSameObject(HotSpotObjectConstantImpl x, HotSpotObjectConstantImpl y) {
         if (x == y) {
             return true;
         }
-        if (x.compressed != y.compressed) {
-            return false;
-        }
-        if (x instanceof DirectHotSpotObjectConstantImpl && y instanceof DirectHotSpotObjectConstantImpl) {
-            DirectHotSpotObjectConstantImpl xd = (DirectHotSpotObjectConstantImpl) x;
-            DirectHotSpotObjectConstantImpl yd = (DirectHotSpotObjectConstantImpl) y;
+        if (x instanceof DirectHotSpotObjectConstantImpl xd && y instanceof DirectHotSpotObjectConstantImpl yd) {
             return (xd.object == yd.object);
         }
-        if (x instanceof DirectHotSpotObjectConstantImpl || y instanceof DirectHotSpotObjectConstantImpl) {
-            // Mixing of constant types is always inequal
-            return false;
+        if (x instanceof IndirectHotSpotObjectConstantImpl indirectX && y instanceof IndirectHotSpotObjectConstantImpl indirectY) {
+            return runtime().compilerToVm.equals(x, indirectX.getHandle(), y, indirectY.getHandle());
         }
-        IndirectHotSpotObjectConstantImpl indirectX = (IndirectHotSpotObjectConstantImpl) x;
-        IndirectHotSpotObjectConstantImpl indirectY = (IndirectHotSpotObjectConstantImpl) y;
-        return runtime().compilerToVm.equals(x, indirectX.getHandle(), y, indirectY.getHandle());
+        // Mixing of constant types is always inequal
+        return false;
     }
 
     @Override

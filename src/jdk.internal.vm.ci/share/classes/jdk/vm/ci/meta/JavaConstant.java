@@ -54,6 +54,28 @@ public interface JavaConstant extends Constant, JavaValue {
     JavaKind getJavaKind();
 
     /**
+     * Compares if the value boxed by this object is identical to the value boxed by
+     * {@code other}. If {@code other} is not a JavaConstant, this method returns false.
+     * If {@code other.getJavaKind() == JavaKind.Object}, the boxed object references
+     * are compared for identity (i.e., {@code ==}), not structural equality (i.e.,
+     * {@code equals()}). In JVMCI implementations supporting compressed objects references
+     * (e.g., {@code -XX:+UseCompressedOops} on HotSpot), comparing JavaConstants for objects
+     * also takes into account whether the references are compressed (i.e., a
+     * JavaConstant that boxes a compressed reference is not equal to another
+     * JavaConstant that boxes an uncompressed reference to the same object).
+     */
+    @Override
+    boolean equals(Object other);
+
+    /**
+     * Gets the hash code based on the boxed value. If the boxed value is an object,
+     * the returned value is based on the {@linkplain System#identityHashCode(Object)
+     * identity hash code} of the boxed object.
+     */
+    @Override
+    int hashCode();
+
+    /**
      * Checks whether this constant is null.
      *
      * @return {@code true} if this constant is the null constant
@@ -204,18 +226,13 @@ public interface JavaConstant extends Constant, JavaValue {
      * @return a boxed copy of {@code value}
      */
     static PrimitiveConstant forInt(int i) {
-        switch (i) {
-            case -1:
-                return INT_MINUS_1;
-            case 0:
-                return INT_0;
-            case 1:
-                return INT_1;
-            case 2:
-                return INT_2;
-            default:
-                return new PrimitiveConstant(JavaKind.Int, i);
-        }
+        return switch (i) {
+            case -1 -> INT_MINUS_1;
+            case 0 -> INT_0;
+            case 1 -> INT_1;
+            case 2 -> INT_2;
+            default -> new PrimitiveConstant(JavaKind.Int, i);
+        };
     }
 
     /**
@@ -258,74 +275,23 @@ public interface JavaConstant extends Constant, JavaValue {
         return new PrimitiveConstant(JavaKind.Short, i);
     }
 
-    /**
-     * Creates a {@link JavaConstant} from a primitive integer of a certain kind.
-     */
-    static PrimitiveConstant forIntegerKind(JavaKind kind, long i) {
-        switch (kind) {
-            case Boolean:
-                return forBoolean(i != 0);
-            case Byte:
-                return forByte((byte) i);
-            case Short:
-                return forShort((short) i);
-            case Char:
-                return forChar((char) i);
-            case Int:
-                return forInt((int) i);
-            case Long:
-                return forLong(i);
-            default:
-                throw new IllegalArgumentException("not an integer kind: " + kind);
-        }
-    }
-
-    /**
-     * Creates a {@link JavaConstant} from a primitive integer of a certain width.
-     */
-    static PrimitiveConstant forPrimitiveInt(int bits, long i) {
-        assert bits <= 64;
-        switch (bits) {
-            case 1:
-                return forBoolean(i != 0);
-            case 8:
-                return forByte((byte) i);
-            case 16:
-                return forShort((short) i);
-            case 32:
-                return forInt((int) i);
-            case 64:
-                return forLong(i);
-            default:
-                throw new IllegalArgumentException("unsupported integer width: " + bits);
-        }
-    }
-
+    @VMEntryPoint
     static PrimitiveConstant forPrimitive(char typeChar, long rawValue) {
         return forPrimitive(JavaKind.fromPrimitiveOrVoidTypeChar(typeChar), rawValue);
     }
 
     static PrimitiveConstant forPrimitive(JavaKind kind, long rawValue) {
-        switch (kind) {
-            case Boolean:
-                return JavaConstant.forBoolean(rawValue != 0);
-            case Byte:
-                return JavaConstant.forByte((byte) rawValue);
-            case Char:
-                return JavaConstant.forChar((char) rawValue);
-            case Short:
-                return JavaConstant.forShort((short) rawValue);
-            case Int:
-                return JavaConstant.forInt((int) rawValue);
-            case Long:
-                return JavaConstant.forLong(rawValue);
-            case Float:
-                return JavaConstant.forFloat(Float.intBitsToFloat((int) rawValue));
-            case Double:
-                return JavaConstant.forDouble(Double.longBitsToDouble(rawValue));
-            default:
-                throw new IllegalArgumentException("Unsupported kind: " + kind);
-        }
+        return switch (kind) {
+            case Boolean -> JavaConstant.forBoolean(rawValue != 0);
+            case Byte -> JavaConstant.forByte((byte) rawValue);
+            case Char -> JavaConstant.forChar((char) rawValue);
+            case Short -> JavaConstant.forShort((short) rawValue);
+            case Int -> JavaConstant.forInt((int) rawValue);
+            case Long -> JavaConstant.forLong(rawValue);
+            case Float -> JavaConstant.forFloat(Float.intBitsToFloat((int) rawValue));
+            case Double -> JavaConstant.forDouble(Double.longBitsToDouble(rawValue));
+            default -> throw new IllegalArgumentException("Unsupported kind: " + kind);
+        };
     }
 
     /**
@@ -335,56 +301,16 @@ public interface JavaConstant extends Constant, JavaValue {
      * @return the primitive constant holding the {@code value}
      */
     static PrimitiveConstant forBoxedPrimitive(Object value) {
-        if (value instanceof Boolean) {
-            return forBoolean((Boolean) value);
-        } else if (value instanceof Byte) {
-            return forByte((Byte) value);
-        } else if (value instanceof Character) {
-            return forChar((Character) value);
-        } else if (value instanceof Short) {
-            return forShort((Short) value);
-        } else if (value instanceof Integer) {
-            return forInt((Integer) value);
-        } else if (value instanceof Long) {
-            return forLong((Long) value);
-        } else if (value instanceof Float) {
-            return forFloat((Float) value);
-        } else if (value instanceof Double) {
-            return forDouble((Double) value);
-        } else {
-            return null;
-        }
-    }
-
-    static PrimitiveConstant forIllegal() {
-        return JavaConstant.ILLEGAL;
-    }
-
-    /**
-     * Returns a constant with the default value for the given kind.
-     */
-    static JavaConstant defaultForKind(JavaKind kind) {
-        switch (kind) {
-            case Boolean:
-                return FALSE;
-            case Byte:
-                return forByte((byte) 0);
-            case Char:
-                return forChar((char) 0);
-            case Short:
-                return forShort((short) 0);
-            case Int:
-                return INT_0;
-            case Double:
-                return DOUBLE_0;
-            case Float:
-                return FLOAT_0;
-            case Long:
-                return LONG_0;
-            case Object:
-                return NULL_POINTER;
-            default:
-                throw new IllegalArgumentException(kind.toString());
-        }
+        return switch (value) {
+            case Boolean b -> forBoolean(b);
+            case Byte b -> forByte(b);
+            case Character c -> forChar(c);
+            case Short i -> forShort(i);
+            case Integer i -> forInt(i);
+            case Long l -> forLong(l);
+            case Float v -> forFloat(v);
+            case Double v -> forDouble(v);
+            case null, default -> null;
+        };
     }
 }

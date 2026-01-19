@@ -27,7 +27,7 @@ package jdk.vm.ci.meta;
  */
 final class NullConstant implements JavaConstant {
 
-    protected NullConstant() {
+    NullConstant() {
     }
 
     @Override

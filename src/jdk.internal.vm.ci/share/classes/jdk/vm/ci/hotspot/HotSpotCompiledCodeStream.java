@@ -22,60 +22,6 @@
  */
 package jdk.vm.ci.hotspot;
 
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.CALLSITE_TARGET_VALUE;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.CONCRETE_METHOD;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.CONCRETE_SUBTYPE;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.ILLEGAL;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.JOBJECT;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.LEAF_TYPE;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.NO_FINALIZABLE_SUBCLASS;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.NULL_CONSTANT;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.OBJECT_ID;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.OBJECT_ID2;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_JOBJECT;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_KLASS;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_METHOD;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_JOBJECT;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_KLASS;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_OBJECT_ID;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_OBJECT_ID2;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_OBJECT_ID;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_OBJECT_ID2;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PRIMITIVE4;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PRIMITIVE8;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PRIMITIVE_0;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.RAW_CONSTANT;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_NARROW_OOP;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_OOP;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_PRIMITIVE;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_VECTOR;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_CALL;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_DATA_PATCH;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_EXCEPTION_HANDLER;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_FOREIGN_CALL;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_FOREIGN_CALL_NO_DEBUG_INFO;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_IMPLICIT_EXCEPTION;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_IMPLICIT_EXCEPTION_DISPATCH;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_INFOPOINT;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_MARK;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_SAFEPOINT;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_NARROW_OOP;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_OOP;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_PRIMITIVE;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_VECTOR;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_NARROW_OOP;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_OOP;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_PRIMITIVE;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_VECTOR;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.VIRTUAL_OBJECT_ID;
-import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.VIRTUAL_OBJECT_ID2;
-
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Map;
-
 import jdk.internal.misc.Unsafe;
 import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.code.BytecodePosition;
@@ -113,12 +59,64 @@ import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaValue;
 import jdk.vm.ci.meta.PrimitiveConstant;
-import jdk.vm.ci.meta.RawConstant;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.VMConstant;
 import jdk.vm.ci.meta.Value;
 import jdk.vm.ci.services.Services;
+
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.CALLSITE_TARGET_VALUE;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.CONCRETE_METHOD;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.CONCRETE_SUBTYPE;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.ILLEGAL;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.JOBJECT;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.LEAF_TYPE;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.NO_FINALIZABLE_SUBCLASS;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.NULL_CONSTANT;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.OBJECT_ID;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.OBJECT_ID2;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_JOBJECT;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_KLASS;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_METHOD;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_JOBJECT;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_KLASS;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_OBJECT_ID;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_NARROW_OBJECT_ID2;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_OBJECT_ID;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PATCH_OBJECT_ID2;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PRIMITIVE4;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PRIMITIVE8;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.PRIMITIVE_0;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_NARROW_OOP;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_OOP;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_PRIMITIVE;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.REGISTER_VECTOR;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_CALL;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_DATA_PATCH;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_EXCEPTION_HANDLER;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_FOREIGN_CALL;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_FOREIGN_CALL_NO_DEBUG_INFO;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_IMPLICIT_EXCEPTION;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_IMPLICIT_EXCEPTION_DISPATCH;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_INFOPOINT;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_MARK;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.SITE_SAFEPOINT;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_NARROW_OOP;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_OOP;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_PRIMITIVE;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT4_VECTOR;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_NARROW_OOP;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_OOP;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_PRIMITIVE;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.STACK_SLOT_VECTOR;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.VIRTUAL_OBJECT_ID;
+import static jdk.vm.ci.hotspot.HotSpotCompiledCodeStream.Tag.VIRTUAL_OBJECT_ID2;
 
 /**
  * Serializes {@link HotSpotCompiledCode} to a list linked native memory chunks. Each chunk has the
@@ -189,7 +187,6 @@ final class HotSpotCompiledCodeStream implements AutoCloseable {
         VIRTUAL_OBJECT_ID,
         VIRTUAL_OBJECT_ID2,
         NULL_CONSTANT,
-        RAW_CONSTANT,
         PRIMITIVE_0,
         PRIMITIVE4,
         PRIMITIVE8,
@@ -1109,10 +1106,6 @@ final class HotSpotCompiledCodeStream implements AutoCloseable {
                 writeTag(VIRTUAL_OBJECT_ID2);
                 writeU2("id:2", id);
             }
-        } else if (value instanceof RawConstant) {
-            RawConstant prim = (RawConstant) value;
-            writeTag(RAW_CONSTANT);
-            writeLong("primitive", prim.getRawValue());
         } else if (value instanceof PrimitiveConstant) {
             PrimitiveConstant prim = (PrimitiveConstant) value;
             if (prim.getJavaKind() != kind) {

@@ -470,7 +470,6 @@ ScopeValue* CodeInstaller::get_scope_value(HotSpotCompiledCodeStream* stream, u1
       return value;
     }
     case NULL_CONSTANT:      { return _oop_null_scope_value; }
-    case RAW_CONSTANT:       { return new ConstantLongValue(stream->read_u8("primitive")); }
     case PRIMITIVE_0:        { ScopeValue* v = to_primitive_value(stream, 0, type, second, JVMCI_CHECK_NULL); return v; }
     case PRIMITIVE4:         { ScopeValue* v = to_primitive_value(stream, stream->read_s4("primitive4"), type, second, JVMCI_CHECK_NULL); return v; }
     case PRIMITIVE8:         { ScopeValue* v = to_primitive_value(stream, stream->read_s8("primitive8"), type, second, JVMCI_CHECK_NULL); return v; }

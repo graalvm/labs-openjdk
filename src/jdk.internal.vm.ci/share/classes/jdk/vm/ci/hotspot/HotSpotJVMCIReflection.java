@@ -45,7 +45,10 @@ abstract class HotSpotJVMCIReflection {
 
     abstract HotSpotResolvedJavaMethod getEnclosingMethod(HotSpotResolvedObjectTypeImpl holder);
 
-    abstract boolean equals(HotSpotObjectConstantImpl hotSpotResolvedJavaType, HotSpotObjectConstantImpl that);
+    /**
+     * Determines if {@code hotSpotResolvedJavaType} and {@code that} refer to the same object.
+     */
+    abstract boolean isSameObject(HotSpotObjectConstantImpl hotSpotResolvedJavaType, HotSpotObjectConstantImpl that);
 
     abstract ResolvedJavaMethod.Parameter[] getParameters(HotSpotResolvedJavaMethodImpl javaMethod);
 

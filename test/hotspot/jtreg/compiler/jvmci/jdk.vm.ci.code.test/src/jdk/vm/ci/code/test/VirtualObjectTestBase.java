@@ -51,7 +51,7 @@ public abstract class VirtualObjectTestBase {
         dummyValue = dummyValue | dummyValue << 16;
         dummyValue = dummyValue | dummyValue << 32;
         if (kind.isNumericInteger()) {
-            return JavaConstant.forIntegerKind(kind, dummyValue);
+            return JavaConstant.forPrimitive(kind, dummyValue);
         } else if (kind == JavaKind.Double) {
             return JavaConstant.forDouble(Double.longBitsToDouble(dummyValue));
         } else if (kind == JavaKind.Float) {
