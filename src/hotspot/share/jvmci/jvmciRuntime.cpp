@@ -2244,7 +2244,11 @@ JVMCI::CodeInstallResult JVMCIRuntime::register_method(JVMCIEnv* JVMCIENV,
               tty->print_cr("Replacing method %s", method_name);
             }
             if (old != nullptr) {
+<<<<<<< HEAD
               old->make_not_entrant(nmethod::InvalidationReason::JVMCI_REPLACED_WITH_NEW_CODE);
+=======
+              old->make_not_entrant(nmethod::ChangeReason::JVMCI_register_method);
+>>>>>>> jdk-25.0.2+10
             }
 
             LogTarget(Info, nmethod, install) lt;

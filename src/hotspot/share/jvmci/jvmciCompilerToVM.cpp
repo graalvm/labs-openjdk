@@ -27,6 +27,7 @@
 #include "classfile/symbolTable.hpp"
 #include "classfile/systemDictionary.hpp"
 #include "classfile/vmClasses.hpp"
+#include "code/nmethod.hpp"
 #include "code/scopeDesc.hpp"
 #include "compiler/compileBroker.hpp"
 #include "compiler/compilerEvent.hpp"
@@ -1207,7 +1208,11 @@ C2V_VMENTRY_0(jint, installCode0, (JNIEnv *env, jobject,
         assert(JVMCIENV->isa_HotSpotNmethod(installed_code_handle), "wrong type");
         // Clear the link to an old nmethod first
         JVMCIObject nmethod_mirror = installed_code_handle;
+<<<<<<< HEAD
         JVMCIENV->invalidate_nmethod_mirror(nmethod_mirror, true, nmethod::InvalidationReason::JVMCI_REPLACED_WITH_NEW_CODE, JVMCI_CHECK_0);
+=======
+        JVMCIENV->invalidate_nmethod_mirror(nmethod_mirror, true, nmethod::ChangeReason::JVMCI_replacing_with_new_code, JVMCI_CHECK_0);
+>>>>>>> jdk-25.0.2+10
       } else {
         assert(JVMCIENV->isa_InstalledCode(installed_code_handle), "wrong type");
       }
@@ -1391,7 +1396,11 @@ C2V_VMENTRY(void, reprofile, (JNIEnv* env, jobject, ARGUMENT_PAIR(method)))
 
   nmethod* code = method->code();
   if (code != nullptr) {
+<<<<<<< HEAD
     code->make_not_entrant(nmethod::InvalidationReason::JVMCI_REPROFILE);
+=======
+    code->make_not_entrant(nmethod::ChangeReason::JVMCI_reprofile);
+>>>>>>> jdk-25.0.2+10
   }
 
   MethodData* method_data = method->method_data();
@@ -1411,7 +1420,11 @@ C2V_VMENTRY(void, invalidateHotSpotNmethod, (JNIEnv* env, jobject, jobject hs_nm
     JVMCI_THROW_MSG(IllegalArgumentException, err_msg("Invalid invalidation_reason: %d", invalidation_reason));
   }
   JVMCIObject nmethod_mirror = JVMCIENV->wrap(hs_nmethod);
+<<<<<<< HEAD
   JVMCIENV->invalidate_nmethod_mirror(nmethod_mirror, deoptimize, static_cast<nmethod::InvalidationReason>(invalidation_reason), JVMCI_CHECK);
+=======
+  JVMCIENV->invalidate_nmethod_mirror(nmethod_mirror, deoptimize, nmethod::ChangeReason::JVMCI_invalidate_nmethod, JVMCI_CHECK);
+>>>>>>> jdk-25.0.2+10
 C2V_END
 
 C2V_VMENTRY_NULL(jlongArray, collectCounters, (JNIEnv* env, jobject))
@@ -1836,7 +1849,11 @@ C2V_VMENTRY(void, materializeVirtualObjects, (JNIEnv* env, jobject, jobject _hs_
     if (!fst.current()->is_compiled_frame()) {
       JVMCI_THROW_MSG(IllegalStateException, "compiled stack frame expected");
     }
+<<<<<<< HEAD
     fst.current()->cb()->as_nmethod()->make_not_entrant(nmethod::InvalidationReason::JVMCI_MATERIALIZE_VIRTUAL_OBJECT);
+=======
+    fst.current()->cb()->as_nmethod()->make_not_entrant(nmethod::ChangeReason::JVMCI_materialize_virtual_object);
+>>>>>>> jdk-25.0.2+10
   }
   Deoptimization::deoptimize(thread, *fst.current(), Deoptimization::Reason_none);
   // look for the frame again as it has been updated by deopt (pc, deopt state...)

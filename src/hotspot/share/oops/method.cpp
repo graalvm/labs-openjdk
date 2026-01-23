@@ -1028,7 +1028,11 @@ void Method::set_native_function(address function, bool post_event_flag) {
   // If so, we have to make it not_entrant.
   nmethod* nm = code(); // Put it into local variable to guard against concurrent updates
   if (nm != nullptr) {
+<<<<<<< HEAD
     nm->make_not_entrant(nmethod::InvalidationReason::SET_NATIVE_FUNCTION);
+=======
+    nm->make_not_entrant(nmethod::ChangeReason::set_native_function);
+>>>>>>> jdk-25.0.2+10
   }
 }
 

@@ -1339,7 +1339,11 @@ void JavaThread::make_zombies() {
       // it is a Java nmethod
       nmethod* nm = CodeCache::find_nmethod(fst.current()->pc());
       assert(nm != nullptr, "did not find nmethod");
+<<<<<<< HEAD
       nm->make_not_entrant(nmethod::InvalidationReason::ZOMBIE);
+=======
+      nm->make_not_entrant(nmethod::ChangeReason::zombie);
+>>>>>>> jdk-25.0.2+10
     }
   }
 }
