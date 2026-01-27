@@ -33,7 +33,7 @@
     clone(defs, repo, release, dst_dir, is_windows=false, is_closed=false):: [
         ['git', 'clone', '--config', 'core.autocrlf=input', '--quiet', defs.bitbucket_base_url + repo + '.git', dst_dir],
     ] + (if is_closed then [
-        ['git', '-C', dst_dir, 'checkout', 'jdk25'],
+        ['git', '-C', dst_dir, 'checkout', 'me/GR-72925'],
     ] else [
         ['git', '-C', dst_dir, 'checkout', '${MAIN_REVISION}'],
     ]),
