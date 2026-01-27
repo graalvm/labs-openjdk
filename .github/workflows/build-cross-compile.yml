@@ -71,21 +71,6 @@ jobs:
             debian-version: trixie
             tolerate-sysroot-errors: false
             gnu-abi: eabihf
-<<<<<<< HEAD
-=======
-          - target-cpu: s390x
-            gnu-arch: s390x
-            debian-arch: s390x
-            debian-repository: https://httpredir.debian.org/debian/
-            debian-version: trixie
-            tolerate-sysroot-errors: false
-          - target-cpu: ppc64le
-            gnu-arch: powerpc64le
-            debian-arch: ppc64el
-            debian-repository: https://httpredir.debian.org/debian/
-            debian-version: trixie
-            tolerate-sysroot-errors: false
->>>>>>> jdk-25.0.2+10
           - target-cpu: riscv64
             gnu-arch: riscv64
             debian-arch: riscv64

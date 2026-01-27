@@ -818,11 +818,7 @@ JRT_ENTRY(void, Runtime1::deoptimize(JavaThread* current, jint trap_request))
   Deoptimization::DeoptReason reason = Deoptimization::trap_request_reason(trap_request);
 
   if (action == Deoptimization::Action_make_not_entrant) {
-<<<<<<< HEAD
     if (nm->make_not_entrant(nmethod::InvalidationReason::C1_DEOPTIMIZE)) {
-=======
-    if (nm->make_not_entrant(nmethod::ChangeReason::C1_deoptimize)) {
->>>>>>> jdk-25.0.2+10
       if (reason == Deoptimization::Reason_tenured) {
         MethodData* trap_mdo = Deoptimization::get_method_data(current, method, true /*create_if_missing*/);
         if (trap_mdo != nullptr) {
@@ -1114,11 +1110,7 @@ JRT_ENTRY(void, Runtime1::patch_code(JavaThread* current, C1StubId stub_id ))
     // safepoint, but if it's still alive then make it not_entrant.
     nmethod* nm = CodeCache::find_nmethod(caller_frame.pc());
     if (nm != nullptr) {
-<<<<<<< HEAD
       nm->make_not_entrant(nmethod::InvalidationReason::C1_CODEPATCH);
-=======
-      nm->make_not_entrant(nmethod::ChangeReason::C1_codepatch);
->>>>>>> jdk-25.0.2+10
     }
 
     Deoptimization::deoptimize_frame(current, caller_frame.id());
@@ -1366,11 +1358,7 @@ void Runtime1::patch_code(JavaThread* current, C1StubId stub_id) {
     // Make sure the nmethod is invalidated, i.e. made not entrant.
     nmethod* nm = CodeCache::find_nmethod(caller_frame.pc());
     if (nm != nullptr) {
-<<<<<<< HEAD
       nm->make_not_entrant(nmethod::InvalidationReason::C1_DEOPTIMIZE_FOR_PATCHING);
-=======
-      nm->make_not_entrant(nmethod::ChangeReason::C1_deoptimize_for_patching);
->>>>>>> jdk-25.0.2+10
     }
   }
 
@@ -1498,11 +1486,7 @@ JRT_ENTRY(void, Runtime1::predicate_failed_trap(JavaThread* current))
 
   nmethod* nm = CodeCache::find_nmethod(caller_frame.pc());
   assert (nm != nullptr, "no more nmethod?");
-<<<<<<< HEAD
   nm->make_not_entrant(nmethod::InvalidationReason::C1_PREDICATE_FAILED_TRAP);
-=======
-  nm->make_not_entrant(nmethod::ChangeReason::C1_predicate_failed_trap);
->>>>>>> jdk-25.0.2+10
 
   methodHandle m(current, nm->method());
   MethodData* mdo = m->method_data();

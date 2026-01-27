@@ -1826,11 +1826,7 @@ void Deoptimization::deoptimize(JavaThread* thread, frame fr, DeoptReason reason
 #if INCLUDE_JVMCI
 address Deoptimization::deoptimize_for_missing_exception_handler(nmethod* nm) {
   // there is no exception handler for this pc => deoptimize
-<<<<<<< HEAD
   nm->make_not_entrant(nmethod::InvalidationReason::MISSING_EXCEPTION_HANDLER);
-=======
-  nm->make_not_entrant(nmethod::ChangeReason::missing_exception_handler);
->>>>>>> jdk-25.0.2+10
 
   // Use Deoptimization::deoptimize for all of its side-effects:
   // gathering traps statistics, logging...
@@ -2467,11 +2463,7 @@ JRT_ENTRY(void, Deoptimization::uncommon_trap_inner(JavaThread* current, jint tr
 
     // Recompile
     if (make_not_entrant) {
-<<<<<<< HEAD
       if (!nm->make_not_entrant(nmethod::InvalidationReason::UNCOMMON_TRAP)) {
-=======
-      if (!nm->make_not_entrant(nmethod::ChangeReason::uncommon_trap)) {
->>>>>>> jdk-25.0.2+10
         return; // the call did not change nmethod's state
       }
 
