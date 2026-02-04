@@ -275,6 +275,36 @@ public interface JavaConstant extends Constant, JavaValue {
         return new PrimitiveConstant(JavaKind.Short, i);
     }
 
+    /**
+     * Creates a {@link JavaConstant} from a primitive integer of a certain kind.
+     */
+    static PrimitiveConstant forIntegerKind(JavaKind kind, long i) {
+        return switch (kind) {
+            case Boolean -> forBoolean(i != 0);
+            case Byte -> forByte((byte) i);
+            case Short -> forShort((short) i);
+            case Char -> forChar((char) i);
+            case Int -> forInt((int) i);
+            case Long -> forLong(i);
+            default -> throw new IllegalArgumentException("not an integer kind: " + kind);
+        };
+    }
+
+    /**
+     * Creates a {@link JavaConstant} from a primitive integer of a certain width.
+     */
+    static PrimitiveConstant forPrimitiveInt(int bits, long i) {
+        assert bits <= 64;
+        return switch (bits) {
+            case 1 -> forBoolean(i != 0);
+            case 8 -> forByte((byte) i);
+            case 16 -> forShort((short) i);
+            case 32 -> forInt((int) i);
+            case 64 -> forLong(i);
+            default -> throw new IllegalArgumentException("unsupported integer width: " + bits);
+        };
+    }
+
     @VMEntryPoint
     static PrimitiveConstant forPrimitive(char typeChar, long rawValue) {
         return forPrimitive(JavaKind.fromPrimitiveOrVoidTypeChar(typeChar), rawValue);
@@ -311,6 +341,31 @@ public interface JavaConstant extends Constant, JavaValue {
             case Float v -> forFloat(v);
             case Double v -> forDouble(v);
             case null, default -> null;
+        };
+    }
+
+    /**
+     * Returns a constant for a value of kind {@link JavaKind#Illegal}.
+     */
+    static PrimitiveConstant forIllegal() {
+        return JavaConstant.ILLEGAL;
+    }
+
+    /**
+     * Returns a constant with the default value for the given kind.
+     */
+    static JavaConstant defaultForKind(JavaKind kind) {
+        return switch (kind) {
+            case Boolean -> FALSE;
+            case Byte -> forByte((byte) 0);
+            case Char -> forChar((char) 0);
+            case Short -> forShort((short) 0);
+            case Int -> INT_0;
+            case Double -> DOUBLE_0;
+            case Float -> FLOAT_0;
+            case Long -> LONG_0;
+            case Object -> NULL_POINTER;
+            default -> throw new IllegalArgumentException(kind.toString());
         };
     }
 }
