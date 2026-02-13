@@ -2216,11 +2216,13 @@ void nmethod::flush_dependencies() {
   }
 }
 
-void nmethod::post_compiled_method(CompileTask* task) {
-  task->mark_success();
-  task->set_nm_content_size(content_size());
-  task->set_nm_insts_size(insts_size());
-  task->set_nm_total_size(total_size());
+void nmethod::post_compiled_method(CompileTask *task) {
+  if (task != nullptr) {
+    task->mark_success();
+    task->set_nm_content_size(content_size());
+    task->set_nm_insts_size(insts_size());
+    task->set_nm_total_size(total_size());
+  }
 
   // JVMTI -- compiled method notification (must be done outside lock)
   post_compiled_method_load_event();
@@ -2229,8 +2231,10 @@ void nmethod::post_compiled_method(CompileTask* task) {
     CompilationLog::log()->log_nmethod(JavaThread::current(), this);
   }
 
-  const DirectiveSet* directive = task->directive();
-  maybe_print_nmethod(directive);
+  if (task != nullptr) {
+    const DirectiveSet* directive = task->directive();
+    maybe_print_nmethod(directive);
+  }
 }
 
 // ------------------------------------------------------------------

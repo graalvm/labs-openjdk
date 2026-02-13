@@ -23,6 +23,7 @@
 
 #include "classfile/javaClasses.inline.hpp"
 #include "code/compiledIC.hpp"
+#include "compiler/compilationLog.hpp"
 #include "compiler/compileBroker.hpp"
 #include "compiler/compilerThread.hpp"
 #include "compiler/oopMap.hpp"
@@ -789,6 +790,7 @@ JVMCI::CodeInstallResult CodeInstaller::install(JVMCICompiler* compiler,
     result = runtime()->register_method(jvmci_env(),
                                         method,
                                         nm,
+                                        nmethod_handle,
                                         entry_bci,
                                         &_offsets,
                                         _orig_pc_offset,
@@ -813,7 +815,6 @@ JVMCI::CodeInstallResult CodeInstaller::install(JVMCICompiler* compiler,
                                         _nmethod_entry_patch_offset);
     if (result == JVMCI::ok) {
       guarantee(nm != nullptr, "successful compile must produce an nmethod");
-      nmethod_handle.set_nmethod(nm);
       cb = nm;
       if (compile_state == nullptr) {
         // This compile didn't come through the CompileBroker so perform the printing here
