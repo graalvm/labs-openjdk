@@ -399,7 +399,9 @@ static char* reserve_mmapped_memory(size_t bytes, char* requested_addr, MemTag m
 
 static int util_posix_fallocate(int fd, off_t offset, off_t len) {
   static_assert(sizeof(off_t) == 8, "Expected Large File Support in this file");
-#ifdef __APPLE__
+#if defined(__COSMOPOLITAN__)
+  return 0;
+#elif defined(__APPLE__)
   fstore_t store = { F_ALLOCATECONTIG, F_PEOFPOSMODE, 0, len };
   // First we try to get a continuous chunk of disk space
   int ret = fcntl(fd, F_PREALLOCATE, &store);

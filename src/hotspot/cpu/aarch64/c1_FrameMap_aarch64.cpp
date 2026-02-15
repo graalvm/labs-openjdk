@@ -28,6 +28,12 @@
 #include "runtime/sharedRuntime.hpp"
 #include "vmreg_aarch64.inline.hpp"
 
+#if defined(__COSMOPOLITAN__)
+#ifndef R18_RESERVED
+#define R18_RESERVED
+#endif
+#endif
+
 LIR_Opr FrameMap::map_to_opr(BasicType type, VMRegPair* reg, bool) {
   LIR_Opr opr = LIR_OprFact::illegalOpr;
   VMReg r_1 = reg->first();
@@ -190,7 +196,6 @@ void FrameMap::initialize() {
   map_register(i, r22); r22_opr = LIR_OprFact::single_cpu(i); i++;
   map_register(i, r23); r23_opr = LIR_OprFact::single_cpu(i); i++;
   map_register(i, r24); r24_opr = LIR_OprFact::single_cpu(i); i++;
-  map_register(i, r25); r25_opr = LIR_OprFact::single_cpu(i); i++;
   map_register(i, r26); r26_opr = LIR_OprFact::single_cpu(i); i++;
 
   // r27 is allocated conditionally. With compressed oops it holds
@@ -209,7 +214,8 @@ void FrameMap::initialize() {
   if (preserve_rheapbase) {
     map_register(i, r27); r27_opr = LIR_OprFact::single_cpu(i); i++; // rheapbase
   }
-  map_register(i, r28); r28_opr = LIR_OprFact::single_cpu(i); i++; // rthread
+  map_register(i, r25); r25_opr = LIR_OprFact::single_cpu(i); i++; // rthread
+  map_register(i, r28); r28_opr = LIR_OprFact::single_cpu(i); i++; // cosmo --ffixed-x28
   if(PreserveFramePointer) {
     map_register(i, r29); r29_opr = LIR_OprFact::single_cpu(i); i++; // rfp
   }

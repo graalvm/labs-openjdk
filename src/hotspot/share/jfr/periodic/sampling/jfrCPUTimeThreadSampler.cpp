@@ -607,6 +607,7 @@ void JfrCPUSamplerThread::handle_timer_signal(siginfo_t* info, void* context) {
 static const int SIG = SIGPROF;
 
 static void set_timer_time(timer_t timerid, int64_t period_nanos) {
+#if !defined(__COSMOPOLITAN__)
   struct itimerspec its;
   if (period_nanos == 0) {
     its.it_interval.tv_sec = 0;
@@ -619,9 +620,11 @@ static void set_timer_time(timer_t timerid, int64_t period_nanos) {
   if (timer_settime(timerid, 0, &its, nullptr) == -1) {
     warning("Failed to set timer for thread sampling: %s", os::strerror(os::get_last_error()));
   }
+#endif
 }
 
 bool JfrCPUSamplerThread::create_timer_for_thread(JavaThread* thread, timer_t& timerid) {
+#if !defined(__COSMOPOLITAN__)
   struct sigevent sev;
   sev.sigev_notify = SIGEV_THREAD_ID;
   sev.sigev_signo = SIG;
@@ -641,6 +644,9 @@ bool JfrCPUSamplerThread::create_timer_for_thread(JavaThread* thread, timer_t& t
     set_timer_time(timerid, period);
   }
   return true;
+#else
+  return false;
+#endif
 }
 
 

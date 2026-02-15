@@ -30,7 +30,9 @@
 #include <stdint.h>
 
 #include <sys/procfs.h>
+#if !defined(__COSMOPOLITAN__)
 #include <sys/ptrace.h>
+#endif
 
 
 #if defined(ppc64) || defined(ppc64le)
@@ -38,8 +40,10 @@
 #define user_regs_struct  pt_regs
 #endif
 #if defined(aarch64) || defined(arm64)
+#if !defined(__COSMOPOLITAN__)
 #include <asm/ptrace.h>
 #define user_regs_struct user_pt_regs
+#endif
 #elif defined(arm)
 #include <asm/ptrace.h>
 #define user_regs_struct  pt_regs

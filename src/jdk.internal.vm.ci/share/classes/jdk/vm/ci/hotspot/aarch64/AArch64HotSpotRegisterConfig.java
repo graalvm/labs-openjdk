@@ -35,8 +35,8 @@ import static jdk.vm.ci.aarch64.AArch64.rscratch1;
 import static jdk.vm.ci.aarch64.AArch64.rscratch2;
 import static jdk.vm.ci.aarch64.AArch64.r12;
 import static jdk.vm.ci.aarch64.AArch64.r18;
+import static jdk.vm.ci.aarch64.AArch64.r25;
 import static jdk.vm.ci.aarch64.AArch64.r27;
-import static jdk.vm.ci.aarch64.AArch64.r28;
 import static jdk.vm.ci.aarch64.AArch64.r29;
 import static jdk.vm.ci.aarch64.AArch64.r31;
 import static jdk.vm.ci.aarch64.AArch64.sp;
@@ -129,7 +129,7 @@ public class AArch64HotSpotRegisterConfig implements RegisterConfig {
      */
     public static final Register platformRegister = r18;
     public static final Register heapBaseRegister = r27;
-    public static final Register threadRegister = r28;
+    public static final Register threadRegister = r25;
     public static final Register fp = r29;
 
     private static final List<Register> reservedRegisters = List.of(rscratch1, rscratch2, threadRegister, fp, lr, r31, zr, sp);

@@ -28,7 +28,9 @@
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+#if !defined(__COSMOPOLITAN__)
 #include <netinet/ip_icmp.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -343,6 +345,7 @@ static jboolean
 ping4(JNIEnv *env, jint fd, SOCKETADDRESS *sa, SOCKETADDRESS *netif,
       jint timeout, jint ttl)
 {
+#if !defined(__COSMOPOLITAN__)
     jint n, size = 60 * 1024, hlen, tmout2, seq = 1;
     socklen_t len;
     unsigned char sendbuf[1500], recvbuf[1500];
@@ -454,6 +457,7 @@ ping4(JNIEnv *env, jint fd, SOCKETADDRESS *sa, SOCKETADDRESS *netif,
         timeout -= 1000;
     } while (timeout > 0);
     close(fd);
+#endif
     return JNI_FALSE;
 }
 

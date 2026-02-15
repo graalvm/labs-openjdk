@@ -139,7 +139,7 @@ constexpr Register rmethod = r12;
 
 constexpr Register lr            = r30; // link register
 constexpr Register rfp           = r29; // frame pointer
-constexpr Register rthread       = r28; // current thread
+constexpr Register rthread       = r25; // current thread
 constexpr Register rheapbase     = r27; // base of heap
 constexpr Register rcpool        = r26; // constant pool cache
 constexpr Register rlocals       = r24; // locals on stack

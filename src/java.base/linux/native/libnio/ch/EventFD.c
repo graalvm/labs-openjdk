@@ -23,7 +23,9 @@
  * questions.
  */
 
+#if !defined(__COSMOPOLITAN__)
  #include <sys/eventfd.h>
+#endif
 
 #include "jni.h"
 #include "jni_util.h"
@@ -37,7 +39,11 @@
 JNIEXPORT jint JNICALL
 Java_sun_nio_ch_EventFD_eventfd0(JNIEnv *env, jclass klazz)
 {
+#if !defined(__COSMOPOLITAN__)
     int efd = eventfd((uint64_t)0, 0);
+#else
+    int efd = -1;
+#endif
     if (efd == -1) {
         JNU_ThrowIOExceptionWithLastError(env, "eventfd failed");
         return IOS_THROWN;

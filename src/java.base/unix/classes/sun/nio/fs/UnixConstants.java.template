@@ -142,9 +142,15 @@ class UnixConstants {
 
     // flags used with openat/unlinkat/etc.
 #if defined(AT_FDCWD) && defined(AT_SYMLINK_NOFOLLOW) && defined(AT_REMOVEDIR)
+#if !defined(__COSMOPOLITAN__)
     static final int PREFIX_AT_FDCWD = AT_FDCWD;
     static final int PREFIX_AT_SYMLINK_NOFOLLOW = AT_SYMLINK_NOFOLLOW;
     static final int PREFIX_AT_REMOVEDIR = AT_REMOVEDIR;
+#else
+    static int PREFIX_AT_FDCWD = cosmoMagic("AT_FDCWD");
+    static int PREFIX_AT_SYMLINK_NOFOLLOW = cosmoMagic("AT_SYMLINK_NOFOLLOW");
+    static int PREFIX_AT_REMOVEDIR = cosmoMagic("AT_REMOVEDIR");
+#endif
 #else
     // not supported (dummy values will not be used at runtime).
     static final int PREFIX_AT_FDCWD = 00;
@@ -176,4 +182,17 @@ class UnixConstants {
     static final int PREFIX_POSIX_FADV_NOREUSE    = POSIX_FADV_NOREUSE;
     static final int PREFIX_POSIX_FADV_WILLNEED   = POSIX_FADV_WILLNEED;
 #endif
+
+#if defined(__COSMOPOLITAN__)
+    /**
+     * cosmoMagic(const char* name)
+     *
+     * @return  link target
+     */
+    private static int cosmoMagic (String name) {
+        return cosmoMagic0(name);
+    }
+    private static native int cosmoMagic0(String name);
+#endif
+
 }

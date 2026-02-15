@@ -35,5 +35,10 @@ int ZSyscall::fallocate(int fd, int mode, size_t offset, size_t length) {
 }
 
 long ZSyscall::get_mempolicy(int* mode, unsigned long* nodemask, unsigned long maxnode, void* addr, unsigned long flags) {
+#ifndef __COSMOPOLITAN__
   return syscall(SYS_get_mempolicy, mode, nodemask, maxnode, addr, flags);
+#else
+  errno = ENOSYS;
+  return -1;
+#endif
 }

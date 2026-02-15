@@ -39,26 +39,28 @@ ifneq ($(findstring $(LOG_LEVEL), debug trace), )
   FONTCONFIG_VERBOSE_FLAG := -verbose
 endif
 
+ifeq ($(USING_FONTCONFIG), yes)
 # Not all OSes have a fontconfig file
-ifneq ($(wildcard $(FONTCONFIG_SRC_FILE)), )
+  ifneq ($(wildcard $(FONTCONFIG_SRC_FILE)), )
 
-  # Copy properties file as-is
-  $(FONTCONFIG_OUT_FILE): $(FONTCONFIG_SRC_FILE)
-	$(call LogInfo, Copying fontconfig.properties)
-	$(call install-file)
+    # Copy properties file as-is
+    $(FONTCONFIG_OUT_FILE): $(FONTCONFIG_SRC_FILE)
+      $(call LogInfo, Copying fontconfig.properties)
+      $(call install-file)
 
-  TARGETS += $(FONTCONFIG_OUT_FILE)
+    TARGETS += $(FONTCONFIG_OUT_FILE)
 
-  # Generate binary representation
-  $(FONTCONFIG_OUT_BIN_FILE): $(FONTCONFIG_SRC_FILE) $(BUILD_TOOLS_JDK)
-	$(call LogInfo, Compiling fontconfig.properties to binary)
-	$(call MakeTargetDir)
-	$(RM) $@
-	$(TOOL_COMPILEFONTCONFIG) $(FONTCONFIG_VERBOSE_FLAG) $< $@
-	$(CHMOD) 444 $@
+    # Generate binary representation
+    $(FONTCONFIG_OUT_BIN_FILE): $(FONTCONFIG_SRC_FILE) $(BUILD_TOOLS_JDK)
+      $(call LogInfo, Compiling fontconfig.properties to binary)
+      $(call MakeTargetDir)
+      $(RM) $@
+      $(TOOL_COMPILEFONTCONFIG) $(FONTCONFIG_VERBOSE_FLAG) $< $@
+      $(CHMOD) 444 $@
 
-  TARGETS += $(FONTCONFIG_OUT_BIN_FILE)
+    TARGETS += $(FONTCONFIG_OUT_BIN_FILE)
 
+  endif
 endif
 
 ################################################################################

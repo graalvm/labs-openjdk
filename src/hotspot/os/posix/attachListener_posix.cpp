@@ -267,15 +267,20 @@ PosixAttachOperation* PosixAttachListener::dequeue() {
 
     // get the credentials of the peer and check the effective uid/guid
 #ifdef LINUX
+#ifndef __COSMOPOLITAN__
     struct ucred cred_info;
     socklen_t optlen = sizeof(cred_info);
-    if (::getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred_info, &optlen) ==
-        -1) {
+    if (::getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred_info, &optlen) == -1)
+#else
+    if (1)
+    {
+#endif
       log_debug(attach)("Failed to get socket option SO_PEERCRED");
       ::close(s);
       continue;
     }
 
+#ifndef __COSMOPOLITAN__
     if (!os::Posix::matches_effective_uid_and_gid_or_root(cred_info.uid,
                                                           cred_info.gid)) {
       log_debug(attach)("euid/egid check failed (%d/%d vs %d/%d)",
@@ -283,6 +288,14 @@ PosixAttachOperation* PosixAttachListener::dequeue() {
       ::close(s);
       continue;
     }
+#else
+    if (1) {
+      log_debug(attach)("euid/egid not implemented");
+      ::close(s);
+      continue;
+    }
+#endif
+
 #endif
 #ifdef BSD
     uid_t puid;

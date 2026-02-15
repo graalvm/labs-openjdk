@@ -33,7 +33,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <poll.h>
+#ifndef __COSMOPOLITAN__
 #include <sys/inotify.h>
+#endif
 
 #include "sun_nio_fs_LinuxWatchService.h"
 
@@ -48,13 +50,18 @@ static void throwUnixException(JNIEnv* env, int errnum) {
 JNIEXPORT jint JNICALL
 Java_sun_nio_fs_LinuxWatchService_eventSize(JNIEnv *env, jclass clazz)
 {
+#if !defined(__COSMOPOLITAN__)
     return (jint)sizeof(struct inotify_event);
+#else
+    return 0;
+#endif
 }
 
 JNIEXPORT jintArray JNICALL
 Java_sun_nio_fs_LinuxWatchService_eventOffsets(JNIEnv *env, jclass clazz)
 {
     jintArray result = (*env)->NewIntArray(env, 5);
+#if !defined(__COSMOPOLITAN__)
     if (result != NULL) {
         jint arr[5];
         arr[0] = (jint)offsetof(struct inotify_event, wd);
@@ -64,6 +71,7 @@ Java_sun_nio_fs_LinuxWatchService_eventOffsets(JNIEnv *env, jclass clazz)
         arr[4] = (jint)offsetof(struct inotify_event, name);
         (*env)->SetIntArrayRegion(env, result, 0, 5, arr);
     }
+#endif
     return result;
 }
 
@@ -72,7 +80,12 @@ JNIEXPORT jint JNICALL
 Java_sun_nio_fs_LinuxWatchService_inotifyInit
     (JNIEnv* env, jclass clazz)
 {
+#ifndef __COSMOPOLITAN__
     int ifd = inotify_init();
+#else
+    errno = ENOSYS;
+    int ifd = -1;
+#endif
     if (ifd == -1) {
         throwUnixException(env, errno);
     }
@@ -86,7 +99,12 @@ Java_sun_nio_fs_LinuxWatchService_inotifyAddWatch
     int wfd = -1;
     const char* path = (const char*)jlong_to_ptr(address);
 
+#if !defined(__COSMOPOLITAN__)
     wfd = inotify_add_watch((int)fd, path, mask);
+#else
+    errno = ENOSYS;
+    wfd = -1;
+#endif
     if (wfd == -1) {
         throwUnixException(env, errno);
     }
@@ -97,7 +115,12 @@ JNIEXPORT void JNICALL
 Java_sun_nio_fs_LinuxWatchService_inotifyRmWatch
     (JNIEnv* env, jclass clazz, jint fd, jint wd)
 {
+#if !defined(__COSMOPOLITAN__)
     int err = inotify_rm_watch((int)fd, (int)wd);
+#else
+    int err = -1;
+    errno = ENOSYS;
+#endif
     if (err == -1)
         throwUnixException(env, errno);
 }

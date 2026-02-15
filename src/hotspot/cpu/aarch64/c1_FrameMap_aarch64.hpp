@@ -154,7 +154,7 @@
     }
 
     // rscratch registers r8, r9
-    // r28=rthread, r30=lr, r31=sp
+    // r25=rthread, r30=lr, r31=sp
     // r18 on masOS/Windows
     return range - 5 R18_RESERVED_ONLY(-1);
   }

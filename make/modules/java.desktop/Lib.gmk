@@ -37,7 +37,15 @@ $(call FillFindCache, $(wildcard $(TOPDIR)/src/java.desktop/*/native))
 include lib/AwtLibraries.gmk
 include lib/ClientLibraries.gmk
 
+SHOULD_BUILD_LIBJSOUND := no
+
 ifeq ($(call isTargetOs, aix), false)
+  ifeq ($(USING_ALSA), yes)
+    SHOULD_BUILD_LIBJSOUND = yes
+  endif
+endif
+
+ifeq ($(SHOULD_BUILD_LIBJSOUND), yes)
   ##############################################################################
   # Build libjsound
   ##############################################################################

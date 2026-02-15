@@ -100,6 +100,7 @@ jboolean
 GetApplicationHomeFromDll(char *buf, jint bufsize)
 {
     /* try to find ourselves instead */
+#if !defined(__COSMOPOLITAN__)
     Dl_info info;
     if (dladdr((void*)&GetApplicationHomeFromDll, &info) != 0) {
         char *path = realpath(info.dli_fname, buf);
@@ -107,6 +108,7 @@ GetApplicationHomeFromDll(char *buf, jint bufsize)
             return TruncatePath(buf, JNI_TRUE);
         }
     }
+#endif
     return JNI_FALSE;
 }
 

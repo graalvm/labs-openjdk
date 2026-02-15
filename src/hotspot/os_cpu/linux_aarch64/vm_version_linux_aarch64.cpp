@@ -27,7 +27,10 @@
 #include "runtime/os.inline.hpp"
 #include "runtime/vm_version.hpp"
 
+#if !defined(__COSMOPOLITAN__)
 #include <asm/hwcap.h>
+#endif
+
 #include <sys/auxv.h>
 #include <sys/prctl.h>
 
@@ -102,17 +105,26 @@
 #endif
 
 int VM_Version::get_current_sve_vector_length() {
+#if !defined(__COSMOPOLITAN__)
   assert(VM_Version::supports_sve(), "should not call this");
   return prctl(PR_SVE_GET_VL);
+#else
+  return 0;
+#endif
 }
 
 int VM_Version::set_and_get_current_sve_vector_length(int length) {
+#if !defined(__COSMOPOLITAN__)
   assert(VM_Version::supports_sve(), "should not call this");
   int new_length = prctl(PR_SVE_SET_VL, length);
   return new_length;
+#else
+  return 0;
+#endif
 }
 
 void VM_Version::get_os_cpu_info() {
+#if !defined(__COSMOPOLITAN__)
 
   uint64_t auxv = getauxval(AT_HWCAP);
   uint64_t auxv2 = getauxval(AT_HWCAP2);
@@ -198,6 +210,7 @@ void VM_Version::get_os_cpu_info() {
     }
     fclose(f);
   }
+#endif
 }
 
 static bool read_fully(const char *fname, char *buf, size_t buflen) {
@@ -235,9 +248,11 @@ static bool read_fully(const char *fname, char *buf, size_t buflen) {
 
 void VM_Version::get_compatible_board(char *buf, int buflen) {
   const char *board_name_file_list[] = {
+#ifndef __COSMOPOLITAN__
     "/proc/device-tree/compatible",
     "/sys/devices/virtual/dmi/id/board_name",
     "/sys/devices/virtual/dmi/id/product_name",
+#endif
     nullptr
   };
 

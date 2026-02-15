@@ -81,6 +81,7 @@
 static void initGroupSourceReq(JNIEnv* env, jbyteArray group, jint index,
                                jbyteArray source, struct group_source_req *req)
 {
+#if !defined(__COSMOPOLITAN__)
     struct sockaddr_in6* sin6;
 
     req->gsr_interface = (uint32_t)index;
@@ -92,6 +93,7 @@ static void initGroupSourceReq(JNIEnv* env, jbyteArray group, jint index,
     sin6 = (struct sockaddr_in6 *)&(req->gsr_source);
     sin6->sin6_family = AF_INET6;
     COPY_INET6_ADDRESS(env, source, (jbyte *)&(sin6->sin6_addr));
+#endif
 }
 
 #ifdef _AIX
@@ -641,6 +643,7 @@ JNIEXPORT jint JNICALL
 Java_sun_nio_ch_Net_joinOrDrop4(JNIEnv *env, jobject this, jboolean join, jobject fdo,
                                 jint group, jint interf, jint source)
 {
+#if !defined(__COSMOPOLITAN__)
     struct ip_mreq mreq;
     struct ip_mreq_source mreq_source;
     int opt, n, optlen;
@@ -686,7 +689,10 @@ Java_sun_nio_ch_Net_joinOrDrop4(JNIEnv *env, jobject this, jboolean join, jobjec
         }
     }
 #endif
-
+#else
+    errno = EOPNOTSUPP;
+    int n = -1;
+#endif
     if (n < 0) {
         if (join && (errno == ENOPROTOOPT || errno == EOPNOTSUPP))
             return IOS_UNAVAILABLE;
@@ -699,7 +705,7 @@ JNIEXPORT jint JNICALL
 Java_sun_nio_ch_Net_blockOrUnblock4(JNIEnv *env, jobject this, jboolean block, jobject fdo,
                                     jint group, jint interf, jint source)
 {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__COSMOPOLITAN__)
     /* no IPv4 exclude-mode filtering for now */
     return IOS_UNAVAILABLE;
 #else
@@ -733,6 +739,7 @@ JNIEXPORT jint JNICALL
 Java_sun_nio_ch_Net_joinOrDrop6(JNIEnv *env, jobject this, jboolean join, jobject fdo,
                                 jbyteArray group, jint index, jbyteArray source)
 {
+#if !defined(__COSMOPOLITAN__)
     struct ipv6_mreq mreq6;
     struct group_source_req req;
     int opt, n, optlen;
@@ -764,6 +771,11 @@ Java_sun_nio_ch_Net_joinOrDrop6(JNIEnv *env, jobject this, jboolean join, jobjec
     }
 #endif
 
+#else
+    errno = EOPNOTSUPP;
+    int n = -1;
+#endif
+
     if (n < 0) {
         if (join && (errno == ENOPROTOOPT || errno == EOPNOTSUPP))
             return IOS_UNAVAILABLE;
@@ -780,6 +792,7 @@ Java_sun_nio_ch_Net_blockOrUnblock6(JNIEnv *env, jobject this, jboolean block, j
     /* no IPv6 exclude-mode filtering for now */
     return IOS_UNAVAILABLE;
 #else
+#if !defined(__COSMOPOLITAN__)
     struct group_source_req req;
     int n;
     int opt = (block) ? MCAST_BLOCK_SOURCE : MCAST_UNBLOCK_SOURCE;
@@ -788,6 +801,10 @@ Java_sun_nio_ch_Net_blockOrUnblock6(JNIEnv *env, jobject this, jboolean block, j
 
     n = setsockopt(fdval(env,fdo), IPPROTO_IPV6, opt,
         (void*)&req, sizeof(req));
+#else
+    int n = -1;
+    errno = EOPNOTSUPP;
+#endif
     if (n < 0) {
         if (block && (errno == ENOPROTOOPT || errno == EOPNOTSUPP))
             return IOS_UNAVAILABLE;

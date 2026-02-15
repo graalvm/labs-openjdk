@@ -248,7 +248,11 @@ void handleSendFailed
                 return;
             }
 
+#ifndef __COSMOPOLITAN__
             if (rv != (dataLength - alreadyRead) || !(msg->msg_flags & MSG_EOR)) {
+#else
+            if (rv != (dataLength - alreadyRead)) {
+#endif
                 //TODO: assert false: "should not reach here";
                 free(addressP);
                 return;
@@ -465,7 +469,11 @@ JNIEXPORT jint JNICALL Java_sun_nio_ch_sctp_SctpChannelImpl_receive0
             union sctp_notification *snp;
             jboolean allocated = JNI_FALSE;
 
+#ifndef __COSMOPOLITAN__
             if (!(msg->msg_flags & MSG_EOR) && length < SCTP_NOTIFICATION_SIZE) {
+#else
+            if (length < SCTP_NOTIFICATION_SIZE) {
+#endif
                 char* newBuf;
                 int rvSAVE = rv;
 
@@ -487,9 +495,15 @@ JNIEXPORT jint JNICALL Java_sun_nio_ch_sctp_SctpChannelImpl_receive0
                 rv += rvSAVE;
             }
             snp = (union sctp_notification *) bufp;
+#ifndef __COSMOPOLITAN__
             if (handleNotification(env, fd, resultContainerObj, snp, rv,
                                    (msg->msg_flags & MSG_EOR),
                                    &sa.sa) == JNI_TRUE) {
+#else
+            if (handleNotification(env, fd, resultContainerObj, snp, rv,
+                                   0,
+                                   &sa.sa) == JNI_TRUE) {
+#endif
                 /* We have received a notification that is of interest
                    to the Java API. The appropriate notification will be
                    set in the result container. */
@@ -511,8 +525,13 @@ JNIEXPORT jint JNICALL Java_sun_nio_ch_sctp_SctpChannelImpl_receive0
         }
     } while (msg->msg_flags & MSG_NOTIFICATION);
 
+#ifndef __COSMOPOLITAN__
     handleMessage(env, resultContainerObj, msg, rv,
-            (msg->msg_flags & MSG_EOR), &sa.sa);
+           (msg->msg_flags & MSG_EOR), &sa.sa);
+#else
+    handleMessage(env, resultContainerObj, msg, rv,
+           0, &sa.sa);
+#endif
     return rv;
 }
 

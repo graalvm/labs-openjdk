@@ -100,7 +100,13 @@ wrapper-information: $(run_wrappergen)
 	$(ECHO) need to be updated for both 32 and 64 bit platforms. You have now
 	$(ECHO) updated them for $(BITS) bit platforms only.
 
-TARGETS += $(run_wrappergen) wrapper-information
+ifeq ($(call isTargetOs, linux), true)
+  ifeq ($(USING_LIBX11), yes)
+    TARGETS += $(run_wrappergen) wrapper-information
+  endif
+else
+  TARGETS += $(run_wrappergen) wrapper-information
+endif
 
 ################################################################################
 

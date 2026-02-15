@@ -26,7 +26,9 @@
  #include <dlfcn.h>
  #include <unistd.h>
  #include <sys/types.h>
+#if !defined(__COSMOPOLITAN__)
  #include <sys/epoll.h>
+#endif
 
 #include "jni.h"
 #include "jni_util.h"
@@ -37,6 +39,7 @@
 
 #include "sun_nio_ch_EPoll.h"
 
+#if !defined(__COSMOPOLITAN__)
 JNIEXPORT jint JNICALL
 Java_sun_nio_ch_EPoll_eventSize(JNIEnv* env, jclass clazz)
 {
@@ -94,3 +97,54 @@ Java_sun_nio_ch_EPoll_wait(JNIEnv *env, jclass clazz, jint epfd,
     }
     return res;
 }
+#else
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_EPoll_eventSize(JNIEnv* env, jclass clazz)
+{
+    return 0;
+}
+
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_EPoll_eventsOffset(JNIEnv* env, jclass clazz)
+{
+    return 0;
+}
+
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_EPoll_dataOffset(JNIEnv* env, jclass clazz)
+{
+    return 0;
+}
+
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_EPoll_create(JNIEnv *env, jclass clazz) {
+    int epfd = -1;
+    if (epfd < 0) {
+        JNU_ThrowIOExceptionWithLastError(env, "epoll_create1 failed");
+    }
+    return epfd;
+}
+
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_EPoll_ctl(JNIEnv *env, jclass clazz, jint epfd,
+                          jint opcode, jint fd, jint events)
+{
+    return ENOSYS;
+}
+
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_EPoll_wait(JNIEnv *env, jclass clazz, jint epfd,
+                           jlong address, jint numfds, jint timeout)
+{
+    int res = -1;
+    if (res < 0) {
+        if (errno == EINTR) {
+            return IOS_INTERRUPTED;
+        } else {
+            JNU_ThrowIOExceptionWithLastError(env, "epoll_wait failed");
+            return IOS_THROWN;
+        }
+    }
+    return res;
+}
+#endif

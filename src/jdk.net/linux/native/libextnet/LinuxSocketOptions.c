@@ -126,10 +126,12 @@ JNIEXPORT jlong JNICALL Java_jdk_net_LinuxSocketOptions_getSoPeerCred0
   (JNIEnv *env, jclass clazz, jint fd) {
 
     int rv;
+
+#if !defined(__COSMOPOLITAN__)
     struct ucred cred;
     socklen_t len = sizeof(cred);
 
-    if ((rv=getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len)) < 0) {
+    if ((rv = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len)) < 0) {
         handleError(env, rv, "get SO_PEERCRED failed");
     } else {
         if ((int)cred.uid == -1) {
@@ -138,6 +140,12 @@ JNIEXPORT jlong JNICALL Java_jdk_net_LinuxSocketOptions_getSoPeerCred0
         }
     }
     return (((jlong)cred.uid) << 32) | (cred.gid & 0xffffffffL);
+#else
+   rv = -1;
+   errno = ENOPROTOOPT;
+   handleError(env, rv, "get SO_PEERCRED failed");
+   return -1;
+#endif
 }
 
 /*
@@ -259,6 +267,7 @@ JNIEXPORT void JNICALL Java_jdk_net_LinuxSocketOptions_setIpDontFragment0
 (JNIEnv *env, jobject unused, jint fd, jboolean optval, jboolean isIPv6) {
     jint rv, optsetting;
 
+#if !defined(__COSMOPOLITAN__)
     optsetting = optval ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
 
     if (!isIPv6) {
@@ -266,6 +275,10 @@ JNIEXPORT void JNICALL Java_jdk_net_LinuxSocketOptions_setIpDontFragment0
     } else {
         rv = setsockopt(fd, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &optsetting, sizeof (optsetting));
     }
+#else
+    rv = -1;
+    errno = ENOPROTOOPT;
+#endif
     handleError(env, rv, "set option IP_DONTFRAGMENT failed");
 }
 
@@ -278,6 +291,7 @@ JNIEXPORT jboolean JNICALL Java_jdk_net_LinuxSocketOptions_getIpDontFragment0
 (JNIEnv *env, jobject unused, jint fd, jboolean isIPv6) {
     jint optlevel, optname, optval, rv;
 
+#if !defined(__COSMOPOLITAN__)
     if (!isIPv6) {
         optlevel = IPPROTO_IP;
         optname = IP_MTU_DISCOVER;
@@ -289,4 +303,10 @@ JNIEXPORT jboolean JNICALL Java_jdk_net_LinuxSocketOptions_getIpDontFragment0
     rv = getsockopt(fd, optlevel, optname, &optval, &sz);
     handleError(env, rv, "get option IP_DONTFRAGMENT failed");
     return optval == IP_PMTUDISC_DO ? JNI_TRUE : JNI_FALSE;
+#else
+    rv = -1;
+    errno = ENOPROTOOPT;
+    handleError(env, rv, "get option IP_DONTFRAGMENT failed");
+    return JNI_FALSE;
+#endif
 }

@@ -128,13 +128,13 @@ reg_def R23     ( SOC, SOE, Op_RegI, 23, r23->as_VMReg()        );
 reg_def R23_H   ( SOC, SOE, Op_RegI, 23, r23->as_VMReg()->next());
 reg_def R24     ( SOC, SOE, Op_RegI, 24, r24->as_VMReg()        );
 reg_def R24_H   ( SOC, SOE, Op_RegI, 24, r24->as_VMReg()->next());
-reg_def R25     ( SOC, SOE, Op_RegI, 25, r25->as_VMReg()        );
+reg_def R25     ( SOC, SOE, Op_RegI, 25, r25->as_VMReg()        ); // thread
 reg_def R25_H   ( SOC, SOE, Op_RegI, 25, r25->as_VMReg()->next());
 reg_def R26     ( SOC, SOE, Op_RegI, 26, r26->as_VMReg()        );
 reg_def R26_H   ( SOC, SOE, Op_RegI, 26, r26->as_VMReg()->next());
 reg_def R27     ( SOC, SOE, Op_RegI, 27, r27->as_VMReg()        ); // heapbase
 reg_def R27_H   ( SOC, SOE, Op_RegI, 27, r27->as_VMReg()->next());
-reg_def R28     (  NS, SOE, Op_RegI, 28, r28->as_VMReg()        ); // thread
+reg_def R28     (  NS, SOE, Op_RegI, 28, r28->as_VMReg()        );
 reg_def R28_H   (  NS, SOE, Op_RegI, 28, r28->as_VMReg()->next());
 reg_def R29     (  NS,  NS, Op_RegI, 29, r29->as_VMReg()        ); // fp
 reg_def R29_H   (  NS,  NS, Op_RegI, 29, r29->as_VMReg()->next());
@@ -385,7 +385,6 @@ alloc_class chunk0(
     R15, R15_H,
     R16, R16_H,
     R17, R17_H,
-    R18, R18_H,
 
     // arg registers
     R0, R0_H,
@@ -404,18 +403,18 @@ alloc_class chunk0(
     R22, R22_H,
     R23, R23_H,
     R24, R24_H,
-    R25, R25_H,
     R26, R26_H,
 
     // non-allocatable registers
-
+    R25, R25_H, // thread
     R27, R27_H, // heapbase
-    R28, R28_H, // thread
     R29, R29_H, // fp
     R30, R30_H, // lr
     R31, R31_H, // sp
     R8, R8_H,   // rscratch1
     R9, R9_H,   // rscratch2
+    R18, R18_H, // cosmo -ffixed-x18
+    R28, R28_H, // cosmo -ffixed-x28
 );
 
 alloc_class chunk1(
@@ -587,13 +586,20 @@ reg_class any_reg %{
   return _ANY_REG_mask;
 %}
 
+#ifdef __COSMOPOLITAN__
+#ifndef R18_RESERVED
+#define R18_RESERVED
+#endif
+#endif
+
 // Class for non-allocatable 32 bit registers
 reg_class non_allocatable_reg32(
 #ifdef R18_RESERVED
     // See comment in register_aarch64.hpp
     R18,                        // tls on Windows
 #endif
-    R28,                        // thread
+    R25,                        // thread
+    R28,                        // cosmo -ffixed-x28
     R30,                        // lr
     R31                         // sp
 );
@@ -666,7 +672,7 @@ reg_class method_reg(
 
 // Class for thread register
 reg_class thread_reg(
-    R28, R28_H
+    R25, R25_H
 );
 
 // Class for frame pointer register

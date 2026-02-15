@@ -291,6 +291,7 @@ static bool core_handle_note(struct ps_prochandle* ph, ELF_PHDR* note_phdr) {
       } else if (notep->n_type == NT_AUXV) {
         // Get first segment from entry point
         ELF_AUXV *auxv = (ELF_AUXV *)descdata;
+#if !defined(__COSMOPOLITAN__)
         while (auxv->a_type != AT_NULL) {
           if (auxv->a_type == AT_ENTRY) {
             // Set entry point address to address of dynamic section.
@@ -300,6 +301,7 @@ static bool core_handle_note(struct ps_prochandle* ph, ELF_PHDR* note_phdr) {
           }
           auxv++;
         }
+#endif
       }
       p = descdata + ROUNDUP(notep->n_descsz, 4);
    }

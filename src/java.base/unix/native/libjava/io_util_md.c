@@ -30,12 +30,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(_AIX)
+#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(_AIX) || defined(__COSMOPOLITAN__)
 #include <sys/ioctl.h>
 #endif
 
 #if defined(__linux__)
 #include <linux/fs.h>
+#include <sys/stat.h>
+#endif
+
+#if defined(__COSMOPOLITAN__)
 #include <sys/stat.h>
 #endif
 
