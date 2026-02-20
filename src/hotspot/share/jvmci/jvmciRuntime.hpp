@@ -28,6 +28,7 @@
 #include "gc/shared/collectedHeap.hpp"
 #include "jvm_io.h"
 #include "jvmci/jvmci.hpp"
+#include "jvmci/jvmciEnv.hpp"
 #include "jvmci/jvmciExceptions.hpp"
 #include "jvmci/jvmciObject.hpp"
 #include "utilities/linkedlist.hpp"
@@ -468,6 +469,7 @@ class JVMCIRuntime: public CHeapObj<mtJVMCI> {
   JVMCI::CodeInstallResult register_method(JVMCIEnv* JVMCIENV,
                                            const methodHandle&       target,
                                            nmethod*&                 nm,
+                                           JVMCINMethodHandle&       nmethod_handle,
                                            int                       entry_bci,
                                            CodeOffsets*              offsets,
                                            int                       orig_pc_offset,

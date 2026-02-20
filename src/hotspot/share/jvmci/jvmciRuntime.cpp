@@ -2106,6 +2106,7 @@ bool JVMCIRuntime::is_intrinsic_supported(JVMCIEnv* JVMCIENV, jint id) {
 JVMCI::CodeInstallResult JVMCIRuntime::register_method(JVMCIEnv* JVMCIENV,
                                                        const methodHandle& method,
                                                        nmethod*& nm,
+                                                       JVMCINMethodHandle& nmethod_handle,
                                                        int entry_bci,
                                                        CodeOffsets* offsets,
                                                        int orig_pc_offset,
@@ -2295,11 +2296,11 @@ JVMCI::CodeInstallResult JVMCIRuntime::register_method(JVMCIEnv* JVMCIENV,
   }
 
   if (result == JVMCI::ok) {
+    nmethod_handle.set_nmethod(nm);
+
     JVMCICompileState* state = JVMCIENV->compile_state();
-    if (state != nullptr) {
-      // Compilation succeeded, post what we know about it
-      nm->post_compiled_method(state->task());
-    }
+    // Compilation succeeded, post what we know about it
+    nm->post_compiled_method(state != nullptr ? state->task() : nullptr);
   }
 
   return result;

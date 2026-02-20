@@ -1,7 +1,7 @@
 {
     # The JVMCI releases that can be built from this repo.
     jvmci_releases:: [
-        self.JVMCIRelease(name='25.1', build='b15', jdk_version='25.0.2+10')
+        self.JVMCIRelease(name='25.1', build='b16', jdk_version='25.0.2+10')
     ],
 
     # Specifies a JVMCI release.
