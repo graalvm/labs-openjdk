@@ -1671,9 +1671,13 @@ private:
 
   static void correct_jvmti_thread_state(JavaThread* jt) {
     oop  ct_oop = jt->threadObj();
+    // JNI-attaching threads may not have a java.lang.Thread yet.
+    if (ct_oop == nullptr) {
+      return;
+    }
     oop  vt_oop = jt->vthread();
     JvmtiThreadState* jt_state = jt->jvmti_thread_state();
-    JvmtiThreadState* ct_state = java_lang_Thread::jvmti_thread_state(jt->threadObj());
+    JvmtiThreadState* ct_state = java_lang_Thread::jvmti_thread_state(ct_oop);
     JvmtiThreadState* vt_state = vt_oop != nullptr ? java_lang_Thread::jvmti_thread_state(vt_oop) : nullptr;
     bool virt = vt_oop != nullptr && java_lang_VirtualThread::is_instance(vt_oop);
 
