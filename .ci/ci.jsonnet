@@ -375,6 +375,8 @@ local common = import 'common.libsonnet';
         targets: ['gate'],
         deploysArtifacts: true,
 
+        local skip_fastdebug = conf.name == '-windows-cygwin-amd64',
+
         local build_labsjdk(jdk_debug_level, java_home_env_var) = [
             ['set-export', java_home_env_var, conf.path('${PWD}/../%s-java-home' % jdk_debug_level)],
             ['python3', '-u', conf.path('${LABSJDK_BUILDER_DIR}/build_labsjdk.py'),
@@ -403,7 +405,7 @@ local common = import 'common.libsonnet';
             ['set-export', 'JIB_DATA_DIR', conf.path('${PWD}/../jib')],
         ] +
         build_labsjdk('release', 'JAVA_HOME') +
-        build_labsjdk('fastdebug', 'JAVA_HOME_FASTDEBUG'),
+        (if skip_fastdebug then [] else build_labsjdk('fastdebug', 'JAVA_HOME_FASTDEBUG')),
     },
 
     local build_confs(defs) = [
