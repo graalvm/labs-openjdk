@@ -256,7 +256,7 @@
 
 
     DarwinAArch64:: self.Darwin + self.AArch64 + {
-        capabilities+: ['darwin_ventura'],
+        capabilities+: ['darwin_sonoma'],
     },
 
     AMD64:: {
