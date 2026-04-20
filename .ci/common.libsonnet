@@ -259,6 +259,15 @@
         capabilities+: ['darwin_sonoma'],
     },
 
+    LinuxRISCV64(defs):: self.Linux + self.RISCV64 + {
+        docker: {
+          image: defs.linux_docker_image_amd64,
+        },
+        packages+: {
+            "devkit:gcc14.2.0-OL6.4+1" : "==0",
+        },
+    },
+
     AMD64:: {
         capabilities+: ['amd64'],
         name+: '-amd64',
@@ -274,5 +283,18 @@
         capabilities+: ['aarch64'],
         name+: '-aarch64',
         arch:: 'aarch64',
+    },
+    RISCV64:: {
+        capabilities+: ["amd64"],
+        name+: "-riscv64",
+        arch:: "riscv64",
+        packages+: {
+            "riscv-gnu-toolchain": "==10.2.0",
+            "autoconf": ">=2.6.9",
+            python3: "==3.8.10",
+        },
+        downloads+: {
+            RISCV_HOME: {name : "riscv-sysroot", version : "1.0"}
+        },
     },
 }
