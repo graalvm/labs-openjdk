@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -199,8 +199,12 @@
     int_field(HotSpotStackFrameReference, frameNumber)                                                        \
     int_field(HotSpotStackFrameReference, bci)                                                                \
     object_field(HotSpotStackFrameReference, method, "Ljdk/vm/ci/hotspot/HotSpotResolvedJavaMethod;")         \
-    objectarray_field(HotSpotStackFrameReference, locals, "[Ljava/lang/Object;")                              \
+    boolean_field(HotSpotStackFrameReference, compiledFrame)                                                  \
+    boolean_field(HotSpotStackFrameReference, deoptimizedFrame)                                               \
+    objectarray_field(HotSpotStackFrameReference, localReferences, "[Ljava/lang/Object;")                     \
     primarray_field(HotSpotStackFrameReference, localIsVirtual, "[Z")                                         \
+    primarray_field(HotSpotStackFrameReference, localKinds, "[B")                                             \
+    primarray_field(HotSpotStackFrameReference, localPrimitiveValues, "[J")                                   \
   end_class                                                                                                   \
   start_class(HotSpotConstantPool, jdk_vm_ci_hotspot_HotSpotConstantPool)                                     \
     long_field(HotSpotConstantPool, constantPoolHandle)                                                       \

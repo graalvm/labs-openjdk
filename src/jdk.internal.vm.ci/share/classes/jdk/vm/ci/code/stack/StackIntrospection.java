@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,11 @@ public interface StackIntrospection {
      * {@link InspectedFrameVisitor#visitFrame}, which is invoked for every {@link InspectedFrame},
      * returns {@code null}. A non-null return value from {@link InspectedFrameVisitor#visitFrame}
      * indicates that frame iteration should stop.
+     * <p>
+     * Each visited {@link InspectedFrame} may be retained after the callback returns. Reader
+     * operations use the captured frame state. Live mutators such as
+     * {@link InspectedFrame#materializeVirtualObjects(boolean)} only work if the implementation can
+     * still find and verify the corresponding frame on the stack before changing it.
      *
      * @param initialMethods if this is non-{@code null}, then the stack walk will start at the
      *            first frame whose method is one of these methods.
