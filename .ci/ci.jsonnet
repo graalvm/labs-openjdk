@@ -258,6 +258,9 @@ local common = import 'common.libsonnet';
             },
         },
 
+        common.LinuxRISCV64(defs) + common.DefaultBootJDK +
+        { editions: ['ce', 'ee'] },
+
         common.LinuxAArch64(defs, major_java_version) + common.AArch64 + common.JTReg + common.DefaultBootJDK +
         { editions: ['ce', 'ee'] },
 
@@ -412,6 +415,7 @@ local common = import 'common.libsonnet';
         common.LinuxAMD64Graal(defs, true),
         common.LinuxAArch64Graal(defs, true),
         common.DarwinAArch64,
+        common.LinuxRISCV64(defs),
         common.Windows + common.AMD64,
     ],
 
