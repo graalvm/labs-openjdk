@@ -90,7 +90,11 @@ public class HotSpotNmethod extends HotSpotInstalledCode {
      */
     private int invalidationReason;
 
+<<<<<<< HEAD
     HotSpotNmethod(HotSpotResolvedJavaMethodImpl method, String name, boolean isDefault, boolean profileDeopt, long compileId) {
+=======
+    HotSpotNmethod(HotSpotResolvedJavaMethodImpl method, String name, boolean isDefault, long compileId) {
+>>>>>>> openjdk-25.0.3-ga
         super(name);
         this.method = method;
         this.isDefault = isDefault;
