@@ -1,0 +1,212 @@
+#
+# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# This code is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 only, as
+# published by the Free Software Foundation.  Oracle designates this
+# particular file as subject to the "Classpath" exception as provided
+# by Oracle in the LICENSE file that accompanied this code.
+#
+# This code is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# version 2 for more details (a copy is included in the LICENSE file that
+# accompanied this code).
+#
+# You should have received a copy of the GNU General Public License version
+# 2 along with this work; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
+#
+---
+name: Build riscv64
+
+"on":
+  push:
+    tags:
+      - 'jvmci-*'
+  workflow_dispatch:
+    inputs:
+      jvmci_tag:
+        description: 'JVMCI release tag to build (e.g. jvmci-25.1-b17)'
+        required: true
+
+jobs:
+  build-riscv64:
+    name: Build labs-openjdk for linux/riscv64
+    runs-on: ubuntu-24.04-riscv
+    timeout-minutes: 300
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Determine version strings
+        id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER_FILE=make/conf/version-numbers.conf
+          FEATURE=$(grep '^DEFAULT_VERSION_FEATURE=' "$VER_FILE" | cut -d= -f2)
+          INTERIM=$(grep '^DEFAULT_VERSION_INTERIM=' "$VER_FILE" | cut -d= -f2)
+          UPDATE=$(grep '^DEFAULT_VERSION_UPDATE=' "$VER_FILE" | cut -d= -f2)
+          TAG="${{ inputs.jvmci_tag || github.ref_name }}"
+          if ! printf '%s' "$TAG" | grep -Eq '^jvmci-[0-9]+(\.[0-9]+)*-b[0-9]+$'; then
+            echo "ERROR: expected a JVMCI release tag (e.g. jvmci-25.1-b17), got: $TAG" >&2
+            exit 1
+          fi
+
+          JDK_VERSION="${FEATURE}.${INTERIM}.${UPDATE}"
+
+          # Derive the JDK build number (+NN) from the upstream aarch64 artifact
+          # for the same jvmci tag.  This keeps our artifact name in sync with
+          # what mx's suite.py expects (e.g. labsjdk-ce-25.0.2+10-jvmci-25.1-b17-...).
+          BUILD=$(gh api "repos/graalvm/labs-openjdk/releases/tags/${TAG}" \
+            --jq '[.assets[] | select(.name | test("linux-aarch64\\.tar\\.gz$")) | .name] | first' \
+            2>/dev/null \
+            | sed -n 's/.*+\([0-9][0-9]*\)-.*/\1/p')
+          if [ -z "$BUILD" ]; then
+            echo "ERROR: could not resolve build number from upstream aarch64 asset for ${TAG}" >&2
+            exit 1
+          fi
+
+          STAGING="labsjdk-ce-${JDK_VERSION}-${TAG}"
+          TARBALL="labsjdk-ce-${JDK_VERSION}+${BUILD}-${TAG}-linux-riscv64.tar.gz"
+
+          echo "feature=${FEATURE}"         >> "$GITHUB_OUTPUT"
+          echo "jdk_version=${JDK_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "build=${BUILD}"             >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"                 >> "$GITHUB_OUTPUT"
+          echo "staging=${STAGING}"         >> "$GITHUB_OUTPUT"
+          echo "tarball=${TARBALL}"         >> "$GITHUB_OUTPUT"
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            autoconf make gcc g++ \
+            libx11-dev libxext-dev libxrender-dev libxtst-dev libxt-dev \
+            libxrandr-dev \
+            libcups2-dev libfontconfig1-dev \
+            libasound2-dev libfreetype-dev \
+            zip unzip
+
+      - name: Install boot JDK
+        run: |
+          VER_FILE=make/conf/version-numbers.conf
+          # "24 25" → try highest version first
+          ACCEPTABLE=$(grep '^DEFAULT_ACCEPTABLE_BOOT_VERSIONS=' "$VER_FILE" \
+            | cut -d'"' -f2 | tr ' ' '\n' | sort -rn)
+
+          BOOT_DIR=/opt/boot-jdk
+          mkdir -p "$BOOT_DIR"
+
+          # Strategy 1: Temurin for each acceptable version (highest first)
+          for VER in $ACCEPTABLE; do
+            ASSET_URL=$(curl -sf \
+              "https://api.adoptium.net/v3/assets/latest/${VER}/hotspot?architecture=riscv64&image_type=jdk&jvm_impl=hotspot&os=linux&vendor=eclipse" \
+              | grep -o '"link":"[^"]*"' | head -1 | cut -d'"' -f4)
+            if [ -n "$ASSET_URL" ]; then
+              echo "Fetching Temurin JDK ${VER} riscv64..."
+              curl -sL "$ASSET_URL" | tar -xz -C "$BOOT_DIR" --strip-components=1
+              break
+            fi
+          done
+
+          # Strategy 2: latest riscv64 artifact published in this repo
+          if [ ! -x "$BOOT_DIR/bin/java" ]; then
+            echo "Temurin not available, checking repo releases..."
+            ASSET_URL=$(gh api "repos/${{ github.repository }}/releases" \
+              --jq '[.[].assets[] | select(.name | test("linux-riscv64\\.tar\\.gz$"))] | sort_by(.updated_at) | last | .browser_download_url' \
+              2>/dev/null || true)
+            if [ -n "$ASSET_URL" ] && [ "$ASSET_URL" != "null" ]; then
+              echo "Fetching boot JDK from repo releases..."
+              curl -sL "$ASSET_URL" | tar -xz -C "$BOOT_DIR" --strip-components=1
+            fi
+          fi
+
+          if [ ! -x "$BOOT_DIR/bin/java" ]; then
+            echo "ERROR: No suitable boot JDK found for riscv64." >&2
+            echo "Acceptable versions: $ACCEPTABLE" >&2
+            exit 1
+          fi
+
+          echo "JAVA_HOME=$BOOT_DIR" >> "$GITHUB_ENV"
+          echo "$BOOT_DIR/bin"       >> "$GITHUB_PATH"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Verify boot JDK
+        run: java -version
+
+      - name: Configure
+        env:
+          VERSION_BUILD: ${{ steps.ver.outputs.build }}
+          VERSION_OPT: ${{ steps.ver.outputs.tag }}
+        run: |
+          bash configure \
+            --with-jvm-features=jvmci \
+            --with-jvm-variants=server \
+            --disable-warnings-as-errors \
+            --with-extra-cflags="-fcommon" \
+            --with-boot-jdk="$JAVA_HOME" \
+            --with-version-build="$VERSION_BUILD" \
+            --with-version-opt="$VERSION_OPT"
+
+      - name: Build images and static-libs
+        run: time make images static-libs-image JOBS=$(nproc)
+
+      - name: Package artifact
+        env:
+          STAGING: ${{ steps.ver.outputs.staging }}
+          TARBALL: ${{ steps.ver.outputs.tarball }}
+        run: |
+          BUILD_DIR=$(ls -d build/linux-riscv64-*-release/images 2>/dev/null | head -1)
+          if [ -z "$BUILD_DIR" ]; then
+            echo "ERROR: could not find build output directory" >&2
+            exit 1
+          fi
+
+          cp -a "$BUILD_DIR/jdk" "$STAGING"
+          mkdir -p "$STAGING/lib/static/linux-riscv64/glibc"
+          # Copy all .a files recursively, flattening into glibc/ (server/libjvm.a → glibc/libjvm.a)
+          find "$BUILD_DIR/static-libs/lib" -name '*.a' \
+            -exec cp {} "$STAGING/lib/static/linux-riscv64/glibc/" \;
+
+          tar -czf "$TARBALL" "$STAGING/"
+          sha1sum "$TARBALL" | awk '{print $1}' > "${TARBALL}.sha1"
+          ls -lh "$TARBALL" "${TARBALL}.sha1"
+          echo "Static libs:"
+          tar -tzf "$TARBALL" | grep "static/" | head -10
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: labsjdk-riscv64
+          path: |
+            *.tar.gz
+            *.tar.gz.sha1
+          retention-days: 90
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TARBALL: ${{ steps.ver.outputs.tarball }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" &>/dev/null; then
+            gh release upload "$TAG" "$TARBALL" "${TARBALL}.sha1" --clobber
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes "riscv64 build of labs-openjdk at tag ${TAG}" \
+              "$TARBALL" "${TARBALL}.sha1"
+          fi
