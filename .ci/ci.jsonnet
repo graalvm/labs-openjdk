@@ -36,6 +36,7 @@ local common = import 'common.libsonnet';
         logs: [
             '*.log',
             '*/build/*/configure-support/sign-dummy/sign-dummy.signlog',
+            'snapshot-labsjdk-versions.json',
         ],
         diskspace_required: '10G',
         deploysArtifacts: true,
@@ -108,6 +109,7 @@ local common = import 'common.libsonnet';
             '--java-build-number=' + build_number,
             '--jvmci-version=' + release.build,
             '--boot-jdk=${BOOT_JDK}',
+            '--labsjdk-versions=snapshot-labsjdk-versions.json',
             '--patches=' + jdk_src_dir + '/patches.tar.gz',
             '--clean-after-build',
             '--jdk-debug-level=' + level,
@@ -272,7 +274,7 @@ local common = import 'common.libsonnet';
         [self.BuildValidation(defs, conf, is_musl_build=true, graalvm_version=25.1) for conf in amd64_musl_confs(defs)],
 
     CreateBuilds(major_java_version, releases, defs)::
-        + produce_builds(major_java_version, releases, false, false, defs)
+         produce_builds(major_java_version, releases, false, false, defs)
         + produce_builds(major_java_version, releases, true, false, defs)
         + produce_builds(major_java_version, releases, false, true, defs),
 
