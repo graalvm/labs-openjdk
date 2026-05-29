@@ -27,8 +27,8 @@
 # ----------------------------------------------------------------------------------------------------
 
 """
-Updates the values for the `version` field of the labsjdk-ce-latest and labsjdk-ee-latest
-objects in the common.json file of the Graal repos.
+Updates the values for the `version` field of the labsjdk-ce-latest and/or
+labsjdk-ee-latest objects in the common.json file of the Graal repos.
 """
 
 import argparse
@@ -37,9 +37,9 @@ import difflib
 from pathlib import Path
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Updates jdks.labsjdk-ce-latest.version and jdks.labsjdk-ee-latest.version values in common.json.")
+    parser = argparse.ArgumentParser(description="Updates jdks.labsjdk-ce-latest.version and/or jdks.labsjdk-ee-latest.version values in common.json.")
     parser.add_argument("labsjdk_versions", action="store", help="URL or path to file from which labsjdk versions will be read. " \
-                        "The content must be a JSON object with ce and ee fields that specify the new values.")
+                        "The content must be a JSON object with ce and/or ee fields that specify the new values.")
     parser.add_argument("common.json", action="store", nargs="+", help="path to a common.json file to process")
 
     args = parser.parse_args()
@@ -64,19 +64,26 @@ if __name__ == "__main__":
             new_versions = new_versions[0:1024] + "... (truncated)"
         raise SystemExit(f"Error decoding content of size {size} from {args.labsjdk_versions} as JSON: {e}\nContent:\n{new_versions}")
 
+    if not isinstance(new_versions, dict):
+        raise SystemExit(f"Error decoding content from {args.labsjdk_versions}: Expected a JSON object.\nJSON:\n{json.dumps(new_versions, indent=2)}")
+
+    editions_to_update = [edition for edition in ("ce", "ee") if edition in new_versions]
+    if not editions_to_update:
+        raise SystemExit(f"Error extracting versions from JSON in {args.labsjdk_versions}: Missing ce/ee value.\nJSON:\n{json.dumps(new_versions, indent=2)}")
+
     for common_json_path in getattr(args, "common.json"):
         common_json_path = Path(common_json_path)
         common_json_text = common_json_path.read_text()
         common_json = json.loads(common_json_text)
-        ce_version = common_json["jdks"]["labsjdk-ce-latest"]["version"]
-        ee_version = common_json["jdks"]["labsjdk-ee-latest"]["version"]
+        new_common_json_text = common_json_text
 
-        try:
-            new_common_json_text = common_json_text\
-                .replace(ce_version, new_versions["ce"])\
-                .replace(ee_version, new_versions["ee"])
-        except KeyError as e:
-            raise SystemExit(f"Error extracting versions from JSON in {args.labsjdk_versions}: Missing value for {e}\nJSON:\n{json.dumps(new_versions, indent=2)}")
+        if "ce" in editions_to_update:
+            ce_version = common_json["jdks"]["labsjdk-ce-latest"]["version"]
+            new_common_json_text = new_common_json_text.replace(ce_version, new_versions["ce"])
+
+        if "ee" in editions_to_update:
+            ee_version = common_json["jdks"]["labsjdk-ee-latest"]["version"]
+            new_common_json_text = new_common_json_text.replace(ee_version, new_versions["ee"])
 
         if new_common_json_text == common_json_text:
             print(f"No change to {common_json_path}")

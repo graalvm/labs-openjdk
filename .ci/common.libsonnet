@@ -1,7 +1,7 @@
 {
     # The JVMCI releases that can be built from this repo.
     jvmci_releases:: [
-        self.JVMCIRelease(name='25.1', build='b17', jdk_version='25.0.2+10')
+        self.JVMCIRelease(name='25.1', build='b19', jdk_version='25.0.3+9')
     ],
 
     # Specifies a JVMCI release.
@@ -25,7 +25,7 @@
     },
 
     # Version of the labsjdk-builder scripts to use
-    labsjdk_builder_version:: '209d5a13dd9d0ea63d596af14b7b98bc165c0fd8',
+    labsjdk_builder_version:: '384e8cef824eecf9476b355f9abfaeaf956fa659',
 
     # Clones a JDK repository
     # If `!is_closed`, then the cloned repo is checked out to branch ${MAIN_REVISION}.
