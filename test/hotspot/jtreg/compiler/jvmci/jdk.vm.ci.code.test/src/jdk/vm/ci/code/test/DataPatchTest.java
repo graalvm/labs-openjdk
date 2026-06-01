@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,6 +40,7 @@
 
 package jdk.vm.ci.code.test;
 
+import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.site.DataSectionReference;
 import jdk.vm.ci.hotspot.HotSpotConstant;
@@ -52,8 +53,15 @@ import org.junit.Test;
  */
 public class DataPatchTest extends CodeInstallationTest {
 
+    private static final long EXPECTED_FIRST_QWORD = 0x0807060504030201L;
+    private static final int TERNLOG_DATA_LENGTH = 80;
+
     public static Class<?> getConstClass() {
         return DataPatchTest.class;
+    }
+
+    public static long getFirstQWord() {
+        return EXPECTED_FIRST_QWORD;
     }
 
     private void test(TestCompiler compiler) {
@@ -91,6 +99,46 @@ public class DataPatchTest extends CodeInstallationTest {
             Register ret = asm.emitLoadPointer(ref);
             asm.emitPointerRet(ret);
         });
+    }
+
+    @Test
+    public void testDataSectionReferenceWithTrailingImmediate() {
+        Assume.assumeTrue("requires AMD64", arch instanceof AMD64);
+        Assume.assumeTrue("requires AVX512F", ((AMD64) arch).getFeatures().contains(AMD64.CPUFeature.AVX512F));
+        test(asm -> {
+            DataSectionReference ref = new DataSectionReference();
+            ref.setOffset(asm.data.position());
+            for (int i = 0; i < TERNLOG_DATA_LENGTH; i++) {
+                asm.data.emitByte(i + 1);
+            }
+
+            // vpxorq zmm0,zmm0,zmm0
+            asm.code.emitByte(0x62);
+            asm.code.emitByte(0xf1);
+            asm.code.emitByte(0xfd);
+            asm.code.emitByte(0x48);
+            asm.code.emitByte(0xef);
+            asm.code.emitByte(0xc0);
+
+            asm.recordDataPatchInCode(ref);
+            // vpternlogq zmm0,zmm0,ZMMWORD PTR [rip+disp32],0xaa
+            asm.code.emitByte(0x62);
+            asm.code.emitByte(0xf3);
+            asm.code.emitByte(0xfd);
+            asm.code.emitByte(0x48);
+            asm.code.emitByte(0x25);
+            asm.code.emitByte(0x05);
+            asm.code.emitInt(0xDEADDEAD);
+            asm.code.emitByte(0xaa);
+
+            // movq rax,xmm0
+            asm.code.emitByte(0x66);
+            asm.code.emitByte(0x48);
+            asm.code.emitByte(0x0f);
+            asm.code.emitByte(0x7e);
+            asm.code.emitByte(0xc0);
+            asm.emitPointerRet(AMD64.rax);
+        }, getMethod("getFirstQWord"));
     }
 
     @Test
