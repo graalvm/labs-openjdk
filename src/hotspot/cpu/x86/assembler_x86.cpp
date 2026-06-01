@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1101,6 +1101,8 @@ address Assembler::locate_operand(address inst, WhichOperand which) {
     assert(ip == inst+1, "no prefixes allowed");
     // no EVEX collisions, all instructions that have 0x62 opcodes
     // have EVEX versions and are subopcodes of 0x66
+    int evex_opcode;
+    evex_opcode = *ip & 0x7;
     ip++; // skip P0 and examine W in P1
     is_64bit = ((VEX_W & *ip) == VEX_W);
     ip++; // move to P2
@@ -1114,6 +1116,11 @@ address Assembler::locate_operand(address inst, WhichOperand which) {
     case 0x1f: // evpcmpd/evpcmpq
     case 0x3f: // evpcmpb/evpcmpw
       tail_size = 1;  // the imm8
+      break;
+    case 0x25: // vpternlogd/vpternlogq r, r, r/a, #8
+      if (evex_opcode == VEX_OPCODE_0F_3A) {
+        tail_size = 1;  // the imm8
+      }
       break;
     default:
       break;
