@@ -128,7 +128,10 @@ const char* Abstract_VM_Version::vm_name() {
 # define VENDOR_PADDING 64
 #endif
 #ifndef VENDOR
-# define VENDOR  "Oracle Corporation"
+// Makes jdk.graal.compiler.hotspot.JVMCIVersionCheck#isOracleJDK be false for
+// labsjdk-ce builds without requiring explicit configuration of the
+// java.vm.vendor system property via --with-vendor-name="GraalVM Community"
+# define VENDOR  "GraalVM Community"
 #endif
 
 static const char vm_vendor_string[sizeof(VENDOR) < VENDOR_PADDING ? VENDOR_PADDING : sizeof(VENDOR)] = VENDOR;
