@@ -33,6 +33,7 @@ import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 import static jdk.vm.ci.hotspot.HotSpotVMConfig.config;
 import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
 import jdk.vm.ci.meta.ConstantPool;
+import jdk.vm.ci.meta.ConstantPool.Tag;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaField;
 import jdk.vm.ci.meta.JavaMethod;
@@ -116,10 +117,12 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
     static final class JvmConstant {
         private final int tag;
         private final String name;
+        private final Tag tagEnum;
 
-        JvmConstant(int tag, String name) {
+        JvmConstant(int tag, String name, Tag tagEnum) {
             this.tag = tag;
             this.name = name;
+            this.tagEnum = tagEnum;
         }
 
         @Override
@@ -139,26 +142,26 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
         private final int internalMin = c.jvmConstantInternalMin;
         private final JvmConstant[] table = new JvmConstant[externalMax + 1 + (internalMax - internalMin) + 1];
 
-        final JvmConstant jvmUtf8 = add(new JvmConstant(c.jvmConstantUtf8, "Utf8"));
-        final JvmConstant jvmInteger = add(new JvmConstant(c.jvmConstantInteger, "Integer"));
-        final JvmConstant jvmLong = add(new JvmConstant(c.jvmConstantLong, "Long"));
-        final JvmConstant jvmFloat = add(new JvmConstant(c.jvmConstantFloat, "Float"));
-        final JvmConstant jvmDouble = add(new JvmConstant(c.jvmConstantDouble, "Double"));
-        final JvmConstant jvmClass = add(new JvmConstant(c.jvmConstantClass, "Class"));
-        final JvmConstant jvmUnresolvedClass = add(new JvmConstant(c.jvmConstantUnresolvedClass, "UnresolvedClass"));
-        final JvmConstant jvmUnresolvedClassInError = add(new JvmConstant(c.jvmConstantUnresolvedClassInError, "UnresolvedClassInError"));
-        final JvmConstant jvmString = add(new JvmConstant(c.jvmConstantString, "String"));
-        final JvmConstant jvmFieldref = add(new JvmConstant(c.jvmConstantFieldref, "Fieldref"));
-        final JvmConstant jvmMethodref = add(new JvmConstant(c.jvmConstantMethodref, "Methodref"));
-        final JvmConstant jvmInterfaceMethodref = add(new JvmConstant(c.jvmConstantInterfaceMethodref, "InterfaceMethodref"));
-        final JvmConstant jvmNameAndType = add(new JvmConstant(c.jvmConstantNameAndType, "NameAndType"));
-        final JvmConstant jvmMethodHandle = add(new JvmConstant(c.jvmConstantMethodHandle, "MethodHandle"));
-        final JvmConstant jvmMethodHandleInError = add(new JvmConstant(c.jvmConstantMethodHandleInError, "MethodHandleInError"));
-        final JvmConstant jvmMethodType = add(new JvmConstant(c.jvmConstantMethodType, "MethodType"));
-        final JvmConstant jvmMethodTypeInError = add(new JvmConstant(c.jvmConstantMethodTypeInError, "MethodTypeInError"));
-        final JvmConstant jvmInvokeDynamic = add(new JvmConstant(c.jvmConstantInvokeDynamic, "InvokeDynamic"));
-        final JvmConstant jvmDynamic = add(new JvmConstant(c.jvmConstantDynamic, "Dynamic"));
-        final JvmConstant jvmDynamicInError = add(new JvmConstant(c.jvmConstantDynamicInError, "DynamicInError"));
+        final JvmConstant jvmUtf8 = add(new JvmConstant(c.jvmConstantUtf8, "Utf8", Tag.UTF8));
+        final JvmConstant jvmInteger = add(new JvmConstant(c.jvmConstantInteger, "Integer", Tag.INTEGER));
+        final JvmConstant jvmLong = add(new JvmConstant(c.jvmConstantLong, "Long", Tag.LONG));
+        final JvmConstant jvmFloat = add(new JvmConstant(c.jvmConstantFloat, "Float", Tag.FLOAT));
+        final JvmConstant jvmDouble = add(new JvmConstant(c.jvmConstantDouble, "Double", Tag.DOUBLE));
+        final JvmConstant jvmClass = add(new JvmConstant(c.jvmConstantClass, "Class", Tag.CLASS));
+        final JvmConstant jvmUnresolvedClass = add(new JvmConstant(c.jvmConstantUnresolvedClass, "UnresolvedClass", Tag.CLASS));
+        final JvmConstant jvmUnresolvedClassInError = add(new JvmConstant(c.jvmConstantUnresolvedClassInError, "UnresolvedClassInError", Tag.CLASS));
+        final JvmConstant jvmString = add(new JvmConstant(c.jvmConstantString, "String", Tag.STRING));
+        final JvmConstant jvmFieldref = add(new JvmConstant(c.jvmConstantFieldref, "Fieldref", Tag.FIELD_REF));
+        final JvmConstant jvmMethodref = add(new JvmConstant(c.jvmConstantMethodref, "Methodref", Tag.METHOD_REF));
+        final JvmConstant jvmInterfaceMethodref = add(new JvmConstant(c.jvmConstantInterfaceMethodref, "InterfaceMethodref", Tag.INTERFACE_METHOD_REF));
+        final JvmConstant jvmNameAndType = add(new JvmConstant(c.jvmConstantNameAndType, "NameAndType", Tag.NAME_AND_TYPE));
+        final JvmConstant jvmMethodHandle = add(new JvmConstant(c.jvmConstantMethodHandle, "MethodHandle", Tag.METHODHANDLE));
+        final JvmConstant jvmMethodHandleInError = add(new JvmConstant(c.jvmConstantMethodHandleInError, "MethodHandleInError", Tag.METHODHANDLE));
+        final JvmConstant jvmMethodType = add(new JvmConstant(c.jvmConstantMethodType, "MethodType", Tag.METHODTYPE));
+        final JvmConstant jvmMethodTypeInError = add(new JvmConstant(c.jvmConstantMethodTypeInError, "MethodTypeInError", Tag.METHODTYPE));
+        final JvmConstant jvmInvokeDynamic = add(new JvmConstant(c.jvmConstantInvokeDynamic, "InvokeDynamic", Tag.INVOKEDYNAMIC));
+        final JvmConstant jvmDynamic = add(new JvmConstant(c.jvmConstantDynamic, "Dynamic", Tag.DYNAMIC));
+        final JvmConstant jvmDynamicInError = add(new JvmConstant(c.jvmConstantDynamicInError, "DynamicInError", Tag.DYNAMIC));
 
         private JvmConstant add(JvmConstant constant) {
             table[indexOf(constant.tag)] = constant;
@@ -949,7 +952,15 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
                 // nothing
                 break;
         }
+    }
 
+    @Override
+    public Tag getTag(int cpi) {
+        JvmConstant tag = getTagAt(cpi);
+        if (tag == null) {
+            return Tag.INVALID;
+        }
+        return tag.tagEnum;
     }
 
     // Lazily initialized.

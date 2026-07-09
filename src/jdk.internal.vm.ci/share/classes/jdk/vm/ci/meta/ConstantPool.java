@@ -296,4 +296,92 @@ public interface ConstantPool {
      * @return the appendix if it exists and is resolved or {@code null}
      */
     JavaConstant lookupAppendix(int rawIndex, int opcode);
+
+    /**
+     * Gets the tag of the constant pool entry at {@code cpi}.
+     *
+     * @param cpi the constant pool index
+     * @return the tag of the entry at {@code cpi}, or {@link Tag#INVALID} if {@code cpi} is the
+     *         unusable slot following a {@link Tag#LONG} or {@link Tag#DOUBLE} entry
+     * @throws IndexOutOfBoundsException if {@code cpi} is not a valid constant pool index
+     */
+    Tag getTag(int cpi);
+
+    /**
+     * The tags for entries in a class file constant pool.
+     *
+     * {@link #INVALID} represents an unusable constant pool slot following a {@link #LONG} or
+     * {@link #DOUBLE} entry.
+     *
+     * @jvms 4.4 The {@code Constant Pool}
+     */
+    enum Tag {
+        INVALID(0),
+        UTF8(1),
+        INTEGER(3),
+        FLOAT(4),
+        LONG(5),
+        DOUBLE(6),
+        CLASS(7),
+        STRING(8),
+        FIELD_REF(9),
+        METHOD_REF(10),
+        INTERFACE_METHOD_REF(11),
+        NAME_AND_TYPE(12),
+        METHODHANDLE(15),
+        METHODTYPE(16),
+        DYNAMIC(17),
+        INVOKEDYNAMIC(18),
+        MODULE(19),
+        PACKAGE(20);
+
+        private final byte value;
+
+        Tag(int value) {
+            assert (byte) value == value;
+            this.value = (byte) value;
+        }
+
+        /**
+         * Gets the numeric value of this tag.
+         *
+         * @return the numeric value of this tag
+         */
+        public final byte getValue() {
+            return value;
+        }
+
+        /**
+         * Gets the tag with a given numeric value.
+         *
+         * @param value a numeric constant pool tag value
+         * @return the tag with the given value
+         * @throws IllegalArgumentException if {@code value} is not a recognized constant-pool tag
+         */
+        public static Tag fromValue(int value) {
+            Tag tag = switch (value) {
+                case 0 -> INVALID;
+                case 1 -> UTF8;
+                case 3 -> INTEGER;
+                case 4 -> FLOAT;
+                case 5 -> LONG;
+                case 6 -> DOUBLE;
+                case 7 -> CLASS;
+                case 8 -> STRING;
+                case 9 -> FIELD_REF;
+                case 10 -> METHOD_REF;
+                case 11 -> INTERFACE_METHOD_REF;
+                case 12 -> NAME_AND_TYPE;
+                case 15 -> METHODHANDLE;
+                case 16 -> METHODTYPE;
+                case 17 -> DYNAMIC;
+                case 18 -> INVOKEDYNAMIC;
+                case 19 -> MODULE;
+                case 20 -> PACKAGE;
+                default -> throw new IllegalArgumentException("Unknown tag value: " + value);
+            };
+            assert tag.value == value;
+            return tag;
+        }
+    }
 }

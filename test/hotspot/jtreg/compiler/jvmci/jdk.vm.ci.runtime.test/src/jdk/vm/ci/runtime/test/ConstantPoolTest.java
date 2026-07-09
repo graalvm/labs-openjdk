@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,6 +37,10 @@
  */
 package jdk.vm.ci.runtime.test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.classfile.ClassFile;
+import java.lang.classfile.constantpool.PoolEntry;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -45,6 +49,8 @@ import java.lang.invoke.MethodType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import jdk.vm.ci.meta.ConstantPool;
+import jdk.vm.ci.meta.ConstantPool.Tag;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaField;
 import jdk.vm.ci.meta.JavaMethod;
@@ -94,6 +100,9 @@ public class ConstantPoolTest {
     public static final int GETSTATIC = 178;
     public static final int INVOKEVIRTUAL = 182;
     public static final int INVOKEDYNAMIC = 186;
+    private static final float TAG_TEST_FLOAT = 123.5f;
+    private static final long TAG_TEST_LONG = 0x1234_5678_9abc_def0L;
+    private static final double TAG_TEST_DOUBLE = 12345.6789d;
 
     public static int beU2(byte[] data, int bci) {
         return ((data[bci] & 0xff) << 8) | (data[bci + 1] & 0xff);
@@ -105,6 +114,66 @@ public class ConstantPoolTest {
 
     public static int beS4(byte[] data, int bci) {
         return (data[bci] << 24) | ((data[bci + 1] & 0xff) << 16) | ((data[bci + 2] & 0xff) << 8) | (data[bci + 3] & 0xff);
+    }
+
+    @Test
+    public void constantPoolTagFromValueTest() {
+        for (Tag tag : Tag.values()) {
+            Assert.assertSame(Tag.fromValue(tag.getValue()), tag, "tag does not round trip: " + tag);
+        }
+        for (int value : new int[]{2, 13, 14, 21}) {
+            final int invalidValue = value;
+            Assert.assertThrows(IllegalArgumentException.class, () -> Tag.fromValue(invalidValue));
+        }
+    }
+
+    @Test
+    public void constantPoolGetTagTest() {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        ResolvedJavaType type = metaAccess.lookupJavaType(ConstantPoolTest.class);
+        ConstantPool constantPool = type.getDeclaredMethods()[0].getConstantPool();
+        boolean sawLong = false;
+        boolean sawDouble = false;
+
+        for (int cpi = 1; cpi < constantPool.length(); cpi++) {
+            Tag tag = constantPool.getTag(cpi);
+            Assert.assertNotNull(tag, "null tag at constant pool index " + cpi);
+            if (tag == Tag.INVALID) {
+                Assert.assertTrue(cpi > 1, "invalid tag at the first constant pool index");
+                Tag previousTag = constantPool.getTag(cpi - 1);
+                Assert.assertTrue(previousTag == Tag.LONG || previousTag == Tag.DOUBLE,
+                                "invalid tag at constant pool index " + cpi + " does not follow a long or double");
+            } else if (tag == Tag.LONG || tag == Tag.DOUBLE) {
+                Assert.assertSame(constantPool.getTag(cpi + 1), Tag.INVALID,
+                                "long or double at constant pool index " + cpi + " is not followed by INVALID");
+                sawLong |= tag == Tag.LONG;
+                sawDouble |= tag == Tag.DOUBLE;
+            }
+        }
+
+        Assert.assertTrue(sawLong, "constant pool does not contain the long test constant");
+        Assert.assertTrue(sawDouble, "constant pool does not contain the double test constant");
+    }
+
+    @Test
+    public void constantPoolGetTagConsistencyTest() throws IOException {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        ResolvedJavaType type = metaAccess.lookupJavaType(ConstantPoolTest.class);
+        ConstantPool constantPool = type.getDeclaredMethods()[0].getConstantPool();
+        InputStream stream = ConstantPoolTest.class.getResourceAsStream("ConstantPoolTest.class");
+        Assert.assertNotNull(stream, "class file not found");
+
+        java.lang.classfile.constantpool.ConstantPool classFileConstantPool;
+        try (stream) {
+            classFileConstantPool = ClassFile.of().parse(stream.readAllBytes()).constantPool();
+        }
+
+        Assert.assertEquals(constantPool.length(), classFileConstantPool.size(), "wrong constant pool length");
+        for (PoolEntry entry : classFileConstantPool) {
+            Tag expectedTag = Tag.fromValue(entry.tag());
+            Assert.assertSame(constantPool.getTag(entry.index()), expectedTag,
+                            "wrong tag at constant pool index " + entry.index());
+        }
     }
 
     @Test
