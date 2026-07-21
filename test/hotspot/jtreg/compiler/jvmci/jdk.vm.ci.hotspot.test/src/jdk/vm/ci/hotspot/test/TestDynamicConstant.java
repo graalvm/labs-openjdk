@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,6 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantBootstraps;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.StringConcatFactory;
@@ -62,12 +63,16 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import jdk.vm.ci.hotspot.HotSpotObjectConstant;
 import jdk.vm.ci.hotspot.HotSpotConstantPool;
+import jdk.vm.ci.hotspot.HotSpotResolvedObjectType;
 import jdk.vm.ci.meta.ConstantPool;
 import jdk.vm.ci.meta.ConstantPool.BootstrapMethodInvocation;
 import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.JavaMethod;
+import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.PrimitiveConstant;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.UnresolvedJavaMethod;
 import jdk.vm.ci.runtime.JVMCI;
 
 /**
@@ -97,15 +102,15 @@ public class TestDynamicConstant implements Opcodes {
         CALL_DIRECT_WITH_ARGS_BSM,
 
         /**
-         * Condy whose bootstrap method is {@link ConstantBootstraps#invoke} that invokes one of the
-         * {@code TestDynamicConstant.get<type>()} methods.
+         * Condy whose bootstrap method is the varargs {@link ConstantBootstraps#invoke} method
+         * that invokes one of the {@code TestDynamicConstant.get<type>()} methods.
          */
         CALL_INDIRECT_BSM,
 
         /**
-         * Condy whose bootstrap method is {@link ConstantBootstraps#invoke} that invokes one of the
-         * {@code TestDynamicConstant.get<type>(<type> p1, <type> p2)} methods with args that are
-         * condys themselves.
+         * Condy whose bootstrap method is the varargs {@link ConstantBootstraps#invoke} method
+         * that invokes one of the {@code TestDynamicConstant.get<type>(<type> p1, <type> p2)}
+         * methods with args that are condys themselves.
          */
         CALL_INDIRECT_WITH_ARGS_BSM
     }
@@ -137,12 +142,35 @@ public class TestDynamicConstant implements Opcodes {
          */
         final String className;
 
+        /**
+         * Whether to add an invokedynamic whose bootstrap method is a
+         * signature-polymorphic MethodHandle method.
+         */
+        final boolean includeNonDirectBootstrapMethod;
+
+        /**
+         * Whether to add a dynamic constant whose bootstrap method fails.
+         */
+        final boolean includeFailingDynamicConstant;
+
         TestGenerator(Class<?> type, CondyType condyType) {
+            this(type, condyType, false, false);
+        }
+
+        TestGenerator(Class<?> type, CondyType condyType, boolean includeNonDirectBootstrapMethod) {
+            this(type, condyType, includeNonDirectBootstrapMethod, false);
+        }
+
+        TestGenerator(Class<?> type, CondyType condyType, boolean includeNonDirectBootstrapMethod, boolean includeFailingDynamicConstant) {
             String typeName = type.getSimpleName();
             this.type = Type.getType(type);
             this.condyType = condyType;
             this.getter = "get" + typeName.substring(0, 1).toUpperCase() + typeName.substring(1);
-            this.className = TestDynamicConstant.class.getName() + "$" + typeName + '_' + condyType;
+            this.includeNonDirectBootstrapMethod = includeNonDirectBootstrapMethod;
+            this.includeFailingDynamicConstant = includeFailingDynamicConstant;
+            this.className = TestDynamicConstant.class.getName() + "$" + typeName + '_' + condyType +
+                            (includeNonDirectBootstrapMethod ? "_NonDirectBSM" : "") +
+                            (includeFailingDynamicConstant ? "_FailingCondy" : "");
         }
 
         Class<?> generateClass() throws ClassNotFoundException {
@@ -221,6 +249,17 @@ public class TestDynamicConstant implements Opcodes {
                 run.visitEnd();
             }
 
+            if (includeFailingDynamicConstant) {
+                String failingSignature = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/Object;";
+                Handle failingHandle = new Handle(H_INVOKESTATIC, testClassInternalName, "throwingBSM", failingSignature, false);
+                ConstantDynamic failingCondy = new ConstantDynamic("failed", "Ljava/lang/Object;", failingHandle);
+                MethodVisitor failing = cw.visitMethod(PUBLIC_STATIC, "failed", "()Ljava/lang/Object;", null, null);
+                failing.visitLdcInsn(failingCondy);
+                failing.visitInsn(ARETURN);
+                failing.visitMaxs(0, 0);
+                failing.visitEnd();
+            }
+
             MethodVisitor concat = cw.visitMethod(PUBLIC_STATIC, "concat", "()Ljava/lang/String;", null, null);
             String sig = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;";
             Handle handle = new Handle(H_INVOKESTATIC, Type.getInternalName(StringConcatFactory.class), "makeConcatWithConstants", sig, false);
@@ -240,8 +279,33 @@ public class TestDynamicConstant implements Opcodes {
             shouldNotBeCalled.visitMaxs(0, 0);
             shouldNotBeCalled.visitEnd();
 
+            if (includeNonDirectBootstrapMethod) {
+                /*
+                 * Resolving CONSTANT_MethodHandles for signature-polymorphic and caller-sensitive
+                 * methods can create non-DirectMethodHandle adapters.
+                 * These entries are inspection fixtures, not usable bootstrap methods: their
+                 * target handles cannot accept the required Lookup, name, and MethodType arguments.
+                 * The test inspects the resolved handles and metadata without linking the call sites.
+                 */
+                String invokeSignature = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/Object;";
+                addNonDirectBootstrapMethod(cw, "nonDirectMethodHandleInvoke", H_INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invoke", invokeSignature);
+                addNonDirectBootstrapMethod(cw, "nonDirectMethodHandleInvokeExact", H_INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invokeExact", invokeSignature);
+                addNonDirectBootstrapMethod(cw, "nonDirectVarHandleGet", H_INVOKEVIRTUAL, "java/lang/invoke/VarHandle", "get", "()Ljava/lang/Object;");
+                addNonDirectBootstrapMethod(cw, "nonDirectThreadGetContextClassLoader", H_INVOKEVIRTUAL, "java/lang/Thread", "getContextClassLoader", "()Ljava/lang/ClassLoader;");
+                addNonDirectBootstrapMethod(cw, "nonDirectClassForName", H_INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;");
+            }
+
             cw.visitEnd();
             return cw.toByteArray();
+        }
+
+        private static void addNonDirectBootstrapMethod(ClassWriter cw, String methodName, int tag, String owner, String name, String descriptor) {
+            MethodVisitor method = cw.visitMethod(PUBLIC_STATIC, methodName, "()V", null, null);
+            Handle handle = new Handle(tag, owner, name, descriptor, false);
+            method.visitInvokeDynamicInsn("nonDirect", "()V", handle);
+            method.visitInsn(RETURN);
+            method.visitMaxs(0, 0);
+            method.visitEnd();
         }
 
         private final class TestCL extends ClassLoader {
@@ -274,17 +338,318 @@ public class TestDynamicConstant implements Opcodes {
         }
     }
 
+    private static Class<?> defineUnlinkedDynamicFixture() {
+        ClassWriter writer = new ClassWriter(0);
+        String name = testClassInternalName + "$UnlinkedDynamicFixture";
+        writer.visit(V17, ACC_PUBLIC | ACC_SUPER, name, null, "java/lang/Object", null);
+        Handle bootstrapMethod = new Handle(H_INVOKESTATIC, constantBootstrapsClassInternalName, "nullConstant",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/Object;", false);
+        MethodVisitor method = writer.visitMethod(PUBLIC_STATIC, "method", "()Ljava/lang/Object;", null, null);
+        method.visitLdcInsn(new ConstantDynamic("dynamic", "Ljava/lang/Object;", bootstrapMethod));
+        method.visitInsn(POP);
+        Handle indyBootstrapMethod = new Handle(H_INVOKESTATIC, Type.getInternalName(StringConcatFactory.class), "makeConcat",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
+        method.visitInvokeDynamicInsn("concat", "()Ljava/lang/String;", indyBootstrapMethod);
+        method.visitInsn(ARETURN);
+        method.visitMaxs(1, 0);
+        method.visitEnd();
+        writer.visitEnd();
+        byte[] bytes = writer.toByteArray();
+        class ByteArrayClassLoader extends ClassLoader {
+            ByteArrayClassLoader() {
+                super(TestDynamicConstant.class.getClassLoader());
+            }
+
+            Class<?> define() {
+                return defineClass(null, bytes, 0, bytes.length);
+            }
+        }
+        return new ByteArrayClassLoader().define();
+    }
+
+    @Test
+    public void testBootstrapInspectionOfUnlinkedHolder() {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        HotSpotResolvedObjectType holder = (HotSpotResolvedObjectType) metaAccess.lookupJavaType(defineUnlinkedDynamicFixture());
+        // Access the constant pool through the HotSpot type: Class.getDeclaredMethod links the
+        // holder, which would prevent this test from exercising inspection without a CP cache.
+        ConstantPool cp = holder.getConstantPool();
+        Assert.assertFalse(holder.isLinked(), "fixture must remain unlinked before inspection");
+        int dynamicCpi = -1;
+        int indyCpi = -1;
+        for (int cpi = 1; cpi < cp.length(); cpi++) {
+            if (cp.getTag(cpi) == ConstantPool.Tag.DYNAMIC) {
+                dynamicCpi = cpi;
+            } else if (cp.getTag(cpi) == ConstantPool.Tag.INVOKEDYNAMIC) {
+                indyCpi = cpi;
+            }
+        }
+        Assert.assertTrue(dynamicCpi > 0, "fixture constant pool has no dynamic entry");
+        Assert.assertTrue(indyCpi > 0, "fixture constant pool has no invokedynamic entry");
+
+        BootstrapMethodInvocation condy = cp.lookupBootstrapMethodInvocation(dynamicCpi, -1, false);
+        Assert.assertNotNull(condy);
+        Assert.assertFalse(condy.isInvokeDynamic());
+        Assert.assertNull(condy.getMethod(), "unlinked holder must not resolve the bootstrap method");
+        Assert.assertEquals(condy.getName(), "dynamic");
+        Assert.assertNull(condy.getType(), "non-resolving lookup must not resolve the type");
+        Assert.assertEquals(condy.getStaticArgumentIndices().length, 0);
+        Assert.assertEquals(cp.getTag(condy.getMethodHandleIndex()), ConstantPool.Tag.METHODHANDLE);
+        Assert.assertEquals(cp.lookupName(condy.getMethodHandleIndex(), -1), "nullConstant");
+
+        BootstrapMethodInvocation indy = cp.lookupBootstrapMethodInvocation(indyCpi, -1, false);
+        Assert.assertNotNull(indy);
+        Assert.assertTrue(indy.isInvokeDynamic());
+        Assert.assertNull(indy.getMethod());
+        Assert.assertEquals(indy.getName(), "concat");
+        Assert.assertNull(indy.getType());
+        Assert.assertThrows(IllegalStateException.class, indy::lookup);
+        Assert.assertThrows(IllegalStateException.class, indy::resolve);
+        Assert.assertFalse(holder.isLinked(), "bootstrap inspection must not link the holder");
+
+        holder.link();
+        // A constant pool index does not identify a call site, even after linking.
+        BootstrapMethodInvocation linkedIndy = cp.lookupBootstrapMethodInvocation(indyCpi, -1, false);
+        Assert.assertNotNull(linkedIndy);
+        Assert.assertThrows(IllegalStateException.class, linkedIndy::lookup);
+        Assert.assertThrows(IllegalStateException.class, linkedIndy::resolve);
+        Assert.assertNull(cp.lookupBootstrapMethodInvocation(dynamicCpi, -1, false).getMethod());
+    }
+
+    public static Object throwingBSM(MethodHandles.Lookup lookup, String name, Class<?> type) {
+        throw new IllegalStateException("expected bootstrap failure");
+    }
+
+    @Test
+    public void testFailedDynamicConstantInspection() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        Class<?> testClass = new TestGenerator(Object.class, CondyType.CALL_DIRECT_BSM, false, true).generateClass();
+        ResolvedJavaMethod failed = metaAccess.lookupJavaMethod(testClass.getDeclaredMethod("failed"));
+        ConstantPool cp = failed.getConstantPool();
+        int cpi = -1;
+        for (int i = 1; i < cp.length(); i++) {
+            if (cp.getTag(i) == ConstantPool.Tag.DYNAMIC && cp.lookupName(i, -1).equals("failed")) {
+                cpi = i;
+                break;
+            }
+        }
+        Assert.assertTrue(cpi > 0, "failed dynamic constant not found");
+
+        BootstrapMethodInvocation before = cp.lookupBootstrapMethodInvocation(cpi, -1, false);
+        Assert.assertNotNull(before);
+        Assert.assertEquals(cp.getTag(before.getMethodHandleIndex()), ConstantPool.Tag.METHODHANDLE);
+
+        final int failedCpi = cpi;
+        Assert.assertThrows(BootstrapMethodError.class, () -> cp.lookupConstant(failedCpi, true));
+        Assert.assertEquals(cp.getTag(cpi), ConstantPool.Tag.DYNAMIC);
+        BootstrapMethodInvocation after = cp.lookupBootstrapMethodInvocation(cpi, -1, false);
+        Assert.assertNotNull(after, "failed dynamic constant lost its symbolic bootstrap information");
+        Assert.assertEquals(after.getName(), "failed");
+    }
+
+    private static Class<?> generateClassWithoutInvokeDynamic(String suffix, boolean includeCondy,
+                    boolean includeUnusedIndy) throws IllegalAccessException {
+        String className = TestDynamicConstant.class.getName() + "$" + suffix;
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        cw.visit(V17, ACC_PUBLIC | ACC_SUPER, className.replace('.', '/'), null, "java/lang/Object", null);
+        Handle nullConstant = new Handle(H_INVOKESTATIC, constantBootstrapsClassInternalName, "nullConstant",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/Object;", false);
+        if (includeCondy) {
+            MethodVisitor method = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, "condy", "()Ljava/lang/Object;", null, null);
+            method.visitLdcInsn(new ConstantDynamic("value", "Ljava/lang/Object;", nullConstant));
+            method.visitInsn(ARETURN);
+            method.visitMaxs(0, 0);
+            method.visitEnd();
+        }
+        if (includeUnusedIndy) {
+            // Add the CP entry and BootstrapMethods record without emitting an invokedynamic
+            // instruction.
+            cw.newInvokeDynamic("unused", "()V", nullConstant);
+        }
+        if (!includeCondy) {
+            MethodVisitor marker = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, "marker", "()V", null, null);
+            marker.visitLdcInsn("plain string constant");
+            marker.visitInsn(POP);
+            marker.visitLdcInsn(42L);
+            marker.visitInsn(POP2);
+            marker.visitInsn(RETURN);
+            marker.visitMaxs(0, 0);
+            marker.visitEnd();
+        }
+        cw.visitEnd();
+        return MethodHandles.lookup().defineHiddenClass(cw.toByteArray(), false).lookupClass();
+    }
+
+    @Test
+    public void testBootstrapInspectionWithoutIndyCache() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        // A CONSTANT_Dynamic without an invokedynamic instruction has no resolved indy entry array.
+        // Bootstrap inspection must not unconditionally dereference
+        // cp->cache()->resolved_indy_entries().
+        Class<?> condyOnlyClass = generateClassWithoutInvokeDynamic("CondyOnly", true, false);
+        ResolvedJavaMethod condyMethod = metaAccess.lookupJavaMethod(condyOnlyClass.getDeclaredMethod("condy"));
+        ConstantPool condyPool = condyMethod.getConstantPool();
+        int condyCpi = -1;
+        for (int cpi = 1; cpi < condyPool.length(); cpi++) {
+            if (condyPool.getTag(cpi) == ConstantPool.Tag.DYNAMIC) {
+                condyCpi = cpi;
+                break;
+            }
+        }
+        Assert.assertTrue(condyCpi > 0, "condy-only class has no dynamic constant");
+        BootstrapMethodInvocation condy = condyPool.lookupBootstrapMethodInvocation(condyCpi, LDC, false);
+        Assert.assertNotNull(condy);
+        Assert.assertFalse(condy.isInvokeDynamic());
+        Assert.assertEquals(condy.getName(), "value");
+
+        Class<?> unusedIndyClass = generateClassWithoutInvokeDynamic("UnusedIndy", false, true);
+        ResolvedJavaMethod marker = metaAccess.lookupJavaMethod(unusedIndyClass.getDeclaredMethod("marker"));
+        ConstantPool unusedIndyPool = marker.getConstantPool();
+        int indyCpi = -1;
+        for (int cpi = 1; cpi < unusedIndyPool.length(); cpi++) {
+            if (unusedIndyPool.getTag(cpi) == ConstantPool.Tag.INVOKEDYNAMIC) {
+                indyCpi = cpi;
+                break;
+            }
+        }
+        Assert.assertTrue(indyCpi > 0, "class has no unused invokedynamic entry");
+        final int unusedIndyCpi = indyCpi;
+        BootstrapMethodInvocation unusedIndy = unusedIndyPool.lookupBootstrapMethodInvocation(unusedIndyCpi, -1, false);
+        Assert.assertNotNull(unusedIndy);
+        Assert.assertTrue(unusedIndy.isInvokeDynamic());
+        Assert.assertEquals(unusedIndy.getName(), "unused");
+
+        byte[] markerCode = marker.getCode();
+        int markerLdcOpcode = beU1(markerCode, 0);
+        int markerLdcCpi = switch (markerLdcOpcode) {
+            case LDC -> beU1(markerCode, 1);
+            case LDC_W -> beU2(markerCode, 1);
+            default -> throw new AssertionError("Unexpected marker opcode: " + markerLdcOpcode);
+        };
+        Assert.assertEquals(unusedIndyPool.getTag(markerLdcCpi), ConstantPool.Tag.STRING);
+        Assert.assertNull(unusedIndyPool.lookupBootstrapMethodInvocation(markerLdcCpi, markerLdcOpcode, false));
+        Assert.assertNull(unusedIndyPool.lookupBootstrapMethodInvocation(markerLdcCpi, LDC_W, false));
+
+        int markerLdc2WCpi = -1;
+        for (int cpi = 1; cpi < unusedIndyPool.length(); cpi++) {
+            if (unusedIndyPool.getTag(cpi) == ConstantPool.Tag.LONG) {
+                markerLdc2WCpi = cpi;
+                break;
+            }
+        }
+        Assert.assertTrue(markerLdc2WCpi > 0, "marker method has no long constant");
+        Assert.assertNull(unusedIndyPool.lookupBootstrapMethodInvocation(markerLdc2WCpi, LDC2_W, false));
+    }
+
+    @Test
+    public void testRawInvokeDynamicBootstrapLifecycle() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        Class<?> testClass = new TestGenerator(String.class, CondyType.CALL_DIRECT_BSM).generateClass();
+        ResolvedJavaMethod concat = metaAccess.lookupJavaMethod(testClass.getDeclaredMethod("concat"));
+        ConstantPool cp = concat.getConstantPool();
+        int cpi = -1;
+        for (int i = 1; i < cp.length(); i++) {
+            if (cp.getTag(i) == ConstantPool.Tag.INVOKEDYNAMIC && cp.lookupName(i, -1).equals("do_concat")) {
+                cpi = i;
+                break;
+            }
+        }
+        Assert.assertTrue(cpi > 0, "concatenation invokedynamic entry not found");
+
+        BootstrapMethodInvocation bsmi = cp.lookupBootstrapMethodInvocation(cpi, -1, false);
+        Assert.assertNotNull(bsmi);
+        Assert.assertTrue(bsmi.isInvokeDynamic());
+        Assert.assertThrows(IllegalStateException.class, bsmi::resolve);
+        Assert.assertThrows(IllegalStateException.class, bsmi::lookup);
+        BootstrapMethodInvocation site = cp.lookupBootstrapMethodInvocation(getFirstInvokedynamicOperand(concat), INVOKEDYNAMIC, false);
+        Assert.assertNull(site.lookup());
+        BootstrapMethodInvocation rawResolved = cp.lookupBootstrapMethodInvocation(cpi, -1, true);
+        Assert.assertEquals(rawResolved.getName(), site.getName());
+        Assert.assertNotNull(rawResolved.getMethod());
+        MethodType expectedType = MethodType.methodType(String.class, String.class);
+        Assert.assertEquals(((HotSpotObjectConstant) rawResolved.getType()).asObject(MethodType.class), expectedType);
+        Assert.assertEquals(rawResolved.getStaticArgumentIndices(), site.getStaticArgumentIndices());
+        Assert.assertNull(site.lookup(), "resolving bootstrap details must not link the call site");
+        Assert.assertThrows(IllegalStateException.class, rawResolved::resolve);
+        Assert.assertThrows(IllegalStateException.class, rawResolved::lookup);
+
+        site.resolve();
+        Assert.assertNotNull(site.lookup());
+        BootstrapMethodInvocation after = cp.lookupBootstrapMethodInvocation(cpi, -1, true);
+        Assert.assertEquals(after.getMethod(), rawResolved.getMethod());
+        Assert.assertEquals(((HotSpotObjectConstant) after.getType()).asObject(MethodType.class), expectedType);
+        Assert.assertEquals(after.getStaticArgumentIndices(), rawResolved.getStaticArgumentIndices());
+        Assert.assertThrows(IllegalStateException.class, after::resolve);
+        Assert.assertThrows(IllegalStateException.class, after::lookup);
+    }
+
+    @Test
+    public void testSharedInvokeDynamicConstantPoolEntry() throws Exception {
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        writer.visit(V17, ACC_PUBLIC | ACC_SUPER, testClassInternalName + "$SharedIndy", null, "java/lang/Object", null);
+        Handle bootstrapMethod = new Handle(H_INVOKESTATIC, Type.getInternalName(StringConcatFactory.class), "makeConcat",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
+        for (String name : List.of("first", "second")) {
+            MethodVisitor method = writer.visitMethod(PUBLIC_STATIC, name, "()Ljava/lang/String;", null, null);
+            method.visitLdcInsn("shared");
+            // ASM reuses the same constant pool entry for both instructions.
+            method.visitInvokeDynamicInsn("concat", "(Ljava/lang/String;)Ljava/lang/String;", bootstrapMethod);
+            method.visitInsn(ARETURN);
+            method.visitMaxs(0, 0);
+            method.visitEnd();
+        }
+        writer.visitEnd();
+        Class<?> testClass = MethodHandles.lookup().defineHiddenClass(writer.toByteArray(), false).lookupClass();
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        ResolvedJavaMethod first = metaAccess.lookupJavaMethod(testClass.getDeclaredMethod("first"));
+        ResolvedJavaMethod second = metaAccess.lookupJavaMethod(testClass.getDeclaredMethod("second"));
+        ConstantPool cp = first.getConstantPool();
+        int firstOperand = getFirstInvokedynamicOperand(first);
+        int secondOperand = getFirstInvokedynamicOperand(second);
+        Assert.assertNotEquals(firstOperand, secondOperand, "each instruction must have its own rewritten index");
+        int cpi = cp.decodeIndex(firstOperand, INVOKEDYNAMIC);
+        Assert.assertEquals(cp.decodeIndex(secondOperand, INVOKEDYNAMIC), cpi, "instructions must share a constant pool entry");
+        BootstrapMethodInvocation firstSite = cp.lookupBootstrapMethodInvocation(firstOperand, INVOKEDYNAMIC, false);
+        BootstrapMethodInvocation secondSite = cp.lookupBootstrapMethodInvocation(secondOperand, INVOKEDYNAMIC, false);
+        Assert.assertNull(firstSite.lookup());
+        Assert.assertNull(secondSite.lookup());
+
+        assertNoCallSiteForInvokeDynamicEntry(cp, cpi);
+        Assert.assertNull(firstSite.lookup(), "bootstrap inspection must not link the first call site");
+        Assert.assertNull(secondSite.lookup(), "bootstrap inspection must not link the second call site");
+
+        firstSite.resolve();
+        Assert.assertNotNull(firstSite.lookup());
+        Assert.assertNull(secondSite.lookup(), "linking the first call site must not link the second");
+        assertNoCallSiteForInvokeDynamicEntry(cp, cpi);
+        Assert.assertNull(secondSite.lookup(), "bootstrap inspection must not link the second call site");
+
+        secondSite.resolve();
+        Assert.assertNotNull(secondSite.lookup());
+        Assert.assertNotNull(firstSite.lookup());
+        assertNoCallSiteForInvokeDynamicEntry(cp, cpi);
+    }
+
+    private static void assertNoCallSiteForInvokeDynamicEntry(ConstantPool cp, int cpi) {
+        for (boolean resolve : new boolean[]{false, true}) {
+            BootstrapMethodInvocation raw = cp.lookupBootstrapMethodInvocation(cpi, -1, resolve);
+            Assert.assertTrue(raw.isInvokeDynamic());
+            Assert.assertThrows(IllegalStateException.class, raw::resolve);
+            Assert.assertThrows(IllegalStateException.class, raw::lookup);
+        }
+    }
+
     /**
      * Asserts that {@link ConstantPool#lookupConstant(int, boolean)} with {@code resolve == false}
      * returns null for all resolvable constant entries.
      */
-    private static void assertNoEagerConstantResolution(Class<?> testClass, ConstantPool cp, Method getTagAt) throws Exception {
+    private static void assertNoEagerConstantResolution(Class<?> testClass, ConstantPool cp) {
         for (int cpi = 1; cpi < cp.length(); cpi++) {
-            String tag = String.valueOf(getTagAt.invoke(cp, cpi));
+            ConstantPool.Tag tag = cp.getTag(cpi);
             switch (tag) {
-                case "MethodHandle":
-                case "MethodType":
-                case "Dynamic": {
+                case METHODHANDLE:
+                case METHODTYPE:
+                case DYNAMIC: {
                     Object con = cp.lookupConstant(cpi, false);
                     Assert.assertNull(con, "Unexpected eager resolution in " + testClass + " at cpi " + cpi + " (tag: " + tag + ")");
                     break;
@@ -303,6 +668,15 @@ public class TestDynamicConstant implements Opcodes {
         BootstrapMethodInvocation bmi = cp.lookupBootstrapMethodInvocation(rawIndex, INVOKEDYNAMIC);
         Assert.assertEquals(bmi.getName(), "do_shouldNotBeCalled");
         Assert.assertEquals(bmi.getMethod().getName(), "shouldNotBeCalledBSM");
+        getBootstrapMethodHandle(bmi, cp);
+
+        // The resolving lookup above caches the bootstrap method handle. The non-resolving form
+        // can now safely expose the corresponding direct method, while leaving type and arguments
+        // unresolved.
+        BootstrapMethodInvocation nonResolvingBmi = cp.lookupBootstrapMethodInvocation(rawIndex, INVOKEDYNAMIC, false);
+        Assert.assertEquals(nonResolvingBmi.getMethod().getName(), "shouldNotBeCalledBSM");
+        Assert.assertNull(nonResolvingBmi.getType());
+        Assert.assertThrows(IllegalStateException.class, nonResolvingBmi::getStaticArguments);
     }
 
     @SuppressWarnings("try")
@@ -323,9 +697,6 @@ public class TestDynamicConstant implements Opcodes {
                         List.class
         };
 
-        Method getTagAt = HotSpotConstantPool.class.getDeclaredMethod("getTagAt", int.class);
-        getTagAt.setAccessible(true);
-
         for (Class<?> type : types) {
             for (CondyType condyType : CondyType.values()) {
                 TestGenerator e = new TestGenerator(type, condyType);
@@ -334,19 +705,28 @@ public class TestDynamicConstant implements Opcodes {
                 ResolvedJavaMethod run = metaAccess.lookupJavaMethod(m);
                 ConstantPool cp = run.getConstantPool();
 
-                assertNoEagerConstantResolution(testClass, cp, getTagAt);
+                assertNoEagerConstantResolution(testClass, cp);
+                assertNonResolvingBootstrapMethodInspection(testClass, metaAccess, cp, condyType);
+                assertLdcBootstrapMethodInspection(run, cp);
+                for (int cpi = 1; cpi < cp.length(); cpi++) {
+                    if (cp.getTag(cpi) == ConstantPool.Tag.DYNAMIC) {
+                        Assert.assertTrue(cp.lookupName(cpi, -1).startsWith("const"));
+                        JavaType dynamicType = cp.lookupReferencedType(cpi, LDC);
+                        Assert.assertEquals(dynamicType.getName(), e.type.getDescriptor());
+                    }
+                }
+                assertNoEagerConstantResolution(testClass, cp);
                 assertLookupBMIDoesNotInvokeBM(metaAccess, testClass);
 
                 if (type != Object.class) {
-                    testLookupBootstrapMethodInvocation(condyType, metaAccess, testClass, getTagAt);
+                    testLookupBootstrapMethodInvocation(condyType, metaAccess, testClass);
                 } else {
                     // StringConcatFactoryStringConcatFactory cannot accept null constants
                 }
 
                 Object lastConstant = null;
                 for (int cpi = 1; cpi < cp.length(); cpi++) {
-                    String tag = String.valueOf(getTagAt.invoke(cp, cpi));
-                    if (tag.equals("Dynamic")) {
+                    if (cp.getTag(cpi) == ConstantPool.Tag.DYNAMIC) {
                         lastConstant = cp.lookupConstant(cpi);
                     }
                 }
@@ -369,9 +749,166 @@ public class TestDynamicConstant implements Opcodes {
     }
 
     /**
+     * Checks that the non-resolving form exposes the BootstrapMethods structure without causing
+     * method handles, method types, or dynamic constants to be resolved.
+     */
+    private static void assertNonResolvingBootstrapMethodInspection(Class<?> testClass, MetaAccessProvider metaAccess, ConstantPool cp, CondyType condyType) throws Exception {
+        for (int cpi = 1; cpi < cp.length(); cpi++) {
+            ConstantPool.Tag tag = cp.getTag(cpi);
+            BootstrapMethodInvocation bsmi = cp.lookupBootstrapMethodInvocation(cpi, -1, false);
+            if (tag != ConstantPool.Tag.INVOKEDYNAMIC && tag != ConstantPool.Tag.DYNAMIC) {
+                Assert.assertNull(bsmi, testClass + ": " + cpi);
+                continue;
+            }
+            Assert.assertNotNull(bsmi);
+            Assert.assertEquals(bsmi.isInvokeDynamic(), tag == ConstantPool.Tag.INVOKEDYNAMIC);
+            Assert.assertNotNull(bsmi.getName());
+            Assert.assertEquals(cp.getTag(bsmi.getMethodHandleIndex()), ConstantPool.Tag.METHODHANDLE);
+            Assert.assertNull(bsmi.getMethod());
+            Assert.assertNull(bsmi.getType());
+            Assert.assertThrows(IllegalStateException.class, bsmi::getStaticArguments);
+
+            int[] indices = bsmi.getStaticArgumentIndices();
+            assertStaticArgumentIndices(bsmi, cp, condyType, indices);
+            int[] copy = bsmi.getStaticArgumentIndices();
+            if (copy.length != 0) {
+                copy[0] = -1;
+                Assert.assertNotEquals(bsmi.getStaticArgumentIndices()[0], -1);
+            }
+        }
+
+        ResolvedJavaMethod concat = metaAccess.lookupJavaMethod(testClass.getDeclaredMethod("concat"));
+        int rawIndex = getFirstInvokedynamicOperand(concat);
+        BootstrapMethodInvocation raw = cp.lookupBootstrapMethodInvocation(rawIndex, INVOKEDYNAMIC, false);
+        Assert.assertTrue(raw.isInvokeDynamic());
+        Assert.assertEquals(cp.lookupName(rawIndex, INVOKEDYNAMIC), raw.getName());
+        Assert.assertNotNull(cp.lookupSignature(rawIndex, INVOKEDYNAMIC));
+        assertNoEagerConstantResolution(testClass, cp);
+    }
+
+    /**
+     * Verifies the symbolic static-argument layout generated for each bootstrap method.
+     */
+    private static void assertStaticArgumentIndices(BootstrapMethodInvocation bsmi, ConstantPool cp, CondyType condyType, int[] indices) {
+        ConstantPool.Tag[] expectedTags;
+        if (bsmi.isInvokeDynamic()) {
+            expectedTags = switch (bsmi.getName()) {
+                case "do_concat" -> new ConstantPool.Tag[]{ConstantPool.Tag.STRING, ConstantPool.Tag.DYNAMIC};
+                case "do_shouldNotBeCalled" -> new ConstantPool.Tag[0];
+                default -> throw new AssertionError("Unexpected invokedynamic: " + bsmi.getName());
+            };
+        } else {
+            expectedTags = switch (condyType) {
+                case CALL_DIRECT_BSM -> new ConstantPool.Tag[0];
+                case CALL_DIRECT_WITH_ARGS_BSM -> switch (bsmi.getName()) {
+                    case "const1" -> new ConstantPool.Tag[0];
+                    case "const2" -> new ConstantPool.Tag[]{ConstantPool.Tag.DYNAMIC, ConstantPool.Tag.INTEGER};
+                    default -> throw new AssertionError("Unexpected dynamic constant: " + bsmi.getName());
+                };
+                case CALL_INDIRECT_BSM -> new ConstantPool.Tag[]{ConstantPool.Tag.METHODHANDLE};
+                case CALL_INDIRECT_WITH_ARGS_BSM -> switch (bsmi.getName()) {
+                    case "const1" -> new ConstantPool.Tag[]{ConstantPool.Tag.METHODHANDLE};
+                    case "const2" -> new ConstantPool.Tag[]{ConstantPool.Tag.METHODHANDLE, ConstantPool.Tag.DYNAMIC, ConstantPool.Tag.DYNAMIC};
+                    default -> throw new AssertionError("Unexpected dynamic constant: " + bsmi.getName());
+                };
+            };
+        }
+        Assert.assertEquals(indices.length, expectedTags.length, bsmi.toString());
+        for (int i = 0; i < indices.length; i++) {
+            Assert.assertEquals(cp.getTag(indices[i]), expectedTags[i], bsmi.toString());
+        }
+    }
+
+    /**
+     * Checks that bootstrap method lookup accepts the bytecodes that load dynamic constants.
+     */
+    private static void assertLdcBootstrapMethodInspection(ResolvedJavaMethod method, ConstantPool cp) {
+        byte[] code = method.getCode();
+        int opcode = beU1(code, 0);
+        int cpi = switch (opcode) {
+            case LDC -> beU1(code, 1);
+            case LDC_W, LDC2_W -> beU2(code, 1);
+            default -> throw new AssertionError("Unexpected constant-loading opcode: " + opcode);
+        };
+        BootstrapMethodInvocation bsmi = cp.lookupBootstrapMethodInvocation(cpi, opcode, false);
+        Assert.assertNotNull(bsmi);
+        Assert.assertFalse(bsmi.isInvokeDynamic());
+
+        // A small constant-pool index is also a valid operand of LDC_W. Exercise that form even
+        // when ASM selected the more compact LDC encoding.
+        if (opcode == LDC) {
+            BootstrapMethodInvocation wideBsmi = cp.lookupBootstrapMethodInvocation(cpi, LDC_W, false);
+            Assert.assertEquals(wideBsmi.getName(), bsmi.getName());
+            Assert.assertEquals(wideBsmi.getStaticArgumentIndices(), bsmi.getStaticArgumentIndices());
+        }
+    }
+
+    /**
+     * Tests inspection of non-direct bootstrap method handles. These generated entries are not
+     * usable bootstrap methods: their target handles cannot accept the required
+     * {@code (Lookup, String, MethodType)} arguments. The test does not call
+     * {@link BootstrapMethodInvocation#resolve()}, which would try to invoke them.
+     */
+    @Test
+    public void testNonDirectBootstrapMethod() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        Class<?> testClass = new TestGenerator(int.class, CondyType.CALL_DIRECT_BSM, true).generateClass();
+        Class<?> directMethodHandleClass = Class.forName("java.lang.invoke.DirectMethodHandle");
+        List<String> methodNames = List.of(
+                        "nonDirectMethodHandleInvoke",
+                        "nonDirectMethodHandleInvokeExact",
+                        "nonDirectVarHandleGet",
+                        "nonDirectThreadGetContextClassLoader",
+                        "nonDirectClassForName");
+        List<String> referencedNames = List.of("invoke", "invokeExact", "get", "getContextClassLoader", "forName");
+        for (int i = 0; i < methodNames.size(); i++) {
+            String methodName = methodNames.get(i);
+            ResolvedJavaMethod method = metaAccess.lookupJavaMethod(testClass.getDeclaredMethod(methodName));
+            ConstantPool cp = method.getConstantPool();
+
+            BootstrapMethodInvocation bsmi = cp.lookupBootstrapMethodInvocation(getFirstInvokedynamicOperand(method), INVOKEDYNAMIC);
+            Assert.assertEquals(bsmi.getName(), "nonDirect");
+            Assert.assertEquals(cp.lookupName(bsmi.getMethodHandleIndex(), -1), referencedNames.get(i));
+            if (i < 3) {
+                // Unlike a linked signature-polymorphic bytecode invocation, whose cached adapter
+                // lookupMethod can return, this starts from the BSM's symbolic MethodHandle entry.
+                // That lookup has no linked invocation and appendix to identify the adapter. The
+                // MethodHandle constant itself is still resolved.
+                Assert.assertNull(bsmi.getMethod());
+                int methodHandleCpi = bsmi.getMethodHandleIndex();
+                Assert.assertTrue(cp.lookupConstant(methodHandleCpi, false) instanceof HotSpotObjectConstant,
+                                "bootstrap method handle was not resolved");
+                JavaMethod symbolicMethod = cp.lookupMethod(methodHandleCpi, -1, method);
+                Assert.assertTrue(symbolicMethod instanceof UnresolvedJavaMethod, String.valueOf(symbolicMethod));
+                Assert.assertEquals(symbolicMethod.getName(), referencedNames.get(i));
+                String expectedHolder = i < 2 ? "Ljava/lang/invoke/MethodHandle;" : "Ljava/lang/invoke/VarHandle;";
+                Assert.assertEquals(symbolicMethod.getDeclaringClass().getName(), expectedHolder);
+                Assert.assertEquals(symbolicMethod.getSignature().toMethodDescriptor(), cp.lookupSignature(methodHandleCpi).toMethodDescriptor());
+            } else {
+                Assert.assertNotNull(bsmi.getMethod());
+                Assert.assertEquals(bsmi.getMethod().getName(), referencedNames.get(i));
+            }
+            MethodHandle methodHandle = getBootstrapMethodHandle(bsmi, cp);
+            Assert.assertFalse(directMethodHandleClass.isInstance(methodHandle), methodName + ": " + methodHandle.getClass().getName());
+        }
+    }
+
+    /**
+     * Resolves the bootstrap method handle referenced by {@code bsmi} and verifies that its index
+     * identifies a {@code CONSTANT_MethodHandle_info} entry.
+     */
+    private static MethodHandle getBootstrapMethodHandle(BootstrapMethodInvocation bsmi, ConstantPool cp) {
+        int methodHandleIndex = bsmi.getMethodHandleIndex();
+        Assert.assertEquals(cp.getTag(methodHandleIndex), ConstantPool.Tag.METHODHANDLE);
+        Object methodHandleConstant = cp.lookupConstant(methodHandleIndex);
+        Assert.assertTrue(methodHandleConstant instanceof HotSpotObjectConstant, String.valueOf(methodHandleConstant));
+        return ((HotSpotObjectConstant) methodHandleConstant).asObject(MethodHandle.class);
+    }
+
+    /**
      * Tests {@link jdk.vm.ci.meta.ConstantPool#lookupBootstrapMethodInvocation}.
      */
-    private void testLookupBootstrapMethodInvocation(CondyType condyType, MetaAccessProvider metaAccess, Class<?> testClass, Method getTagAt) throws Throwable {
+    private void testLookupBootstrapMethodInvocation(CondyType condyType, MetaAccessProvider metaAccess, Class<?> testClass) throws Throwable {
         Method m = testClass.getDeclaredMethod("concat");
         ResolvedJavaMethod concat = metaAccess.lookupJavaMethod(m);
         ConstantPool cp = concat.getConstantPool();
@@ -383,33 +920,45 @@ public class TestDynamicConstant implements Opcodes {
         );
 
         for (int cpi = 1; cpi < cp.length(); cpi++) {
-            String tag = String.valueOf(getTagAt.invoke(cp, cpi));
+            ConstantPool.Tag tag = cp.getTag(cpi);
             BootstrapMethodInvocation bsmi = cp.lookupBootstrapMethodInvocation(cpi, -1);
-            if (tag.equals("InvokeDynamic") || tag.equals("Dynamic")) {
+            if (tag == ConstantPool.Tag.INVOKEDYNAMIC || tag == ConstantPool.Tag.DYNAMIC) {
                 Assert.assertNotNull(bsmi);
+                MethodHandle methodHandle = getBootstrapMethodHandle(bsmi, cp);
                 String bsm = bsmi.getMethod().format("%H.%n");
-                if (tag.equals("InvokeDynamic")) {
+                if (bsmi.getMethod().isVarArgs()) {
+                    Assert.assertTrue(methodHandle.isVarargsCollector(), bsm);
+                }
+                if (tag == ConstantPool.Tag.INVOKEDYNAMIC) {
                     Assert.assertTrue(bsmi.isInvokeDynamic());
                     Assert.assertTrue(expectedIndyBSMs.containsKey(bsm), expectedIndyBSMs.toString());
                 } else {
                     Assert.assertFalse(bsmi.isInvokeDynamic());
                     Assert.assertNull(bsmi.lookup());
                     checkBsmName(condyType, bsm);
+                    if (condyType == CondyType.CALL_INDIRECT_BSM || condyType == CondyType.CALL_INDIRECT_WITH_ARGS_BSM) {
+                        Assert.assertTrue(bsmi.getMethod().isVarArgs(), bsm);
+                    }
                     List<JavaConstant> staticArguments = bsmi.getStaticArguments();
                     for (int i = 0; i < staticArguments.size(); ++i) {
                         JavaConstant constant = staticArguments.get(i);
                         if (constant instanceof PrimitiveConstant) {
-                            String innerTag = String.valueOf(getTagAt.invoke(cp, constant.asInt()));
+                            ConstantPool.Tag innerTag = cp.getTag(constant.asInt());
                             if (condyType == CondyType.CALL_DIRECT_WITH_ARGS_BSM) {
                                 Assert.assertEquals(i, 0);
-                                Assert.assertEquals(innerTag, "Dynamic");
+                                Assert.assertEquals(innerTag, ConstantPool.Tag.DYNAMIC);
                             }
-                            if (innerTag.equals("Dynamic")) {
+                            if (innerTag == ConstantPool.Tag.DYNAMIC) {
                                 BootstrapMethodInvocation innerBsmi = cp.lookupBootstrapMethodInvocation(constant.asInt(), -1);
                                 String innerBsm = innerBsmi.getMethod().format("%H.%n");
                                 checkBsmName(condyType, innerBsm);
+                                MethodHandle innerMethodHandle = getBootstrapMethodHandle(innerBsmi, cp);
+                                if (condyType == CondyType.CALL_INDIRECT_BSM || condyType == CondyType.CALL_INDIRECT_WITH_ARGS_BSM) {
+                                    Assert.assertTrue(innerBsmi.getMethod().isVarArgs(), innerBsm);
+                                    Assert.assertTrue(innerMethodHandle.isVarargsCollector(), innerBsm);
+                                }
                             } else {
-                                Assert.assertEquals(innerTag, "MethodHandle");
+                                Assert.assertEquals(innerTag, ConstantPool.Tag.METHODHANDLE);
                             }
                         } else {
                             if (condyType == CondyType.CALL_DIRECT_WITH_ARGS_BSM) {
@@ -457,6 +1006,9 @@ public class TestDynamicConstant implements Opcodes {
         Assert.assertEquals(condyBSMs.size(), expectedNumCondys);
         for (var bsmi : condyBSMs) {
             Assert.assertTrue(!bsmi.isInvokeDynamic());
+            if (condyType == CondyType.CALL_INDIRECT_BSM || condyType == CondyType.CALL_INDIRECT_WITH_ARGS_BSM) {
+                Assert.assertTrue(bsmi.getMethod().isVarArgs(), bsmi.getMethod().format("%H.%n"));
+            }
             bsmi.resolve();
             Assert.assertNotNull(bsmi.lookup());
         }
@@ -477,6 +1029,10 @@ public class TestDynamicConstant implements Opcodes {
     private static int beU1(byte[] data, int bci) {
         return data[bci] & 0xff;
     }
+    private static int beU2(byte[] data, int bci) {
+        return (beU1(data, bci) << 8) | beU1(data, bci + 1);
+    }
+    private static final int LDC_W = 19;
     private static final int LDC2_W = 20;
 
     /**

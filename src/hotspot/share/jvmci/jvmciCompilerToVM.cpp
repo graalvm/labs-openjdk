@@ -823,59 +823,65 @@ C2V_VMENTRY_0(jint, getNumIndyEntries, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp))
   return cp->resolved_indy_entries_length();
 C2V_END
 
-C2V_VMENTRY_NULL(jobjectArray, resolveBootstrapMethod, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint index))
+C2V_VMENTRY_NULL(jobjectArray, lookupBootstrapMethodInvocation, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint index, jboolean resolve, jint indy_index))
   constantPoolHandle cp(THREAD, UNPACK_PAIR(ConstantPool, cp));
   constantTag tag = cp->tag_at(index);
   bool is_indy = tag.is_invoke_dynamic();
-  bool is_condy = tag.is_dynamic_constant();
+  bool is_condy = tag.is_dynamic_constant() || tag.is_dynamic_constant_in_error();
   if (!(is_condy || is_indy)) {
     JVMCI_THROW_MSG_NULL(IllegalArgumentException, err_msg("Unexpected constant pool tag at index %d: %d", index, tag.value()));
   }
-  // Get the indy entry based on CP index
-  int indy_index = -1;
-  if (is_indy) {
-    for (int i = 0; i < cp->resolved_indy_entries_length(); i++) {
-      if (cp->resolved_indy_entry_at(i)->constant_pool_index() == index) {
-        indy_index = i;
-      }
+  // Rewriting publishes the cache before initializing its reference map and resolved references.
+  // Only inspect cached state after the acquire read of the holder's linked state ensures that
+  // initialization is complete. Otherwise, a concurrent linker may expose a partial cache.
+  bool holder_is_linked = cp->pool_holder()->is_linked();
+  // A constant pool entry can be shared by multiple call sites, so only use an explicitly
+  // supplied rewritten index; a constant pool index alone does not identify a call site.
+  if (is_indy && indy_index >= 0) {
+    if (!holder_is_linked || indy_index >= cp->resolved_indy_entries_length() ||
+        cp->resolved_indy_entry_at(indy_index)->constant_pool_index() != index) {
+      JVMCI_THROW_MSG_NULL(IllegalArgumentException, err_msg("Invalid invokedynamic index %d for constant pool index %d", indy_index, index));
     }
   }
-  // Resolve the bootstrap specifier, its name, type, and static arguments
+  // Without a rewritten index BootstrapInfo treats an indy as a condy, but the name, signature,
+  // bootstrap method and static arguments used here are still obtained from the constant pool.
+  // Exception wrapping is identical, although bootstrap resolution failures for such an indy
+  // are logged under methodhandles,condy instead of methodhandles,indy.
   BootstrapInfo bootstrap_specifier(cp, index, indy_index);
-  Handle bsm = bootstrap_specifier.resolve_bsm(CHECK_NULL);
-
-  // call java.lang.invoke.MethodHandle::asFixedArity() -> MethodHandle
-  // to get a DirectMethodHandle from which we can then extract a Method*
-  JavaValue result(T_OBJECT);
-  JavaCalls::call_virtual(&result,
-                         bsm,
-                         vmClasses::MethodHandle_klass(),
-                         vmSymbols::asFixedArity_name(),
-                         vmSymbols::asFixedArity_signature(),
-                         CHECK_NULL);
-  bsm = Handle(THREAD, result.get_oop());
-
-  // Check assumption about getting a DirectMethodHandle
-  if (!java_lang_invoke_DirectMethodHandle::is_instance(bsm())) {
-    JVMCI_THROW_MSG_NULL(InternalError, err_msg("Unexpected MethodHandle subclass: %s", bsm->klass()->external_name()));
+  bool bsm_is_resolved = false;
+  if (resolve) {
+    // Resolve the bootstrap specifier, its name, type, and static arguments
+    bootstrap_specifier.resolve_bsm(CHECK_NULL);
+    bsm_is_resolved = true;
+  } else if (holder_is_linked) {
+    cp->find_cached_constant_at(bootstrap_specifier.bsm_index(), bsm_is_resolved, CHECK_NULL);
   }
-  // Create return array describing the bootstrap method invocation (BSMI)
-  JVMCIObjectArray bsmi = JVMCIENV->new_Object_array(4, JVMCI_CHECK_NULL);
 
-  // Extract Method* and wrap it in a ResolvedJavaMethod
-  Handle member = Handle(THREAD, java_lang_invoke_DirectMethodHandle::member(bsm()));
-  JVMCIObject bsmi_method = JVMCIENV->get_jvmci_method(methodHandle(THREAD, java_lang_invoke_MemberName::vmtarget(member())), JVMCI_CHECK_NULL);
-  JVMCIENV->put_object_at(bsmi, 0, bsmi_method);
+  // Create return array describing the bootstrap method invocation (BSMI)
+  JVMCIObjectArray bsmi = JVMCIENV->new_Object_array(6, JVMCI_CHECK_NULL);
+
+  // The bootstrap method is represented by the method reference in the constant pool entry
+  // referenced by the method handle. Looking up that entry avoids calling MethodHandle methods,
+  // which is required for compiler threads and also handles non-direct method handles.
+  if (bsm_is_resolved) {
+    Method* target = JVMCIRuntime::get_method_by_index(cp, bootstrap_specifier.bsm_index(),
+                                                       Bytecodes::_ldc, cp->pool_holder());
+    if (target != nullptr) {
+      JVMCIObject bsmi_method = JVMCIENV->get_jvmci_method(methodHandle(THREAD, target), JVMCI_CHECK_NULL);
+      JVMCIENV->put_object_at(bsmi, 0, bsmi_method);
+    }
+  }
 
   JVMCIObject bsmi_name = JVMCIENV->create_string(bootstrap_specifier.name(), JVMCI_CHECK_NULL);
   JVMCIENV->put_object_at(bsmi, 1, bsmi_name);
 
-  Handle type_arg = bootstrap_specifier.type_arg();
-  JVMCIObject bsmi_type = JVMCIENV->get_object_constant(type_arg());
-  JVMCIENV->put_object_at(bsmi, 2, bsmi_type);
+  if (resolve) {
+    Handle type_arg = bootstrap_specifier.type_arg();
+    JVMCIENV->put_object_at(bsmi, 2, JVMCIENV->get_object_constant(type_arg()));
+  }
 
   Handle arg_values = bootstrap_specifier.arg_values();
-  if (arg_values.not_null()) {
+  if (resolve && arg_values.not_null()) {
     if (!arg_values->is_array()) {
       JVMCIENV->put_object_at(bsmi, 3, JVMCIENV->get_object_constant(arg_values()));
     } else if (arg_values->is_objArray()) {
@@ -900,12 +906,17 @@ C2V_VMENTRY_NULL(jobjectArray, resolveBootstrapMethod, (JNIEnv* env, jobject, AR
       }
     }
   }
+  int argc = bootstrap_specifier.argc();
+  JVMCIPrimitiveArray argument_indices = JVMCIENV->new_intArray(argc, JVMCI_CHECK_NULL);
+  JVMCIENV->put_object_at(bsmi, 4, argument_indices);
+  for (int i = 0; i < argc; i++) {
+    JVMCIENV->put_int_at(argument_indices, i, bootstrap_specifier.arg_index(i));
+  }
+  jvalue method_handle_index_value;
+  method_handle_index_value.i = bootstrap_specifier.bsm_index();
+  JVMCIObject method_handle_index = JVMCIENV->create_box(T_INT, &method_handle_index_value, JVMCI_CHECK_NULL);
+  JVMCIENV->put_object_at(bsmi, 5, method_handle_index);
   return JVMCIENV->get_jobjectArray(bsmi);
-C2V_END
-
-C2V_VMENTRY_0(jint, bootstrapArgumentIndexAt, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint cpi, jint index))
-  constantPoolHandle cp(THREAD, UNPACK_PAIR(ConstantPool, cp));
-  return cp->bootstrap_argument_index_at(cpi, index);
 C2V_END
 
 C2V_VMENTRY_0(jint, lookupNameAndTypeRefIndexInPool, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint index, jint opcode))
@@ -913,16 +924,15 @@ C2V_VMENTRY_0(jint, lookupNameAndTypeRefIndexInPool, (JNIEnv* env, jobject, ARGU
   return cp->name_and_type_ref_index_at(index, (Bytecodes::Code)opcode);
 C2V_END
 
-C2V_VMENTRY_NULL(jobject, lookupNameInPool, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint which, jint opcode))
+C2V_VMENTRY_NULL(jobjectArray, lookupNameAndSignatureInPool, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint index, jint opcode))
   constantPoolHandle cp(THREAD, UNPACK_PAIR(ConstantPool, cp));
-  JVMCIObject sym = JVMCIENV->create_string(cp->name_ref_at(which, (Bytecodes::Code)opcode), JVMCI_CHECK_NULL);
-  return JVMCIENV->get_jobject(sym);
-C2V_END
-
-C2V_VMENTRY_NULL(jobject, lookupSignatureInPool, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint which, jint opcode))
-  constantPoolHandle cp(THREAD, UNPACK_PAIR(ConstantPool, cp));
-  JVMCIObject sym = JVMCIENV->create_string(cp->signature_ref_at(which, (Bytecodes::Code)opcode), JVMCI_CHECK_NULL);
-  return JVMCIENV->get_jobject(sym);
+  int name_and_type_index = cp->name_and_type_ref_index_at(index, (Bytecodes::Code)opcode);
+  JVMCIObjectArray result = JVMCIENV->new_Object_array(2, JVMCI_CHECK_NULL);
+  JVMCIObject name = JVMCIENV->create_string(cp->symbol_at(cp->name_ref_index_at(name_and_type_index)), JVMCI_CHECK_NULL);
+  JVMCIObject signature = JVMCIENV->create_string(cp->symbol_at(cp->signature_ref_index_at(name_and_type_index)), JVMCI_CHECK_NULL);
+  JVMCIENV->put_object_at(result, 0, name);
+  JVMCIENV->put_object_at(result, 1, signature);
+  return JVMCIENV->get_jobjectArray(result);
 C2V_END
 
 C2V_VMENTRY_0(jint, lookupKlassRefIndexInPool, (JNIEnv* env, jobject, ARGUMENT_PAIR(cp), jint index, jint opcode))
@@ -998,18 +1008,61 @@ C2V_VMENTRY_NULL(jobject, resolveFieldInPool, (JNIEnv* env, jobject, ARGUMENT_PA
   fieldDescriptor fd;
   methodHandle mh(THREAD, UNPACK_PAIR(Method, method));
 
-  Bytecodes::Code bc = (Bytecodes::Code) (((int) opcode) & 0xFF);
-  int holder_index = cp->klass_ref_index_at(index, bc);
-  if (!cp->tag_at(holder_index).is_klass() && !THREAD->can_call_java()) {
-    // If the holder is not resolved in the constant pool and the current
-    // thread cannot call Java, return null. This avoids a Java call
-    // in LinkInfo to load the holder.
-    Symbol* klass_name = cp->klass_ref_at_noresolve(index, bc);
-    return nullptr;
-  }
+  if (code == Bytecodes::_ldc || code == Bytecodes::_ldc_w) {
+    if (!cp->tag_at(index).is_method_handle() && !cp->tag_at(index).is_method_handle_in_error()) {
+      return nullptr;
+    }
+    // Use the field ref as that's easier than reverse-engineering the cached handle.
+    int ref_kind = cp->method_handle_ref_kind_at(index);
+    if (!MethodHandles::ref_kind_is_field(ref_kind)) {
+      return nullptr;
+    }
+    int member_index = cp->method_handle_index_at(index);
+    assert(cp->tag_at(member_index).is_field(), "");
+    int holder_index = cp->uncached_klass_ref_index_at(member_index);
+    if (!cp->tag_at(holder_index).is_klass() && !THREAD->can_call_java()) {
+      // If the holder is not resolved in the constant pool and the current
+      // thread cannot call Java, return null. This avoids a Java call
+      // in LinkInfo to load the holder.
+      return nullptr;
+    }
+    Klass* holder = cp->klass_at(holder_index, CHECK_NULL);
+    if (!holder->is_instance_klass()) {
+      return nullptr;
+    }
+    Symbol* name = cp->uncached_name_ref_at(member_index);
+    Symbol* signature = cp->uncached_signature_ref_at(member_index);
+    Bytecodes::Code member_bc;
+    switch (ref_kind) {
+      case JVM_REF_getField:
+        member_bc = Bytecodes::_getfield;
+        break;
+      case JVM_REF_getStatic:
+        member_bc = Bytecodes::_getstatic;
+        break;
+      case JVM_REF_putField:
+        member_bc = Bytecodes::_putfield;
+        break;
+      case JVM_REF_putStatic:
+        member_bc = Bytecodes::_putstatic;
+        break;
+      default:
+        return nullptr;
+    }
+    LinkInfo link_info(holder, name, signature, mh);
+    LinkResolver::resolve_field(fd, link_info, member_bc, false, CHECK_NULL);
+  } else {
+    int holder_index = cp->klass_ref_index_at(index, code);
+    if (!cp->tag_at(holder_index).is_klass() && !THREAD->can_call_java()) {
+      // If the holder is not resolved in the constant pool and the current
+      // thread cannot call Java, return null. This avoids a Java call
+      // in LinkInfo to load the holder.
+      return nullptr;
+    }
 
-  LinkInfo link_info(cp, index, mh, code, CHECK_NULL);
-  LinkResolver::resolve_field(fd, link_info, Bytecodes::java_code(code), false, CHECK_NULL);
+    LinkInfo link_info(cp, index, mh, code, CHECK_NULL);
+    LinkResolver::resolve_field(fd, link_info, Bytecodes::java_code(code), false, CHECK_NULL);
+  }
   JVMCIPrimitiveArray info = JVMCIENV->wrap(info_handle);
   if (info.is_null() || JVMCIENV->get_length(info) != 4) {
     JVMCI_ERROR_NULL("info must not be null and have a length of 4");
@@ -3468,7 +3521,6 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "asResolvedJavaMethod",                         CC "(" EXECUTABLE ")" HS_METHOD,                                                      FN_PTR(asResolvedJavaMethod)},
   {CC "asString",                                     CC "(" OBJECTCONSTANT ")" STRING,                                                     FN_PTR(asString)},
   {CC "attachCurrentThread",                          CC "([BZ[J)Z",                                                                        FN_PTR(attachCurrentThread)},
-  {CC "bootstrapArgumentIndexAt",                     CC "(" HS_CONSTANT_POOL2 "II)I",                                                      FN_PTR(bootstrapArgumentIndexAt)},
   {CC "boxPrimitive",                                 CC "(" OBJECT ")" OBJECTCONSTANT,                                                     FN_PTR(boxPrimitive)},
   {CC "callSystemExit",                               CC "(I)V",                                                                            FN_PTR(callSystemExit)},
   {CC "clearOopHandle",                               CC "(J)V",                                                                            FN_PTR(clearOopHandle)},
@@ -3547,15 +3599,15 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "isTrustedForIntrinsics",                       CC "(" HS_KLASS2 ")Z",                                                                FN_PTR(isTrustedForIntrinsics)},
   {CC "iterateFrames",                                CC "([" RESOLVED_METHOD "[" RESOLVED_METHOD "I" INSPECTED_FRAME_VISITOR ")" OBJECT,   FN_PTR(iterateFrames)},
   {CC "lookupAppendixInPool",                         CC "(" HS_CONSTANT_POOL2 "II)" OBJECTCONSTANT,                                        FN_PTR(lookupAppendixInPool)},
+  {CC "lookupBootstrapMethodInvocation",              CC "(" HS_CONSTANT_POOL2 "IZI)[" OBJECT,                                              FN_PTR(lookupBootstrapMethodInvocation)},
   {CC "lookupClass",                                  CC "(" CLASS ")" HS_RESOLVED_TYPE,                                                    FN_PTR(lookupClass)},
   {CC "lookupConstantInPool",                         CC "(" HS_CONSTANT_POOL2 "IZ)" JAVACONSTANT,                                          FN_PTR(lookupConstantInPool)},
   {CC "lookupJClass",                                 CC "(J)" HS_RESOLVED_TYPE,                                                            FN_PTR(lookupJClass)},
   {CC "lookupKlassInPool",                            CC "(" HS_CONSTANT_POOL2 "I)Ljava/lang/Object;",                                      FN_PTR(lookupKlassInPool)},
   {CC "lookupKlassRefIndexInPool",                    CC "(" HS_CONSTANT_POOL2 "II)I",                                                      FN_PTR(lookupKlassRefIndexInPool)},
   {CC "lookupMethodInPool",                           CC "(" HS_CONSTANT_POOL2 "IB" HS_METHOD2 ")" HS_METHOD,                               FN_PTR(lookupMethodInPool)},
+  {CC "lookupNameAndSignatureInPool",                 CC "(" HS_CONSTANT_POOL2 "II)[" OBJECT,                                             FN_PTR(lookupNameAndSignatureInPool)},
   {CC "lookupNameAndTypeRefIndexInPool",              CC "(" HS_CONSTANT_POOL2 "II)I",                                                      FN_PTR(lookupNameAndTypeRefIndexInPool)},
-  {CC "lookupNameInPool",                             CC "(" HS_CONSTANT_POOL2 "II)" STRING,                                                FN_PTR(lookupNameInPool)},
-  {CC "lookupSignatureInPool",                        CC "(" HS_CONSTANT_POOL2 "II)" STRING,                                                FN_PTR(lookupSignatureInPool)},
   {CC "lookupType",                                   CC "(" STRING HS_KLASS2 "IZ)" HS_RESOLVED_TYPE,                                       FN_PTR(lookupType)},
   {CC "makeIdentityHashCode",                         CC "(" OBJECTCONSTANT "I)I",                                                          FN_PTR(makeIdentityHashCode)},
   {CC "materializeVirtualObjects",                    CC "(" HS_STACK_FRAME_REF "Z)V",                                                      FN_PTR(materializeVirtualObjects)},
@@ -3574,7 +3626,6 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "releaseFailedSpeculations",                    CC "(J)V",                                                                            FN_PTR(releaseFailedSpeculations)},
   {CC "reprofile",                                    CC "(" HS_METHOD2 ")V",                                                               FN_PTR(reprofile)},
   {CC "resetCompilationStatistics",                   CC "()V",                                                                             FN_PTR(resetCompilationStatistics)},
-  {CC "resolveBootstrapMethod",                       CC "(" HS_CONSTANT_POOL2 "I)[" OBJECT,                                                FN_PTR(resolveBootstrapMethod)},
   {CC "resolveFieldInPool",                           CC "(" HS_CONSTANT_POOL2 "I" HS_METHOD2 "B[I)" HS_KLASS,                              FN_PTR(resolveFieldInPool)},
   {CC "resolveInvokeHandleInPool",                    CC "(" HS_CONSTANT_POOL2 "I)V",                                                       FN_PTR(resolveInvokeHandleInPool)},
   {CC "resolveMethod",                                CC "(" HS_KLASS2 HS_METHOD2 HS_KLASS2 ")" HS_METHOD,                                  FN_PTR(resolveMethod)},

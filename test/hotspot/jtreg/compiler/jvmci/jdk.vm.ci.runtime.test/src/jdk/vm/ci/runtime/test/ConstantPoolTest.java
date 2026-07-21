@@ -31,6 +31,7 @@
  *          jdk.internal.vm.ci/jdk.vm.ci.common
  * @library /compiler/jvmci/jdk.vm.ci.hotspot.test/src
  *          /compiler/jvmci/jdk.vm.ci.code.test/src
+ *          /testlibrary/asm
  * @run testng/othervm
  *      -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:-UseJVMCICompiler
  *      jdk.vm.ci.runtime.test.ConstantPoolTest
@@ -42,12 +43,17 @@ import java.io.InputStream;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.constantpool.PoolEntry;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import jdk.vm.ci.meta.ConstantPool;
 import jdk.vm.ci.meta.ConstantPool.Tag;
@@ -55,9 +61,13 @@ import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaField;
 import jdk.vm.ci.meta.JavaMethod;
 import jdk.vm.ci.meta.MetaAccessProvider;
+import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
+import jdk.vm.ci.meta.UnresolvedJavaField;
+import jdk.vm.ci.meta.UnresolvedJavaMethod;
+import jdk.vm.ci.meta.UnresolvedJavaType;
 import jdk.vm.ci.runtime.JVMCI;
 
 public class ConstantPoolTest {
@@ -97,6 +107,9 @@ public class ConstantPoolTest {
     public static final int ICONST_0 = 3;
     public static final int ALOAD_0 = 42;
     public static final int ALOAD_1 = 43;
+    public static final int LDC = 18;
+    public static final int LDC_W = 19;
+    public static final int LDC2_W = 20;
     public static final int GETSTATIC = 178;
     public static final int INVOKEVIRTUAL = 182;
     public static final int INVOKEDYNAMIC = 186;
@@ -219,6 +232,7 @@ public class ConstantPoolTest {
         int rawIndex = beU2(bytecode, 1);
         JavaField field =  m.getConstantPool().lookupField(rawIndex, m, GETSTATIC);
         Assert.assertEquals("someStaticField", field.getName(), "Wrong field name; rawIndex = " + rawIndex + ";");
+        Assert.assertEquals(m.getConstantPool().lookupName(rawIndex, GETSTATIC), "someStaticField");
     }
 
     static String concatString1(String a, String b) {
@@ -239,6 +253,333 @@ public class ConstantPoolTest {
     }
 
     static void intFunc(int t) {}
+
+    public static class MethodHandleBase {
+        public int inheritedField;
+    }
+
+    static Runnable createLambda() {
+        return () -> {
+        };
+    }
+
+    @Test
+    public void lookupSymbolicInfoTest() throws ReflectiveOperationException {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        ResolvedJavaType type = metaAccess.lookupJavaType(ConstantPoolTest.class);
+        ResolvedJavaMethod constantPoolMethod = type.getDeclaredMethods()[0];
+        ConstantPool constantPool = constantPoolMethod.getConstantPool();
+        boolean sawMethodHandle = false;
+        boolean sawMethodType = false;
+        boolean sawInvokeDynamic = false;
+        int nonMethodHandleCpi = -1;
+        int invalidNameCpi = -1;
+
+        for (int cpi = 1; cpi < constantPool.length(); cpi++) {
+            Tag tag = constantPool.getTag(cpi);
+            if (nonMethodHandleCpi == -1 && tag != Tag.METHODHANDLE && tag != Tag.INVALID) {
+                nonMethodHandleCpi = cpi;
+            }
+            if (invalidNameCpi == -1 && tag != Tag.FIELD_REF && tag != Tag.METHOD_REF && tag != Tag.INTERFACE_METHOD_REF &&
+                            tag != Tag.METHODHANDLE && tag != Tag.DYNAMIC && tag != Tag.INVOKEDYNAMIC && tag != Tag.INVALID) {
+                invalidNameCpi = cpi;
+            }
+            switch (tag) {
+                case FIELD_REF:
+                    Assert.assertFalse(constantPool.lookupName(cpi, -1).isEmpty());
+                    break;
+                case METHOD_REF:
+                case INTERFACE_METHOD_REF:
+                    Assert.assertFalse(constantPool.lookupName(cpi, -1).isEmpty());
+                    Assert.assertNotNull(constantPool.lookupSignature(cpi));
+                    break;
+                case METHODHANDLE: {
+                    int referenceKind = constantPool.lookupMethodHandleReferenceKind(cpi);
+                    Assert.assertTrue(referenceKind >= MethodHandleInfo.REF_getField && referenceKind <= MethodHandleInfo.REF_invokeInterface,
+                                    "invalid reference kind: " + referenceKind);
+                    int referenceIndex = constantPool.lookupMethodHandleReferenceIndex(cpi);
+                    Tag referenceTag = constantPool.getTag(referenceIndex);
+                    if (referenceKind >= MethodHandleInfo.REF_getField && referenceKind <= MethodHandleInfo.REF_putStatic) {
+                        Assert.assertSame(referenceTag, Tag.FIELD_REF);
+                    } else {
+                        Assert.assertTrue(referenceTag == Tag.METHOD_REF || referenceTag == Tag.INTERFACE_METHOD_REF,
+                                        "invalid method handle reference tag: " + referenceTag);
+                    }
+                    Assert.assertFalse(constantPool.lookupName(cpi, -1).isEmpty());
+                    if (referenceKind >= MethodHandleInfo.REF_getField && referenceKind <= MethodHandleInfo.REF_putStatic) {
+                        JavaField field = constantPool.lookupField(cpi, constantPoolMethod, -1);
+                        Assert.assertEquals(field.getName(), constantPool.lookupName(cpi, -1));
+                    } else {
+                        JavaMethod method = constantPool.lookupMethod(cpi, -1);
+                        Assert.assertEquals(method.getName(), constantPool.lookupName(cpi, -1));
+                        Assert.assertEquals(method.getSignature().toMethodDescriptor(), constantPool.lookupSignature(cpi).toMethodDescriptor());
+                    }
+                    sawMethodHandle = true;
+                    break;
+                }
+                case METHODTYPE:
+                    Assert.assertNotNull(constantPool.lookupSignature(cpi));
+                    sawMethodType = true;
+                    break;
+                case INVOKEDYNAMIC:
+                    Assert.assertFalse(constantPool.lookupName(cpi, -1).isEmpty());
+                    Assert.assertNotNull(constantPool.lookupSignature(cpi));
+                    sawInvokeDynamic = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        Assert.assertTrue(sawMethodHandle, "constant pool has no MethodHandle entry");
+        Assert.assertTrue(sawMethodType, "constant pool has no MethodType entry");
+        Assert.assertTrue(sawInvokeDynamic, "constant pool has no InvokeDynamic entry");
+        Assert.assertTrue(nonMethodHandleCpi > 0, "constant pool has no non-method-handle entry");
+        Assert.assertTrue(invalidNameCpi > 0, "constant pool has no entry without a symbolic name");
+        final int invalidMethodHandleCpi = nonMethodHandleCpi;
+        Assert.assertThrows(IllegalArgumentException.class, () -> constantPool.lookupMethodHandleReferenceIndex(invalidMethodHandleCpi));
+        final int invalidNameEntryCpi = invalidNameCpi;
+        Assert.assertThrows(IllegalArgumentException.class, () -> constantPool.lookupName(invalidNameEntryCpi, -1));
+
+        Class<?> fixture = defineMethodHandleFixture();
+        ResolvedJavaMethod fixtureMethod = metaAccess.lookupJavaMethod(fixture.getDeclaredMethod("method"));
+        ConstantPool fixturePool = fixtureMethod.getConstantPool();
+        for (int cpi = 1; cpi < fixturePool.length(); cpi++) {
+            if (fixturePool.getTag(cpi) == Tag.METHODHANDLE && fixturePool.lookupMethodHandleReferenceKind(cpi) == MethodHandleInfo.REF_getStatic) {
+                final int fieldMethodHandleCpi = cpi;
+                int referenceIndex = fixturePool.lookupMethodHandleReferenceIndex(cpi);
+                Assert.assertSame(fixturePool.getTag(referenceIndex), Tag.FIELD_REF);
+                Assert.assertEquals(fixturePool.lookupName(referenceIndex, -1), "field");
+                JavaField field = fixturePool.lookupField(cpi, fixtureMethod, -1);
+                Assert.assertEquals(field.getName(), "field");
+                Assert.assertThrows(IllegalArgumentException.class, () -> fixturePool.lookupSignature(fieldMethodHandleCpi));
+                Assert.assertThrows(IllegalArgumentException.class, () -> fixturePool.lookupField(fieldMethodHandleCpi, null, -1));
+                return;
+            }
+        }
+        Assert.fail("fixture constant pool has no REF_getStatic MethodHandle entry");
+    }
+
+    private static Class<?> defineMethodHandleFixture() throws IllegalAccessException {
+        ClassWriter writer = new ClassWriter(0);
+        String name = ConstantPoolTest.class.getName().replace('.', '/') + "$MethodHandleFixture";
+        String superName = MethodHandleBase.class.getName().replace('.', '/');
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER, name, null, superName, null);
+        writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "field", "I", null, null).visitEnd();
+        writer.visitField(Opcodes.ACC_PUBLIC, "instanceField", "I", null, null).visitEnd();
+        MethodVisitor constructor = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+        constructor.visitVarInsn(Opcodes.ALOAD, 0);
+        constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, superName, "<init>", "()V", false);
+        constructor.visitInsn(Opcodes.RETURN);
+        constructor.visitMaxs(1, 1);
+        constructor.visitEnd();
+        MethodVisitor target = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "target", "()V", null, null);
+        target.visitInsn(Opcodes.RETURN);
+        target.visitMaxs(0, 0);
+        target.visitEnd();
+        MethodVisitor instanceTarget = writer.visitMethod(Opcodes.ACC_PUBLIC, "instanceTarget", "()V", null, null);
+        instanceTarget.visitInsn(Opcodes.RETURN);
+        instanceTarget.visitMaxs(0, 1);
+        instanceTarget.visitEnd();
+        MethodVisitor varargs = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VARARGS,
+                        "varargs", "([Ljava/lang/Object;)V", null, null);
+        varargs.visitInsn(Opcodes.RETURN);
+        varargs.visitMaxs(0, 1);
+        varargs.visitEnd();
+        MethodVisitor method = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "method", "()V", null, null);
+        method.visitLdcInsn(new Handle(Opcodes.H_INVOKESTATIC, name, "target", "()V", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_INVOKESTATIC, name, "varargs", "([Ljava/lang/Object;)V", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_INVOKEVIRTUAL, name, "instanceTarget", "()V", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_INVOKESPECIAL, name, "instanceTarget", "()V", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_NEWINVOKESPECIAL, name, "<init>", "()V", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_INVOKEINTERFACE, "java/lang/Runnable", "run", "()V", true));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_GETSTATIC, name, "field", "I", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_PUTSTATIC, name, "field", "I", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_GETFIELD, name, "instanceField", "I", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_PUTFIELD, name, "instanceField", "I", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_GETFIELD, name, "inheritedField", "I", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitInsn(Opcodes.RETURN);
+        method.visitMaxs(1, 0);
+        method.visitEnd();
+        writer.visitEnd();
+        return MethodHandles.lookup().defineHiddenClass(writer.toByteArray(), false).lookupClass();
+    }
+
+    @Test
+    public void lookupMethodHandleTest() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        Class<?> fixture = defineMethodHandleFixture();
+        // The symbolic holder classes are loaded before looking up the unresolved handles.
+        metaAccess.lookupJavaType(fixture);
+        metaAccess.lookupJavaType(Runnable.class);
+        metaAccess.lookupJavaType(MethodHandleBase.class);
+        ResolvedJavaMethod fixtureMethod = metaAccess.lookupJavaMethod(fixture.getDeclaredMethod("method"));
+        ConstantPool fixturePool = fixtureMethod.getConstantPool();
+        int methodHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_invokeStatic, "target");
+        int varargsMethodHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_invokeStatic, "varargs");
+        int virtualMethodHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_invokeVirtual, "instanceTarget");
+        int specialMethodHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_invokeSpecial, "instanceTarget");
+        int constructorMethodHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_newInvokeSpecial, "<init>");
+        int interfaceMethodHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_invokeInterface, "run");
+        int fieldHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_getStatic, "field");
+        int putStaticFieldHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_putStatic, "field");
+        int instanceFieldHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_getField, "instanceField");
+        int putInstanceFieldHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_putField, "instanceField");
+        int inheritedFieldHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_getField, "inheritedField");
+
+        int[] methodHandles = {methodHandleCpi, varargsMethodHandleCpi, virtualMethodHandleCpi,
+                        specialMethodHandleCpi, constructorMethodHandleCpi, interfaceMethodHandleCpi};
+        String[] methodNames = {"target", "varargs", "instanceTarget", "instanceTarget", "<init>", "run"};
+        int[] fieldHandles = {fieldHandleCpi, putStaticFieldHandleCpi, instanceFieldHandleCpi,
+                        putInstanceFieldHandleCpi, inheritedFieldHandleCpi};
+        String[] fieldNames = {"field", "field", "instanceField", "instanceField", "inheritedField"};
+        for (int cpi : methodHandles) {
+            Assert.assertTrue(cpi > 0, "fixture constant pool is missing a method handle");
+        }
+        for (int cpi : fieldHandles) {
+            Assert.assertTrue(cpi > 0, "fixture constant pool is missing a field handle");
+        }
+        Assert.assertEquals(fixturePool.lookupSignature(fixturePool.lookupMethodHandleReferenceIndex(methodHandleCpi)).toMethodDescriptor(), "()V");
+
+        for (int cpi : methodHandles) {
+            Assert.assertNull(fixturePool.lookupConstant(cpi, false), "method handle resolved before lookup: " + cpi);
+        }
+        for (int cpi : fieldHandles) {
+            Assert.assertNull(fixturePool.lookupConstant(cpi, false), "method handle resolved before lookup: " + cpi);
+        }
+
+        for (int opcode : new int[]{-1, LDC, LDC_W}) {
+            for (int i = 0; i < methodHandles.length; i++) {
+                int cpi = methodHandles[i];
+                JavaMethod method = fixturePool.lookupMethod(cpi, opcode);
+                Assert.assertTrue(method instanceof ResolvedJavaMethod, opcode + " " + methodNames[i] + ": " + method);
+                Assert.assertEquals(method.getName(), methodNames[i]);
+            }
+        }
+        for (int opcode : new int[]{-1, LDC, LDC_W}) {
+            for (int i = 0; i < fieldHandles.length; i++) {
+                int cpi = fieldHandles[i];
+                JavaField field = fixturePool.lookupField(cpi, fixtureMethod, opcode);
+                Assert.assertTrue(field instanceof ResolvedJavaField, opcode + " " + fieldNames[i] + ": " + field);
+                Assert.assertEquals(field.getName(), fieldNames[i]);
+            }
+        }
+        for (int cpi : methodHandles) {
+            Assert.assertNull(fixturePool.lookupConstant(cpi, false), "method lookup resolved method handle: " + cpi);
+        }
+        for (int cpi : fieldHandles) {
+            Assert.assertNull(fixturePool.lookupConstant(cpi, false), "field lookup resolved method handle: " + cpi);
+        }
+
+        for (int cpi : methodHandles) {
+            fixturePool.lookupConstant(cpi);
+        }
+        for (int cpi : fieldHandles) {
+            fixturePool.lookupConstant(cpi);
+        }
+
+        for (int opcode : new int[]{-1, LDC, LDC_W}) {
+            for (int i = 0; i < methodHandles.length; i++) {
+                JavaMethod method = fixturePool.lookupMethod(methodHandles[i], opcode);
+                Assert.assertTrue(method instanceof ResolvedJavaMethod, opcode + " " + methodNames[i] + ": " + method);
+                Assert.assertEquals(method.getName(), methodNames[i]);
+            }
+        }
+        for (int opcode : new int[]{-1, LDC, LDC_W}) {
+            for (int i = 0; i < fieldHandles.length; i++) {
+                JavaField field = fixturePool.lookupField(fieldHandles[i], fixtureMethod, opcode);
+                Assert.assertTrue(field instanceof ResolvedJavaField, opcode + " " + fieldNames[i] + " kind=" +
+                                fixturePool.lookupMethodHandleReferenceKind(fieldHandles[i]) + ": " + field);
+                Assert.assertEquals(field.getName(), fieldNames[i]);
+            }
+        }
+    }
+
+    private static Class<?> defineUnresolvedHolderMethodHandleFixture() throws IllegalAccessException {
+        ClassWriter writer = new ClassWriter(0);
+        String name = ConstantPoolTest.class.getName().replace('.', '/') + "$UnresolvedHolderMethodHandleFixture";
+        String missingHolder = ConstantPoolTest.class.getName().replace('.', '/') + "$MissingMethodHandleHolder";
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER, name, null, "java/lang/Object", null);
+        MethodVisitor method = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "method", "()V", null, null);
+        method.visitLdcInsn(new Handle(Opcodes.H_INVOKESTATIC, missingHolder, "missingTarget", "()V", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitLdcInsn(new Handle(Opcodes.H_GETSTATIC, missingHolder, "missingField", "I", false));
+        method.visitInsn(Opcodes.POP);
+        method.visitInsn(Opcodes.RETURN);
+        method.visitMaxs(1, 0);
+        method.visitEnd();
+        writer.visitEnd();
+        return MethodHandles.lookup().defineHiddenClass(writer.toByteArray(), false).lookupClass();
+    }
+
+    @Test
+    public void lookupMethodHandleUnresolvedHolderTest() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        Class<?> fixture = defineUnresolvedHolderMethodHandleFixture();
+        ResolvedJavaMethod fixtureMethod = metaAccess.lookupJavaMethod(fixture.getDeclaredMethod("method"));
+        ConstantPool fixturePool = fixtureMethod.getConstantPool();
+        int methodHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_invokeStatic, "missingTarget");
+        int fieldHandleCpi = findMethodHandle(fixturePool, MethodHandleInfo.REF_getStatic, "missingField");
+        Assert.assertTrue(methodHandleCpi > 0, "fixture constant pool is missing the unresolved method handle");
+        Assert.assertTrue(fieldHandleCpi > 0, "fixture constant pool is missing the unresolved field handle");
+
+        for (int opcode : new int[]{-1, LDC, LDC_W}) {
+            Assert.assertNull(fixturePool.lookupConstant(methodHandleCpi, false));
+            JavaMethod method = fixturePool.lookupMethod(methodHandleCpi, opcode);
+            Assert.assertTrue(method instanceof UnresolvedJavaMethod, opcode + ": " + method);
+            Assert.assertTrue(method.getDeclaringClass() instanceof UnresolvedJavaType, opcode + ": " + method.getDeclaringClass());
+            Assert.assertEquals(method.getName(), "missingTarget");
+        }
+        Assert.assertNull(fixturePool.lookupConstant(methodHandleCpi, false), "lookup resolved the method handle");
+
+        for (int opcode : new int[]{-1, LDC, LDC_W}) {
+            Assert.assertNull(fixturePool.lookupConstant(fieldHandleCpi, false));
+            JavaField field = fixturePool.lookupField(fieldHandleCpi, fixtureMethod, opcode);
+            Assert.assertTrue(field instanceof UnresolvedJavaField, opcode + ": " + field);
+            Assert.assertTrue(field.getDeclaringClass() instanceof UnresolvedJavaType, opcode + ": " + field.getDeclaringClass());
+            Assert.assertEquals(field.getName(), "missingField");
+        }
+        Assert.assertNull(fixturePool.lookupConstant(fieldHandleCpi, false), "lookup resolved the field handle");
+
+        // Force HotSpot to record linkage failures for both handles. Symbolic inspection must
+        // remain possible after the failure and must not surface the saved linkage exception.
+        final int failedMethodHandleCpi = methodHandleCpi;
+        final int failedFieldHandleCpi = fieldHandleCpi;
+        Assert.assertThrows(LinkageError.class, () -> fixturePool.lookupConstant(failedMethodHandleCpi, true));
+        Assert.assertThrows(LinkageError.class, () -> fixturePool.lookupConstant(failedFieldHandleCpi, true));
+        Assert.assertSame(fixturePool.getTag(methodHandleCpi), Tag.METHODHANDLE);
+        Assert.assertSame(fixturePool.getTag(fieldHandleCpi), Tag.METHODHANDLE);
+        Assert.assertEquals(fixturePool.lookupName(methodHandleCpi, -1), "missingTarget");
+        Assert.assertEquals(fixturePool.lookupSignature(methodHandleCpi).toMethodDescriptor(), "()V");
+        JavaMethod failedMethod = fixturePool.lookupMethod(methodHandleCpi, -1);
+        Assert.assertTrue(failedMethod instanceof UnresolvedJavaMethod, String.valueOf(failedMethod));
+        Assert.assertEquals(failedMethod.getName(), "missingTarget");
+        Assert.assertEquals(fixturePool.lookupName(fieldHandleCpi, -1), "missingField");
+        JavaField failedField = fixturePool.lookupField(fieldHandleCpi, fixtureMethod, -1);
+        Assert.assertTrue(failedField instanceof UnresolvedJavaField, String.valueOf(failedField));
+        Assert.assertEquals(failedField.getName(), "missingField");
+    }
+
+    private static int findMethodHandle(ConstantPool constantPool, int referenceKind, String name) {
+        for (int cpi = 1; cpi < constantPool.length(); cpi++) {
+            if (constantPool.getTag(cpi) == Tag.METHODHANDLE && constantPool.lookupMethodHandleReferenceKind(cpi) == referenceKind &&
+                            constantPool.lookupName(constantPool.lookupMethodHandleReferenceIndex(cpi), -1).equals(name)) {
+                return cpi;
+            }
+        }
+        return -1;
+    }
 
     @Test
     public void lookupAppendixTest() throws Throwable {
@@ -393,5 +734,7 @@ public class ConstantPoolTest {
         System.out.println("callee = " + callee);
         Assert.assertTrue(callee.toString().equals("HotSpotMethod<Object.hashCode()>"),
                           "wrong method: " + callee);
+        Assert.assertEquals(m.getConstantPool().lookupName(rawIndex, INVOKEVIRTUAL), "hashCode");
+        Assert.assertEquals(m.getConstantPool().lookupSignature(rawIndex, INVOKEVIRTUAL).toMethodDescriptor(), "()I");
     }
 }

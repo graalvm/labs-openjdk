@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -342,40 +342,6 @@ final class CompilerToVM {
     private native int lookupNameAndTypeRefIndexInPool(HotSpotConstantPool constantPool, long constantPoolPointer, int rawIndex, int opcode);
 
     /**
-     * Gets the name of the {@code JVM_CONSTANT_NameAndType} entry in {@code constantPool}
-     * referenced by the {@code which}.
-     *
-     * The behavior of this method is undefined if the class holding the {@code constantPool}
-     * has not yet been rewritten, or {@code which} is not a valid index for
-     * this class for the given {@code opcode}
-     *
-     * @param which  for INVOKE{VIRTUAL,SPECIAL,STATIC,INTERFACE}, must be {@code cpci}. For all other bytecodes,
-     *               must be {@code rawIndex}
-     */
-    String lookupNameInPool(HotSpotConstantPool constantPool, int which, int opcode) {
-        return lookupNameInPool(constantPool, constantPool.getConstantPoolPointer(), which, opcode);
-    }
-
-    private native String lookupNameInPool(HotSpotConstantPool constantPool, long constantPoolPointer, int which, int opcode);
-
-    /**
-     * Gets the signature of the {@code JVM_CONSTANT_NameAndType} entry in {@code constantPool}
-     * referenced by the {@code which}.
-     *
-     * The behavior of this method is undefined if the class holding the {@code constantPool}
-     * has not yet been rewritten, or {@code which} is not a valid index for
-     * this class for the given {@code opcode}
-     *
-     * @param which  for INVOKE{VIRTUAL,SPECIAL,STATIC,INTERFACE}, must be {@code cpci}. For all other bytecodes,
-     *               must be {@code rawIndex}
-     */
-    String lookupSignatureInPool(HotSpotConstantPool constantPool, int which, int opcode) {
-        return lookupSignatureInPool(constantPool, constantPool.getConstantPoolPointer(), which, opcode);
-    }
-
-    private native String lookupSignatureInPool(HotSpotConstantPool constantPool, long constantPoolPointer, int which, int opcode);
-
-    /**
      * Gets the {@code JVM_CONSTANT_Class} index from the entry in {@code constantPool}
      * referenced by the {@code which}. The meaning of {@code which} is dependent
      * on the given {@opcode}.
@@ -409,8 +375,13 @@ final class CompilerToVM {
     private native Object lookupKlassInPool(HotSpotConstantPool constantPool, long constantPoolPointer, int cpi);
 
     /**
-     * Looks up a method denoted by the entry at index {@code cpi} in {@code constantPool}. This
-     * method does not perform any resolution.
+     * Looks up a method denoted by the entry at index {@code cpi} in {@code constantPool}.
+     *
+     * If {@code opcode} is {@code ldc} or {@code ldc_w} and {@code cpi} denotes a
+     * {@code JVM_CONSTANT_MethodHandle} entry with a method reference kind, the referenced method
+     * is looked up symbolically, without resolving the method handle or loading its holder. The
+     * method handle need not be resolved, and the returned method may be resolved even if the
+     * handle has failed or will fail to resolve.
      *
      * The behavior of this method is undefined if {@code cpi} does not denote an entry representing
      * a method.
@@ -485,7 +456,7 @@ final class CompilerToVM {
     private native int getNumIndyEntries(HotSpotConstantPool constantPool, long constantPoolPointer);
 
     /**
-     * Resolves the details for invoking the bootstrap method associated with the
+     * Gets the details for invoking the bootstrap method associated with the
      * {@code CONSTANT_Dynamic_info} or @{code CONSTANT_InvokeDynamic_info} entry at {@code cpi} in
      * {@code constant pool}.
      *
@@ -496,43 +467,37 @@ final class CompilerToVM {
      *     bsm_invocation = [
      *         ResolvedJavaMethod method,
      *         String name,
-     *         Object type,             // JavaConstant: reference to Class (condy) or MethodType (indy)
-     *         Object staticArguments,  // null: no static arguments
+     *         Object type,             // JavaConstant: reference to Class (condy) or MethodType (indy),
+     *                                   // or null when not resolving
+     *         Object staticArguments,  // null: no static arguments, or when not resolving
      *                                  // JavaConstant: single static argument
      *                                  // JavaConstant[]: multiple static arguments
      *                                  // int[]: static arguments to be resolved via BootstrapCallInfo
+     *         int[] staticArgumentIndices,
+     *         Integer methodHandleIndex
      *     ]
      * </pre>
      *
+     * @param indyIndex the rewritten invokedynamic index when {@code cpi} came from an
+     *            {@code invokedynamic} bytecode, or {@code -1} when only a constant-pool index is
+     *            available
      * @return bootstrap method invocation details as encoded above
      */
-    Object[] resolveBootstrapMethod(HotSpotConstantPool constantPool, int cpi) {
-        return resolveBootstrapMethod(constantPool, constantPool.getConstantPoolPointer(), cpi);
+    Object[] lookupBootstrapMethodInvocation(HotSpotConstantPool constantPool, int cpi, boolean resolve, int indyIndex) {
+        return lookupBootstrapMethodInvocation(constantPool, constantPool.getConstantPoolPointer(), cpi, resolve, indyIndex);
     }
 
-    private native Object[] resolveBootstrapMethod(HotSpotConstantPool constantPool, long constantPoolPointer, int cpi);
+    private native Object[] lookupBootstrapMethodInvocation(HotSpotConstantPool constantPool, long constantPoolPointer, int cpi, boolean resolve, int indyIndex);
 
     /**
-     * Gets the constant pool index of a static argument of a {@code CONSTANT_Dynamic_info} or
-     * @{code CONSTANT_InvokeDynamic_info} entry. Used when the list of static arguments in the
-     * {@link BootstrapMethodInvocation} is a {@code List<PrimitiveConstant>} of the form
-     * {{@code arg_count}, {@code pool_index}}, meaning the arguments are not already resolved and that
-     * the JDK has to lookup the arguments when they are needed. The {@code cpi} corresponds to
-     * {@code pool_index} and the {@code index} has to be smaller than {@code arg_count}.
-     *
-     * The behavior of this method is undefined if {@code cpi} does not denote an entry representing
-     * a {@code CONSTANT_Dynamic_info} or a @{code CONSTANT_InvokeDynamic_info}, or if the index
-     * is out of bounds.
-     *
-     * @param cpi the index of a {@code CONSTANT_Dynamic_info} or @{code CONSTANT_InvokeDynamic_info} entry
-     * @param index the index of the static argument in the list of static arguments
-     * @return the constant pool index associated with the static argument
+     * Gets the symbolic name and signature of the entry at {@code rawIndex}. The result contains
+     * the name at index 0 and the signature at index 1.
      */
-    int bootstrapArgumentIndexAt(HotSpotConstantPool constantPool, int cpi, int index) {
-        return bootstrapArgumentIndexAt(constantPool, constantPool.getConstantPoolPointer(), cpi, index);
+    Object[] lookupNameAndSignatureInPool(HotSpotConstantPool constantPool, int rawIndex, int opcode) {
+        return lookupNameAndSignatureInPool(constantPool, constantPool.getConstantPoolPointer(), rawIndex, opcode);
     }
 
-    private native int bootstrapArgumentIndexAt(HotSpotConstantPool constantPool, long constantPoolPointer, int cpi, int index);
+    private native Object[] lookupNameAndSignatureInPool(HotSpotConstantPool constantPool, long constantPoolPointer, int rawIndex, int opcode);
 
     /**
      * If {@code cpi} denotes an entry representing a signature polymorphic method ({@jvms 2.9}),
@@ -590,6 +555,13 @@ final class CompilerToVM {
      *       fflags   // fieldDescriptor::field_flags()
      *     ]
      * </pre>
+     *
+     * If {@code opcode} is {@code ldc} or {@code ldc_w} and {@code rawIndex} denotes a
+     * {@code JVM_CONSTANT_MethodHandle} entry with a field reference kind, the referenced field
+     * is looked up from its symbolic member reference. The method handle need not be resolved, and
+     * the returned field may be resolved even if the handle has failed or will fail to resolve.
+     * If the member holder is not yet resolved, this operation resolves it when the current thread
+     * can run Java; otherwise it returns null.
      *
      * The behavior of this method is undefined if {@code rawIndex} is invalid.
      *

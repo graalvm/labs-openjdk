@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -89,11 +89,26 @@ public interface ConstantPool {
      * specific to the bytecode it denotes are performed if the field is already resolved. Checks
      * for some bytecodes require the method that contains the bytecode to be specified. Should any
      * of these checks fail, an unresolved field reference is returned.
+     * If {@code opcode} is {@code -1}, {@code ldc}, or {@code ldc_w} and {@code rawIndex} denotes
+     * a {@link Tag#METHODHANDLE} with a field reference kind, the underlying field is returned.
+     * This lookup does not resolve the method handle or load its member holder. It can return a
+     * resolved field based on the symbolic member reference even if the method handle is
+     * unresolved, has failed, or will fail to resolve. Otherwise, an unresolved symbolic field is
+     * returned. When the holder is already loaded, the VM field resolution step may resolve its
+     * constant-pool entry if the current thread can run Java.
      *
-     * @param rawIndex rewritten index in the bytecode stream after the {@code opcode}
-     * @param opcode the opcode of the instruction for which the lookup is being performed
+     * @param rawIndex rewritten index in the bytecode stream after the {@code opcode}, or a
+     *            constant pool index when {@code opcode} is {@code -1}, {@code ldc}, or
+     *            {@code ldc_w}
+     * @param opcode the opcode of the instruction for which the lookup is being performed, or
+     *            {@code -1}
      * @param method the method for which the lookup is being performed
      * @return a reference to the field at {@code rawIndex} in this pool
+     * @throws IllegalArgumentException if {@code opcode} is {@code -1}, {@code ldc}, or
+     *             {@code ldc_w} and {@code rawIndex} does not denote a method handle that
+     *             references a field
+     * @throws IllegalArgumentException if {@code method} is null or is not a method from this
+     *             JVMCI implementation
      */
     JavaField lookupField(int rawIndex, ResolvedJavaMethod method, int opcode);
 
@@ -101,12 +116,23 @@ public interface ConstantPool {
      * Looks up a reference to a method. If {@code opcode} is non-negative, then resolution checks
      * specific to the bytecode it denotes are performed if the method is already resolved. Should
      * any of these checks fail, an unresolved method reference is returned.
+     * If {@code opcode} is {@code -1}, {@code ldc}, or {@code ldc_w} and {@code cpi} denotes a
+     * {@link Tag#METHODHANDLE} with a method reference kind, the underlying method is returned.
+     * This lookup does not resolve the method handle or load its member holder. It can return a
+     * resolved method based on the symbolic member reference even if the method handle is
+     * unresolved, has failed, or will fail to resolve. Otherwise, an unresolved symbolic method
+     * is returned. In particular, signature-polymorphic method handles may remain unresolved
+     * because their invocation descriptor is not the descriptor of a single declared method.
      *
-     * @param cpi the constant pool index
+     * @param cpi rewritten index in the bytecode stream after the {@code opcode}, or a constant
+     *            pool index when {@code opcode} is {@code -1}, {@code ldc}, or {@code ldc_w}
      * @param opcode the opcode of the instruction for which the lookup is being performed or
      *            {@code -1}
      * @return a reference to the method at {@code cpi} in this pool
      * @throws ClassFormatError if the entry at {@code cpi} is not a method
+     * @throws IllegalArgumentException if {@code opcode} is {@code -1}, {@code ldc}, or
+     *             {@code ldc_w} and {@code cpi} does not denote a method handle that references a
+     *             method
      */
     default JavaMethod lookupMethod(int cpi, int opcode) {
         return lookupMethod(cpi, opcode, null);
@@ -117,7 +143,8 @@ public interface ConstantPool {
      * specific to the bytecode it denotes are performed if the method is already resolved. Should
      * any of these checks fail, an unresolved method reference is returned.
      *
-     * @param cpi the constant pool index
+     * @param cpi rewritten index in the bytecode stream after the {@code opcode}, or a constant
+     *            pool index when {@code opcode} is {@code -1}, {@code ldc}, or {@code ldc_w}
      * @param opcode the opcode of the instruction for which the lookup is being performed or
      *            {@code -1}
      * @param caller if non-null, do access checks in the context of {@code caller} calling the
@@ -126,6 +153,9 @@ public interface ConstantPool {
      * @throws ClassFormatError if the entry at {@code cpi} is not a method
      * @throws IllegalAccessError if {@code caller} is non-null and it cannot link against the
      *             looked up method
+     * @throws IllegalArgumentException if {@code opcode} is {@code -1}, {@code ldc}, or
+     *             {@code ldc_w} and {@code cpi} does not denote a method handle that references a
+     *             method
      */
     JavaMethod lookupMethod(int cpi, int opcode, ResolvedJavaMethod caller);
 
@@ -139,9 +169,27 @@ public interface ConstantPool {
      */
     interface BootstrapMethodInvocation {
         /**
-         * Gets the bootstrap method that will be invoked.
+         * Gets the bootstrap method that will be invoked, or {@code null} if this invocation was
+         * looked up without resolution and its method handle was not already resolved, or if the
+         * method handle cannot be represented by a {@link ResolvedJavaMethod}. A {@code null}
+         * result does not necessarily mean that the method handle is unresolved; an implementation
+         * may resolve the handle without being able to associate it with a
+         * {@link ResolvedJavaMethod}.
+         * {@link #getMethodHandleIndex()} can be used to inspect the symbolic bootstrap method
+         * handle in either case.
          */
         ResolvedJavaMethod getMethod();
+
+        /**
+         * Gets the constant pool index of the {@link Tag#METHODHANDLE} entry denoting the
+         * bootstrap method. This index can be used with the symbolic lookup methods on
+         * {@link ConstantPool} to inspect the method handle and its referenced member, including
+         * {@link ConstantPool#lookupMethodHandleReferenceKind(int)},
+         * {@link ConstantPool#lookupMethodHandleReferenceIndex(int)},
+         * {@link ConstantPool#lookupMethod(int, int)}, and
+         * {@link ConstantPool#lookupField(int, ResolvedJavaMethod, int)}.
+         */
+        int getMethodHandleIndex();
 
         /**
          * Returns {@code true} if this bootstrap method invocation is for a
@@ -158,11 +206,23 @@ public interface ConstantPool {
         /**
          * Returns a reference to the {@link MethodType} ({@code this.isInvokeDynamic() == true}) or
          * {@link Class} ({@code this.isInvokeDynamic() == false}) resolved for the descriptor of
-         * the pool entry.
+         * the pool entry, or {@code null} if this invocation was looked up without resolution.
          */
         JavaConstant getType();
 
+        /**
+         * Gets the constant pool indices of the static arguments, in the order in which they
+         * occur in the {@code BootstrapMethods} attribute. The returned array is a copy.
+         *
+         * @throws UnsupportedOperationException if the implementation does not support retrieving
+         *             static argument indices
+         */
+        default int[] getStaticArgumentIndices() {
+            throw new UnsupportedOperationException();
+        }
+
         /// Gets the static arguments with which the bootstrap method will be invoked.
+        ///
         /// The [kind][JavaConstant#getJavaKind()] of each argument will be
         /// [JavaKind#Object] or [JavaKind#Int]. The latter represents an
         /// unresolved `CONSTANT_Dynamic_info` entry. To resolve this entry, the
@@ -184,14 +244,21 @@ public interface ConstantPool {
         /// ```
         /// The other types of entries are already resolved and can be used directly.
         ///
+        /// @throws IllegalStateException if this invocation was looked up without resolution;
+        ///         use `getStaticArgumentIndices()` instead
         /// @jvms 5.4.3.6
         List<JavaConstant> getStaticArguments();
 
         /**
-         * Resolves the element corresponding to this bootstrap. If
-         * {@code isInvokeDynamic()}, then the corresponding invoke dynamic is resolved.
-         * If {@code !isInvokeDynamic()}, then the dynamic constant pool entry will be
-         * resolved.
+         * Resolves the element represented by this bootstrap method invocation. If
+         * {@code isInvokeDynamic()}, this resolves the associated call site, invoking its
+         * bootstrap method as needed. If {@code !isInvokeDynamic()}, this resolves the dynamic
+         * constant, invoking its bootstrap method as needed. This may execute arbitrary Java code
+         * and may throw an {@link Error}, including a {@link BootstrapMethodError}.
+         * <p>
+         * Resolving an invokedynamic call site requires an index associated with an invokedynamic
+         * instruction. An invocation looked up by constant pool index alone does not identify a
+         * call site, so this method throws {@link IllegalStateException} in that case.
          *
          * @jvms 5.4.3.6
          */
@@ -200,7 +267,9 @@ public interface ConstantPool {
         /**
          * If {@code isInvokeDynamic()}, then this method looks up the corresponding
          * invoke dynamic's appendix. If {@code !isInvokeDynamic()}, then this will
-         * return the constant pool entry's value.
+         * return the constant pool entry's value. An invokedynamic entry looked up by constant
+         * pool index alone does not identify a call site; calling this method in that case throws
+         * {@link IllegalStateException}.
          */
         JavaConstant lookup();
     }
@@ -209,17 +278,42 @@ public interface ConstantPool {
      * Gets the details for invoking a bootstrap method associated with the
      * {@code CONSTANT_Dynamic_info} or {@code CONSTANT_InvokeDynamic_info} pool entry
      * in the constant pool.
+     * This is equivalent to calling the
+     * {@link #lookupBootstrapMethodInvocation(int, int, boolean)} overload with {@code resolve}
+     * set to {@code true}.
      *
-     * @param index if {@code opcode} is -1,  {@code index} is a constant pool index. Otherwise {@code opcode}
-     *              must be {@code Bytecodes.INVOKEDYNAMIC}, and {@code index} must be the operand of that
-     *              opcode in the bytecode stream (i.e., a {@code rawIndex}).
-     * @param opcode must be {@code Bytecodes.INVOKEDYNAMIC}, or -1 if
-     *            {@code index} was not decoded from a bytecode stream
-     * @return the bootstrap method invocation details or {@code null} if the entry specified by {@code index}
-     *         is not a {@code CONSTANT_Dynamic_info} or {@code CONSTANT_InvokeDynamic_info}
+     * @param index the operand of the bytecode specified by {@code opcode}, or a constant pool
+     *            index if {@code opcode} is -1
+     * @param opcode must be {@code Bytecodes.INVOKEDYNAMIC}, {@code Bytecodes.LDC},
+     *            {@code Bytecodes.LDC_W}, or {@code Bytecodes.LDC2_W}; or -1 if {@code index} was
+     *            not decoded from a bytecode stream
+     * @return the bootstrap method invocation details or {@code null} if the entry specified by
+     *         {@code index} is not a {@code CONSTANT_Dynamic_info} or
+     *         {@code CONSTANT_InvokeDynamic_info}
      * @jvms 4.7.23 The {@code BootstrapMethods} Attribute
      */
     default BootstrapMethodInvocation lookupBootstrapMethodInvocation(int index, int opcode) {
+        return lookupBootstrapMethodInvocation(index, opcode, true);
+    }
+
+    /**
+     * Gets the details for invoking a bootstrap method. When {@code resolve} is false, this
+     * method does not cause classes to be loaded or arbitrary Java code to be called. The method
+     * can be {@code null} when it is not already safely available. The type is {@code null} when
+     * {@code resolve} is false. When {@code resolve} is false, static argument indices are available
+     * through {@link BootstrapMethodInvocation#getStaticArgumentIndices()}. The bootstrap method
+     * handle entry can be inspected symbolically even if its resolution has failed or will fail.
+     * An invokedynamic entry looked up by constant pool index alone provides bootstrap method
+     * details but does not identify a call site for {@link BootstrapMethodInvocation#resolve()}
+     * or {@link BootstrapMethodInvocation#lookup()}.
+     *
+     * @param index as for {@link #lookupBootstrapMethodInvocation(int, int)}
+     * @param opcode as for {@link #lookupBootstrapMethodInvocation(int, int)}
+     * @param resolve whether bootstrap method details may be resolved
+     * @return the bootstrap method invocation details or null if the entry is neither a
+     *         {@code CONSTANT_Dynamic_info} nor a {@code CONSTANT_InvokeDynamic_info}
+     */
+    default BootstrapMethodInvocation lookupBootstrapMethodInvocation(int index, int opcode, boolean resolve) {
         throw new UnsupportedOperationException();
     }
 
@@ -258,12 +352,71 @@ public interface ConstantPool {
     String lookupUtf8(int cpi);
 
     /**
+     * Looks up the name of a constant pool entry without resolving the entry.
+     *
+     * This method supports {@link Tag#FIELD_REF}, {@link Tag#METHOD_REF},
+     * {@link Tag#INTERFACE_METHOD_REF}, {@link Tag#METHODHANDLE}, {@link Tag#DYNAMIC}, and
+     * {@link Tag#INVOKEDYNAMIC} entries.
+     *
+     * @param rawIndex index in the bytecode stream after the {@code opcode} (could be rewritten
+     *            for some opcodes), or a constant pool index if {@code opcode} is {@code -1}
+     * @param opcode the opcode of the instruction for which the lookup is being performed, or
+     *            {@code -1} if {@code rawIndex} is a constant pool index
+     * @return the name at the entry referenced by {@code rawIndex}
+     * @throws IllegalArgumentException if the entry referenced by {@code rawIndex} has no name
+     */
+    String lookupName(int rawIndex, int opcode);
+
+    /**
      * Looks up a method signature.
      *
-     * @param cpi the constant pool index
-     * @return the method signature at index {@code cpi} in this constant pool
+     * In addition to a {@link Tag#UTF8} entry, this method supports {@link Tag#METHOD_REF},
+     * {@link Tag#INTERFACE_METHOD_REF}, method-related {@link Tag#METHODHANDLE},
+     * {@link Tag#METHODTYPE}, and {@link Tag#INVOKEDYNAMIC} entries. The result is obtained from
+     * the constant pool without resolving the entry. For a method handle, this is the descriptor
+     * of its referenced member, not the adapted method handle type.
+     *
+     * @param rawIndex index in the bytecode stream after the {@code opcode} (could be rewritten
+     *            for some opcodes), or a constant pool index if {@code opcode} is {@code -1}
+     * @param opcode the opcode of the instruction for which the lookup is being performed, or
+     *            {@code -1} if {@code rawIndex} is a constant pool index
+     * @return the method signature at the entry referenced by {@code rawIndex}
+     * @throws IllegalArgumentException if the entry referenced by {@code rawIndex} has no method
+     *             signature, or if {@code opcode} denotes a field access
      */
-    Signature lookupSignature(int cpi);
+    Signature lookupSignature(int rawIndex, int opcode);
+
+    /**
+     * Looks up a method signature using a constant pool index.
+     *
+     * @param cpi the constant pool index
+     * @return the method signature at the entry referenced by {@code cpi}
+     */
+    default Signature lookupSignature(int cpi) {
+        return lookupSignature(cpi, -1);
+    }
+
+    /**
+     * Looks up the reference kind of a {@link Tag#METHODHANDLE} entry without resolving the
+     * entry. The returned value is one of the {@code REF_*} constants in
+     * {@link java.lang.invoke.MethodHandleInfo}.
+     *
+     * @param cpi the constant pool index
+     * @return the method handle reference kind at {@code cpi}
+     * @throws IllegalArgumentException if the entry at {@code cpi} is not a method handle
+     */
+    int lookupMethodHandleReferenceKind(int cpi);
+
+    /**
+     * Looks up the reference index of a {@link Tag#METHODHANDLE} entry without resolving the
+     * entry. The returned index denotes a {@link Tag#FIELD_REF}, {@link Tag#METHOD_REF}, or
+     * {@link Tag#INTERFACE_METHOD_REF} entry, as determined by the method handle's reference kind.
+     *
+     * @param cpi the constant pool index
+     * @return the constant pool index of the member reference at {@code cpi}
+     * @throws IllegalArgumentException if the entry at {@code cpi} is not a method handle
+     */
+    int lookupMethodHandleReferenceIndex(int cpi);
 
     /**
      * Looks up a constant at the specified index.

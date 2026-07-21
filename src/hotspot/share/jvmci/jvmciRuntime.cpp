@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1874,25 +1874,68 @@ Method* JVMCIRuntime::get_method_by_index_impl(const constantPoolHandle& cpool,
     if (cpool->resolved_indy_entry_at(index)->is_resolved()) {
       return cpool->resolved_indy_entry_at(index)->method();
     }
-
     return nullptr;
   }
+  int holder_index;
+  Symbol* name_sym;
+  Symbol* sig_sym;
+  constantTag tag;
+  Bytecodes::Code member_bc;
+  if (bc == Bytecodes::_ldc || bc == Bytecodes::_ldc_w) {
+    // An ldc method-handle operand is a constant-pool index, not a rewritten method-cache index.
+    constantTag method_handle_tag = cpool->tag_at(index);
+    if (!method_handle_tag.is_method_handle() && !method_handle_tag.is_method_handle_in_error()) {
+      return nullptr;
+    }
+    // Use the method ref as that's easier than reverse-engineering the cached handle.
+    int ref_kind = cpool->method_handle_ref_kind_at(index);
+    if (!MethodHandles::ref_kind_is_method(ref_kind) && ref_kind != JVM_REF_newInvokeSpecial) {
+      return nullptr;
+    }
 
-  int holder_index = cpool->klass_ref_index_at(index, bc);
+    int member_index = cpool->method_handle_index_at(index);
+    tag = cpool->tag_at(member_index);
+    assert(tag.is_method() || tag.is_interface_method(), "");
+
+    switch (ref_kind) {
+      case JVM_REF_invokeVirtual:
+        member_bc = Bytecodes::_invokevirtual;
+        break;
+      case JVM_REF_invokeInterface:
+        member_bc = Bytecodes::_invokeinterface;
+        break;
+      case JVM_REF_invokeStatic:
+        member_bc = Bytecodes::_invokestatic;
+        break;
+      case JVM_REF_invokeSpecial:
+      case JVM_REF_newInvokeSpecial:
+        member_bc = Bytecodes::_invokespecial;
+        break;
+      default:
+        return nullptr;
+    }
+    holder_index = cpool->uncached_klass_ref_index_at(member_index);
+    name_sym = cpool->uncached_name_ref_at(member_index);
+    sig_sym = cpool->uncached_signature_ref_at(member_index);
+  } else {
+    holder_index = cpool->klass_ref_index_at(index, bc);
+    // Get the method's name and signature.
+    name_sym = cpool->name_ref_at(index, bc);
+    sig_sym  = cpool->signature_ref_at(index, bc);
+    tag = cpool->tag_ref_at(index, bc);
+    member_bc = bc;
+  }
+
   bool holder_is_accessible;
   Klass* holder = get_klass_by_index_impl(cpool, holder_index, holder_is_accessible, accessor);
 
-  // Get the method's name and signature.
-  Symbol* name_sym = cpool->name_ref_at(index, bc);
-  Symbol* sig_sym  = cpool->signature_ref_at(index, bc);
-
-  if (cpool->has_preresolution()
+  if (member_bc == bc && (cpool->has_preresolution()
       || ((holder == vmClasses::MethodHandle_klass() || holder == vmClasses::VarHandle_klass()) &&
-          MethodHandles::is_signature_polymorphic_name(holder, name_sym))) {
+          MethodHandles::is_signature_polymorphic_name(holder, name_sym)))) {
     // Short-circuit lookups for JSR 292-related call sites.
     // That is, do not rely only on name-based lookups, because they may fail
     // if the names are not resolvable in the boot class loader (7056328).
-    switch (bc) {
+    switch (member_bc) {
     case Bytecodes::_invokevirtual:
     case Bytecodes::_invokeinterface:
     case Bytecodes::_invokespecial:
@@ -1910,8 +1953,7 @@ Method* JVMCIRuntime::get_method_by_index_impl(const constantPoolHandle& cpool,
   }
 
   if (holder_is_accessible) { // Our declared holder is loaded.
-    constantTag tag = cpool->tag_ref_at(index, bc);
-    Method* m = lookup_method(accessor, holder, name_sym, sig_sym, bc, tag);
+    Method* m = lookup_method(accessor, holder, name_sym, sig_sym, member_bc, tag);
     if (m != nullptr) {
       // We found the method.
       return m;
