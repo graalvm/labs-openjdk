@@ -198,7 +198,7 @@ AC_DEFUN_ONCE([JDKVER_SETUP_JDK_VERSION_NUMBERS],
             AC_MSG_ERROR([Version string contains + but both 'BUILD' and 'OPT' are missing])
           fi
           if test "x$VERSION_BUILD" = x0; then
-            AC_MSG_WARN([Version build 0 is not interpreted as no build number])
+            AC_MSG_WARN([Version build 0 is a valid build number in labsjdk])
             # VERSION_BUILD=
           fi
           # Stop the version part process from setting default values.
