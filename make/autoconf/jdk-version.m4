@@ -198,8 +198,8 @@ AC_DEFUN_ONCE([JDKVER_SETUP_JDK_VERSION_NUMBERS],
             AC_MSG_ERROR([Version string contains + but both 'BUILD' and 'OPT' are missing])
           fi
           if test "x$VERSION_BUILD" = x0; then
-            AC_MSG_WARN([Version build 0 is interpreted as no build number])
-            VERSION_BUILD=
+            AC_MSG_WARN([Version build 0 is a valid build number in labsjdk])
+            # VERSION_BUILD=
           fi
           # Stop the version part process from setting default values.
           # We still allow them to explicitly override though.
@@ -276,8 +276,8 @@ AC_DEFUN_ONCE([JDKVER_SETUP_JDK_VERSION_NUMBERS],
     else
       JDKVER_CHECK_AND_SET_NUMBER(VERSION_BUILD, $with_version_build)
       if test "x$VERSION_BUILD" = "x0"; then
-        AC_MSG_WARN([--with-version-build=0 is interpreted as --without-version-build])
-        VERSION_BUILD=
+        AC_MSG_WARN([--with-version-build=0 is not interpreted as --without-version-build])
+        # VERSION_BUILD=
       fi
     fi
   else
@@ -454,7 +454,8 @@ AC_DEFUN_ONCE([JDKVER_SETUP_JDK_VERSION_NUMBERS],
 
   # A build number of "0" is interpreted as "no build number".
   if test "x$VERSION_BUILD" = x0; then
-    VERSION_BUILD=
+    AC_MSG_WARN([--with-version-build=0 is not interpreted as --without-version-build])
+    # VERSION_BUILD=
   fi
 
   # Compute the complete version string, with additional build information
