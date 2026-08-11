@@ -1,0 +1,51 @@
+name: 'ARM32 JVMCI Validation'
+
+on:
+  push:
+    branches:
+      - arm32-jvmci
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  validate-arm32-jvmci:
+    name: 'Validate ARM32 JVMCI files'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Check ARM32 JVMCI files exist'
+        run: |
+          echo "=== Checking ARM32 JVMCI implementation files ==="
+          MISSING=0
+          for f in \
+            "src/jdk.internal.vm.ci/share/classes/jdk/vm/ci/arm/ARM.java" \
+            "src/jdk.internal.vm.ci/share/classes/jdk/vm/ci/arm/ARMKind.java" \
+            "src/jdk.internal.vm.ci/share/classes/jdk/vm/ci/arm/package-info.java"; do
+            if [ -f "$f" ]; then
+              echo "OK: $f"
+            else
+              echo "MISSING: $f"
+              MISSING=$((MISSING+1))
+            fi
+          done
+          if [ $MISSING -gt 0 ]; then
+            echo "ERROR: $MISSING required files are missing"
+            exit 1
+          fi
+          echo "All ARM32 JVMCI files are present!"
+
+      - name: 'Validate Java class declarations'
+        run: |
+          for f in \
+            src/jdk.internal.vm.ci/share/classes/jdk/vm/ci/arm/ARM.java \
+            src/jdk.internal.vm.ci/share/classes/jdk/vm/ci/arm/ARMKind.java; do
+            if grep -qE "^public (class|enum|@interface)" "$f"; then
+              echo "OK: $f has valid top-level declaration"
+            else
+              echo "WARNING: unexpected structure in $f"
+            fi
+          done
+          echo "ARM32 JVMCI stub validation complete."
