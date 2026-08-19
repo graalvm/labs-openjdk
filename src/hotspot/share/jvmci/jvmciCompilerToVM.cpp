@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1563,6 +1563,7 @@ static GrowableArray<ScopeValue*>* get_unallocated_objects_or_null(GrowableArray
   return unallocated;
 }
 
+
 C2V_VMENTRY_NULL(jobject, iterateFrames, (JNIEnv* env, jobject compilerToVM, jobjectArray initial_methods, jobjectArray match_methods, jint initialSkip, jobject visitor_handle))
 
   if (!thread->has_last_Java_frame()) {
@@ -1608,6 +1609,8 @@ C2V_VMENTRY_NULL(jobject, iterateFrames, (JNIEnv* env, jobject compilerToVM, job
 
         StackValueCollection* locals = nullptr;
         typeArrayHandle localIsVirtual_h;
+        typeArrayHandle localKinds_h;
+        typeArrayHandle localPrimitiveValues_h;
         if (vf->is_compiled_frame()) {
           // compiled method frame
           compiledVFrame* cvf = compiledVFrame::cast(vf);
@@ -1665,22 +1668,62 @@ C2V_VMENTRY_NULL(jobject, iterateFrames, (JNIEnv* env, jobject compilerToVM, job
           matched_jvmci_method = Handle(THREAD, JNIHandles::resolve(jvmci_method.as_jobject()));
         }
         HotSpotJVMCI::HotSpotStackFrameReference::set_method(JVMCIENV, frame_reference(), matched_jvmci_method());
+        HotSpotJVMCI::HotSpotStackFrameReference::set_compiledFrame(JVMCIENV, frame_reference(), vf->is_compiled_frame() ? JNI_TRUE : JNI_FALSE);
+        HotSpotJVMCI::HotSpotStackFrameReference::set_deoptimizedFrame(JVMCIENV, frame_reference(),
+                                                                       vf->is_compiled_frame() && vf->frame_pointer()->is_deoptimized_frame() ? JNI_TRUE : JNI_FALSE);
         HotSpotJVMCI::HotSpotStackFrameReference::set_localIsVirtual(JVMCIENV, frame_reference(), localIsVirtual_h());
 
         HotSpotJVMCI::HotSpotStackFrameReference::set_compilerToVM(JVMCIENV, frame_reference(), JNIHandles::resolve(compilerToVM));
         HotSpotJVMCI::HotSpotStackFrameReference::set_stackPointer(JVMCIENV, frame_reference(), (jlong) frame_id);
         HotSpotJVMCI::HotSpotStackFrameReference::set_frameNumber(JVMCIENV, frame_reference(), frame_number);
 
-        // initialize the locals array
-        objArrayOop array_oop = oopFactory::new_objectArray(locals->size(), CHECK_NULL);
-        objArrayHandle array(THREAD, array_oop);
+        // Expose only object/primitive/unavailable slot categories. This mirrors the shared
+        // InspectedFrame contract: local inspection is raw frame-state introspection, not precise
+        // Java-local typing. Primitive payloads are snapshotted in a flattened long[] with two
+        // entries per local: the even entry stores the slot's 32-bit payload, while the odd entry
+        // stores the adjacent-slot 64-bit view used by getLocalLong/getLocalDouble when the next
+        // slot is also primitive. This preserves narrow-slot reads for subword/int locals without
+        // losing the structural wide view expected by the hacky adjacent-slot accessors.
+        enum LocalKind : jbyte {
+          LOCAL_KIND_UNAVAILABLE = 0,
+          LOCAL_KIND_OBJECT = 1,
+          LOCAL_KIND_PRIMITIVE = 2
+        };
+        objArrayOop local_references_array_oop = oopFactory::new_objectArray(locals->size(), CHECK_NULL);
+        objArrayHandle localReferences_h(THREAD, local_references_array_oop);
+        typeArrayOop local_kinds_array_oop = oopFactory::new_byteArray(locals->size(), CHECK_NULL);
+        localKinds_h = typeArrayHandle(THREAD, local_kinds_array_oop);
+        for (int i = 0; i < locals->size(); i++) {
+          localKinds_h->byte_at_put(i, LOCAL_KIND_UNAVAILABLE);
+        }
         for (int i = 0; i < locals->size(); i++) {
           StackValue* var = locals->at(i);
           if (var->type() == T_OBJECT) {
-            array->obj_at_put(i, locals->at(i)->get_obj()());
+            localReferences_h->obj_at_put(i, var->get_obj()());
+            localKinds_h->byte_at_put(i, LOCAL_KIND_OBJECT);
+          } else if (var->type() == T_INT) {
+            if (localPrimitiveValues_h.is_null()) {
+              typeArrayOop local_primitive_values_array_oop = oopFactory::new_longArray(locals->size() * 2, CHECK_NULL);
+              localPrimitiveValues_h = typeArrayHandle(THREAD, local_primitive_values_array_oop);
+            }
+            localKinds_h->byte_at_put(i, LOCAL_KIND_PRIMITIVE);
+            localPrimitiveValues_h->long_at_put(i * 2, (jlong) (jint) locals->int_at(i));
           }
         }
-        HotSpotJVMCI::HotSpotStackFrameReference::set_locals(JVMCIENV, frame_reference(), array());
+        // Wide primitive access is reconstructed from adjacent primitive slots without committing
+        // to a more specific source-language primitive kind per slot.
+        for (int i = 0; i + 1 < locals->size(); i++) {
+          if (localKinds_h->byte_at(i) == LOCAL_KIND_PRIMITIVE && localKinds_h->byte_at(i + 1) == LOCAL_KIND_PRIMITIVE) {
+            if (localPrimitiveValues_h.is_null()) {
+              typeArrayOop local_primitive_values_array_oop = oopFactory::new_longArray(locals->size() * 2, CHECK_NULL);
+              localPrimitiveValues_h = typeArrayHandle(THREAD, local_primitive_values_array_oop);
+            }
+            localPrimitiveValues_h->long_at_put(i * 2 + 1, (jlong) locals->long_at(i));
+          }
+        }
+        HotSpotJVMCI::HotSpotStackFrameReference::set_localReferences(JVMCIENV, frame_reference(), localReferences_h());
+        HotSpotJVMCI::HotSpotStackFrameReference::set_localKinds(JVMCIENV, frame_reference(), localKinds_h());
+        HotSpotJVMCI::HotSpotStackFrameReference::set_localPrimitiveValues(JVMCIENV, frame_reference(), localPrimitiveValues_h());
         HotSpotJVMCI::HotSpotStackFrameReference::set_objectsMaterialized(JVMCIENV, frame_reference(), JNI_FALSE);
 
         JavaValue result(T_OBJECT);
@@ -1923,13 +1966,13 @@ C2V_VMENTRY(void, materializeVirtualObjects, (JNIEnv* env, jobject, jobject _hs_
 
   // all locals are materialized by now
   JVMCIENV->set_HotSpotStackFrameReference_localIsVirtual(hs_frame, nullptr);
-  // update the locals array
-  JVMCIObjectArray array = JVMCIENV->get_HotSpotStackFrameReference_locals(hs_frame);
+  // update the localReferences array
+  JVMCIObjectArray local_references = JVMCIENV->get_HotSpotStackFrameReference_localReferences(hs_frame);
   StackValueCollection* locals = virtualFrames->at(last_frame_number)->locals();
   for (int i = 0; i < locals->size(); i++) {
     StackValue* var = locals->at(i);
     if (var->type() == T_OBJECT) {
-      JVMCIENV->put_object_at(array, i, HotSpotJVMCI::wrap(locals->at(i)->get_obj()()));
+      JVMCIENV->put_object_at(local_references, i, HotSpotJVMCI::wrap(locals->at(i)->get_obj()()));
     }
   }
   HotSpotJVMCI::HotSpotStackFrameReference::set_objectsMaterialized(JVMCIENV, hs_frame, JNI_TRUE);

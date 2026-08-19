@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,11 @@ package jdk.vm.ci.code.stack;
  * {@link #visitFrame} return null to indicate that frame iteration should continue and the next
  * caller frame should be visited; and return any non-null value to indicate that frame iteration
  * should stop.
+ * <p>
+ * The provided {@link InspectedFrame} may be retained after
+ * {@link #visitFrame(InspectedFrame)} returns. See {@link InspectedFrame} for the lifetime rules
+ * for retained frame handles and the safety checks required before reading or mutating a frame
+ * after the callback returns.
  */
 public interface InspectedFrameVisitor<T> {
 
