@@ -41,6 +41,8 @@ void G1DetermineCompactionQueueClosure::free_empty_humongous_region(G1HeapRegion
 }
 
 inline bool G1DetermineCompactionQueueClosure::should_compact(G1HeapRegion* hr) const {
+  assert_svm_only(!hr->is_image_heap(), "image heap must not be compacted");
+
   // There is no need to iterate and forward objects in non-movable regions ie.
   // prepare them for compaction.
   if (hr->is_humongous() || hr->has_pinned_objects()) {
@@ -80,6 +82,12 @@ static bool has_pinned_objects(G1HeapRegion* hr) {
 }
 
 inline bool G1DetermineCompactionQueueClosure::do_heap_region(G1HeapRegion* hr) {
+#ifdef SVM
+  if (hr->is_image_heap()) {
+    // No need to free or compact the image heap.
+    return false;
+  } else
+#endif // SVM
   if (should_compact(hr)) {
     assert(!hr->is_humongous(), "moving humongous objects not supported.");
     add_to_compaction_queue(hr);

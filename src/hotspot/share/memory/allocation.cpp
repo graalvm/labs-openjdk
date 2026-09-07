@@ -66,6 +66,7 @@ void FreeHeap(void* p) {
   os::free(p);
 }
 
+#ifndef SVM
 void* MetaspaceObj::_shared_metaspace_base = nullptr;
 void* MetaspaceObj::_shared_metaspace_top  = nullptr;
 
@@ -118,11 +119,12 @@ void* ArenaObj::operator new(size_t size, Arena *arena) throw() {
 // AnyObj
 //
 
-void* AnyObj::operator new(size_t size, Arena *arena) {
+void* AnyObj::operator new(size_t size, Arena *arena) throw() {
   address res = (address)arena->Amalloc(size);
   DEBUG_ONLY(set_allocation_type(res, ARENA);)
   return res;
 }
+#endif // !SVM
 
 void* AnyObj::operator new(size_t size, MemTag mem_tag) throw() {
   address res = (address)AllocateHeap(size, mem_tag, CALLER_PC);
@@ -130,6 +132,7 @@ void* AnyObj::operator new(size_t size, MemTag mem_tag) throw() {
   return res;
 }
 
+#ifndef SVM
 void* AnyObj::operator new(size_t size, const std::nothrow_t&  nothrow_constant,
     MemTag mem_tag) throw() {
   // should only call this with std::nothrow, use other operator new() otherwise
@@ -137,6 +140,7 @@ void* AnyObj::operator new(size_t size, const std::nothrow_t&  nothrow_constant,
     DEBUG_ONLY(if (res!= nullptr) set_allocation_type(res, C_HEAP);)
   return res;
 }
+#endif // !SVM
 
 void AnyObj::operator delete(void* p) {
   if (p == nullptr) {
@@ -206,6 +210,7 @@ AnyObj::AnyObj() {
   initialize_allocation_info();
 }
 
+#ifndef SVM
 AnyObj::AnyObj(const AnyObj&) {
   // Initialize _allocation_t as a new object, ignoring object being copied.
   initialize_allocation_info();
@@ -218,6 +223,7 @@ AnyObj& AnyObj::operator=(const AnyObj& r) {
   // Keep current _allocation_t value;
   return *this;
 }
+#endif // !SVM
 
 AnyObj::~AnyObj() {
   // allocated_on_C_heap() also checks that encoded (in _allocation) address == this.
@@ -231,12 +237,15 @@ AnyObj::~AnyObj() {
 // Non-product code
 
 #ifndef PRODUCT
+#ifndef SVM
 void AnyObj::print() const       { print_on(tty); }
+#endif // !SVM
 
 void AnyObj::print_on(outputStream* st) const {
   st->print_cr("AnyObj(" PTR_FORMAT ")", p2i(this));
 }
 
+#ifndef SVM
 ReallocMark::ReallocMark() {
 #ifdef ASSERT
   Thread *thread = Thread::current();
@@ -252,5 +261,6 @@ void ReallocMark::check(Arena* arena) {
   }
 #endif
 }
+#endif // !SVM
 
 #endif // Non-product

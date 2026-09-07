@@ -142,6 +142,9 @@ private:
   static const char* _state_strings[];
   static const char* _short_state_strings[];
 public:
+#ifdef SVM
+  RemSetState state() const { return _state; }
+#endif // SVM
 
   const char* get_state_str() const { return _state_strings[_state]; }
   const char* get_short_state_str() const { return _short_state_strings[_state]; }
@@ -186,7 +189,9 @@ public:
   // the heap region that owns this RSet.
   void add_code_root(nmethod* nm);
   void remove_code_root(nmethod* nm);
+#ifndef SVM
   void bulk_remove_code_roots();
+#endif // !SVM
 
   // Applies blk->do_nmethod() to each of the entries in _code_roots
   void code_roots_do(NMethodClosure* blk) const;

@@ -133,6 +133,7 @@ class G1HeapSummary : public GCHeapSummary {
    }
 };
 
+#ifndef SVM
 class MetaspaceSummary : public StackObj {
   size_t _capacity_until_GC;
   MetaspaceCombinedStats _stats;
@@ -168,6 +169,7 @@ class MetaspaceSummary : public StackObj {
   }
 
 };
+#endif // !SVM
 
 class G1EvacSummary : public StackObj {
 private:

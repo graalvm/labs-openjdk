@@ -37,7 +37,11 @@ class fileStream;
 // Declare all global flags used by the JVMCI compiler. Only flags that need
 // to be accessible to the JVMCI C++ code should be defined here.
 //
-#define JVMCI_FLAGS(develop,                                                \
+#define JVMCI_FLAGS(ni_hosted,                                              \
+                    ni_hosted_pd,                                           \
+                    ni_runtime,                                             \
+                    ni_runtime_pd,                                          \
+                    develop,                                                \
                     develop_pd,                                             \
                     product,                                                \
                     product_pd,                                             \
@@ -201,6 +205,7 @@ class fileStream;
 
 DECLARE_FLAGS(JVMCI_FLAGS)
 
+#ifndef SVM
 // The base name for the shared library containing the JVMCI based compiler
 #define JVMCI_SHARED_LIBRARY_NAME "jvmcicompiler"
 
@@ -226,3 +231,4 @@ class JVMCIGlobals {
   static fileStream* get_jni_config_file() { return _jni_config_file; }
 };
 #endif // SHARE_JVMCI_JVMCI_GLOBALS_HPP
+#endif // !SVM

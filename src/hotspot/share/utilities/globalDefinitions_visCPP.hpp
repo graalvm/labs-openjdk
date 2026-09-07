@@ -75,7 +75,6 @@ const auto strtok_r = strtok_s;
 #define S_ISFIFO(mode) (((mode) & _S_IFIFO) == _S_IFIFO)
 
 // Checking for nanness
-
 inline int g_isnan(jfloat  f)                    { return _isnan(f); }
 inline int g_isnan(jdouble f)                    { return _isnan(f); }
 
@@ -83,7 +82,6 @@ inline int g_isnan(jdouble f)                    { return _isnan(f); }
 
 inline int g_isfinite(jfloat  f)                 { return _finite(f); }
 inline int g_isfinite(jdouble f)                 { return _finite(f); }
-
 #define offset_of(klass,field) offsetof(klass,field)
 
 #define THREAD_LOCAL __declspec(thread)

@@ -85,7 +85,9 @@ class G1ParScanThreadState : public CHeapObj<mtGC> {
   // available for allocation.
   bool _old_gen_is_full;
   PartialArraySplitter _partial_array_splitter;
+#ifndef SVM
   StringDedup::Requests _string_dedup_requests;
+#endif // !SVM
 
   G1CardTable* ct() { return _ct; }
 

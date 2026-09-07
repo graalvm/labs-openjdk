@@ -44,7 +44,9 @@ class G1CodeRootSet {
 
   void add(nmethod* method);
   bool remove(nmethod* method);
+#ifndef SVM
   void bulk_remove();
+#endif // !SVM
   bool contains(nmethod* method);
   void clear();
 

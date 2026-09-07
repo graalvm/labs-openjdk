@@ -52,6 +52,7 @@ class G1GCPhaseTimes : public CHeapObj<mtGC> {
     ExtRootScan,
     ThreadRoots,
     CLDGRoots,
+    SVM_ONLY(ImageHeap COMMA)
     CMRefRoots,
     // For every strong OopStorage there will be one element in this enum,
     // starting with StrongOopStorageSetRoots.

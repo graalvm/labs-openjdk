@@ -105,7 +105,7 @@ public:
   bool is_old() const                  { return type() == Old; }
   bool is_optional() const             { return type() == Optional; }
 
-#ifdef ASSERT
+#if defined(ASSERT) || defined (SVM)
   bool is_default() const              { return type() == NotInCSet; }
   bool is_valid() const                { return (type() >= Optional && type() < Num); }
 #endif

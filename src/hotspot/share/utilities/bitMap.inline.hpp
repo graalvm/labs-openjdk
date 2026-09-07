@@ -380,9 +380,11 @@ inline BitMap::IteratorImpl::IteratorImpl(const BitMap* map, idx_t beg, idx_t en
   : _map(map), _cur_beg(beg), _cur_end(end)
 {}
 
+#ifndef SVM
 inline bool BitMap::IteratorImpl::is_empty() const {
   return _cur_beg == _cur_end;
 }
+#endif // !SVM
 
 inline BitMap::idx_t BitMap::IteratorImpl::first() const {
   assert_not_empty();

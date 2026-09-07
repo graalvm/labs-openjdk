@@ -53,6 +53,9 @@ class GlobalCounter : public AllStatic {
 
   // The global counter
   static PaddedCounter _global_counter;
+#ifdef SVM
+  static PaddedCounter _java_threads_in_critical_section;
+#endif // SVM
 
   // Bit 0 is active bit.
   static const uintx COUNTER_ACTIVE = 1;

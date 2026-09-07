@@ -64,6 +64,7 @@
 #include "gc/z/zThreadLocalData.hpp"
 #endif
 
+#ifndef SVM
 // Declaration and definition of StubGenerator (no .hpp file).
 // For a more detailed description of the stub routine structure
 // see the comment in stubRoutines.hpp
@@ -450,7 +451,7 @@ class StubGenerator: public StubCodeGenerator {
     __ verify_oop(r0);
 
     __ str(r0, Address(rthread, Thread::pending_exception_offset()));
-    __ mov(rscratch1, (address)__FILE__);
+    __ mov(rscratch1, (address)__FILENAME_ONLY__);
     __ str(rscratch1, Address(rthread, Thread::exception_file_offset()));
     __ movw(rscratch1, (int)__LINE__);
     __ strw(rscratch1, Address(rthread, Thread::exception_line_offset()));
@@ -11920,13 +11921,14 @@ class StubGenerator: public StubCodeGenerator {
 void StubGenerator_generate(CodeBuffer* code, StubGenBlobId blob_id) {
   StubGenerator g(code, blob_id);
 }
-
+#endif // !SVM
 
 #if defined (LINUX)
 
 // Define pointers to atomic stubs and initialize them to point to the
 // code in atomic_aarch64.S.
 
+// NOTE (chaeubl): extern "C" is needed because these functions are defined in assembly
 #define DEFAULT_ATOMIC_OP(OPNAME, SIZE, RELAXED)                                \
   extern "C" uint64_t aarch64_atomic_ ## OPNAME ## _ ## SIZE ## RELAXED ## _default_impl \
     (volatile void *ptr, uint64_t arg1, uint64_t arg2);                 \

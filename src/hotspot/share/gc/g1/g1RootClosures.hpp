@@ -36,9 +36,11 @@ public:
   // Closures to process raw oops in the root set.
   virtual OopClosure* strong_oops() = 0;
 
+#ifndef SVM
   // Closures to process CLDs in the root set.
   virtual CLDClosure* weak_clds() = 0;
   virtual CLDClosure* strong_clds() = 0;
+#endif // !SVM
 
   // Applied to nmethods reachable as strong roots.
   virtual NMethodClosure* strong_nmethods() = 0;

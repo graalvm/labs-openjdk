@@ -366,6 +366,7 @@ JVMFlag::Error JVMFlagAccess::check_constraint(const JVMFlag* flag, void * func,
   return access_impl(flag)->check_constraint(flag, func, verbose);
 }
 
+#ifndef SVM
 void JVMFlagAccess::print_range(outputStream* st, const JVMFlag* flag, const JVMFlagLimit* range) {
   return access_impl(flag)->print_range(st, range);
 }
@@ -401,3 +402,4 @@ void JVMFlagAccess::print_range(outputStream* st, const JVMFlag* flag) {
     }
   }
 }
+#endif // !SVM

@@ -45,5 +45,4 @@ define_pd_global(size_t, JVMInvokeMethodSlack,   8192);
 
 // Used on 64 bit platforms for UseCompressedOops base address
 define_pd_global(size_t, HeapBaseMinAddress,     2*G);
-
 #endif // OS_CPU_WINDOWS_X86_GLOBALS_WINDOWS_X86_HPP

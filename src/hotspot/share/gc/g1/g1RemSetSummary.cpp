@@ -222,6 +222,13 @@ public:
   {}
 
   bool do_heap_region(G1HeapRegion* r) {
+#ifdef SVM
+    if (r->is_image_heap()) {
+      assert(r->rem_set()->is_empty(), "remembered set of image heap regions must be empty");
+      return false;
+    }
+#endif // SVM
+
     G1HeapRegionRemSet* hrrs = r->rem_set();
     size_t rs_mem_sz = 0;
     size_t rs_unused_mem_sz = 0;

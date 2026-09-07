@@ -69,6 +69,7 @@ static inline derived_pointer operator+(derived_pointer p, intptr_t offset) {
   return static_cast<derived_pointer>(derived_pointer_value(p) + offset);
 }
 
+#ifndef SVM
 // OopMapStream
 
 OopMapStream::OopMapStream(const OopMap* oop_map)
@@ -865,6 +866,7 @@ ImmutableOopMapSet* ImmutableOopMapSet::build_from(const OopMapSet* oopmap_set) 
 void ImmutableOopMapSet::operator delete(void* p) {
   FREE_C_HEAP_ARRAY(unsigned char, p);
 }
+#endif // !SVM
 
 //------------------------------DerivedPointerTable---------------------------
 

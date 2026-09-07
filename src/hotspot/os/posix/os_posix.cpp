@@ -102,6 +102,7 @@ static jlong initial_time_count = 0;
 
 static int clock_tics_per_sec = 100;
 
+#ifndef SVM
 // Platform minimum stack allowed
 size_t os::_os_min_stack_allowed = PTHREAD_STACK_MIN;
 
@@ -413,6 +414,7 @@ static char* reserve_mmapped_memory(size_t bytes, char* requested_addr, MemTag m
   }
   return nullptr;
 }
+#endif // !SVM
 
 static int util_posix_fallocate(int fd, off_t offset, off_t len) {
   static_assert(sizeof(off_t) == 8, "Expected Large File Support in this file");
@@ -521,6 +523,7 @@ char* os::reserve_memory_aligned(size_t size, size_t alignment, MemTag mem_tag, 
   return chop_extra_memory(size, alignment, extra_base, extra_size);
 }
 
+#ifndef SVM
 char* os::map_memory_to_file_aligned(size_t size, size_t alignment, int file_desc, MemTag mem_tag) {
   size_t extra_size = calculate_aligned_extra_size(size, alignment);
   // For file mapping, we do not call os:map_memory_to_file(size,fd) since:
@@ -545,11 +548,13 @@ char* os::map_memory_to_file_aligned(size_t size, size_t alignment, int file_des
 int os::get_fileno(FILE* fp) {
   return NOT_AIX(::)fileno(fp);
 }
+#endif // !SVM
 
 struct tm* os::gmtime_pd(const time_t* clock, struct tm*  res) {
   return gmtime_r(clock, res);
 }
 
+#ifndef SVM
 void os::Posix::print_load_average(outputStream* st) {
   st->print("load average: ");
   double loadavg[3];
@@ -728,6 +733,7 @@ bool os::get_host_name(char* buf, size_t buflen) {
   log_warning(os)("Failed to get host name, error message: %s", errmsg);
   return false;
 }
+#endif // !SVM
 
 #ifndef _LP64
 // Helper, on 32bit, for os::has_allocatable_memory_limit
@@ -813,6 +819,7 @@ bool os::has_allocatable_memory_limit(size_t* limit) {
 #endif
 }
 
+#ifndef SVM
 void* os::get_default_process_handle() {
 #ifdef __APPLE__
   // MacOS X needs to use RTLD_FIRST instead of RTLD_LAZY
@@ -904,6 +911,7 @@ const char* os::get_current_directory(char *buf, size_t buflen) {
 FILE* os::fdopen(int fd, const char* mode) {
   return ::fdopen(fd, mode);
 }
+#endif // !SVM
 
 ssize_t os::pd_write(int fd, const void *buf, size_t nBytes) {
   ssize_t res;
@@ -911,9 +919,11 @@ ssize_t os::pd_write(int fd, const void *buf, size_t nBytes) {
   return res;
 }
 
+#ifndef SVM
 ssize_t os::read_at(int fd, void *buf, unsigned int nBytes, jlong offset) {
   return ::pread(fd, buf, nBytes, offset);
 }
+#endif // !SVM
 
 void os::flockfile(FILE* fp) {
   ::flockfile(fp);
@@ -923,6 +933,7 @@ void os::funlockfile(FILE* fp) {
   ::funlockfile(fp);
 }
 
+#ifndef SVM
 DIR* os::opendir(const char* dirname) {
   assert(dirname != nullptr, "just checking");
   return ::opendir(dirname);
@@ -961,6 +972,7 @@ ssize_t os::connect(int fd, struct sockaddr* him, socklen_t len) {
 void os::exit(int num) {
   permit_forbidden_function::exit(num);
 }
+#endif // !SVM
 
 void os::_exit(int num) {
   permit_forbidden_function::_exit(num);
@@ -986,11 +998,13 @@ void os::naked_short_nanosleep(jlong ns) {
   return;
 }
 
+#ifndef SVM
 void os::naked_short_sleep(jlong ms) {
   assert(ms < MILLIUNITS, "Un-interruptable sleep, short time use only");
   os::naked_short_nanosleep(millis_to_nanos(ms));
   return;
 }
+#endif // !SVM
 
 char* os::Posix::describe_pthread_attr(char* buf, size_t buflen, const pthread_attr_t* attr) {
   size_t stack_size = 0;
@@ -1007,6 +1021,7 @@ char* os::Posix::describe_pthread_attr(char* buf, size_t buflen, const pthread_a
   return buf;
 }
 
+#ifndef SVM
 char* os::realpath(const char* filename, char* outbuf, size_t outbuflen) {
 
   if (filename == nullptr || outbuf == nullptr || outbuflen < 1) {
@@ -1086,6 +1101,7 @@ bool os::same_files(const char* file1, const char* file2) {
   }
   return is_same;
 }
+#endif // !SVM
 
 // Called when creating the thread.  The minimum stack sizes have already been calculated
 size_t os::Posix::get_initial_stack_size(ThreadType thr_type, size_t req_stack_size) {
@@ -1096,6 +1112,7 @@ size_t os::Posix::get_initial_stack_size(ThreadType thr_type, size_t req_stack_s
     stack_size = req_stack_size;
   }
 
+#ifndef SVM
   switch (thr_type) {
   case os::java_thread:
     // Java threads use ThreadStackSize which default value can be
@@ -1128,6 +1145,7 @@ size_t os::Posix::get_initial_stack_size(ThreadType thr_type, size_t req_stack_s
                       _vm_internal_thread_min_stack_allowed);
     break;
   }
+#endif // !SVM
 
   // pthread_attr_setstacksize() may require that the size be rounded up to the OS page size.
   // Be careful not to round up to 0. Align down in that case.
@@ -1140,6 +1158,7 @@ size_t os::Posix::get_initial_stack_size(ThreadType thr_type, size_t req_stack_s
   return stack_size;
 }
 
+#ifndef SVM
 #ifndef ZERO
 #ifndef ARM
 static bool get_frame_at_stack_banging_point(JavaThread* thread, address pc, const void* ucVoid, frame* fr) {
@@ -1269,6 +1288,7 @@ bool os::Posix::matches_effective_uid_or_root(uid_t uid) {
 bool os::Posix::matches_effective_uid_and_gid_or_root(uid_t uid, gid_t gid) {
     return is_root(uid) || (geteuid() == uid && getegid() == gid);
 }
+#endif // !SVM
 
 // Shared clock/time and other supporting routines for pthread_mutex/cond
 // initialization. This is enabled on Solaris but only some of the clock/time
@@ -1317,9 +1337,13 @@ void os::Posix::init(void) {
   // Check for pthread_condattr_setclock support.
 
   // libpthread is already loaded.
+#if defined(SVM) && defined(MUSL_LIBC)
+  int (*condattr_setclock_func)(pthread_condattr_t*, clockid_t) = &::pthread_condattr_setclock;
+#else
   int (*condattr_setclock_func)(pthread_condattr_t*, clockid_t) =
     (int (*)(pthread_condattr_t*, clockid_t))dlsym(RTLD_DEFAULT,
                                                    "pthread_condattr_setclock");
+#endif
   if (condattr_setclock_func != nullptr) {
     _pthread_condattr_setclock = condattr_setclock_func;
   }
@@ -1358,6 +1382,7 @@ int os::Posix::clock_tics_per_second() {
   return clock_tics_per_sec;
 }
 
+#ifndef SVM
 #ifdef ASSERT
 bool os::Posix::ucontext_is_interpreter(const ucontext_t* uc) {
   assert(uc != nullptr, "invariant");
@@ -1366,6 +1391,7 @@ bool os::Posix::ucontext_is_interpreter(const ucontext_t* uc) {
   return Interpreter::contains(pc);
 }
 #endif
+#endif // !SVM
 
 // Utility to convert the given timeout to an absolute timespec
 // (based on the appropriate clock) to use with pthread_cond_timewait,
@@ -1434,6 +1460,7 @@ static void unpack_abs_time(timespec* abstime, jlong deadline, jlong now_sec) {
   }
 }
 
+#ifndef SVM
 static jlong millis_to_nanos_bounded(jlong millis) {
   // We have to watch for overflow when converting millis to nanos,
   // but if millis is that large then we will end up limiting to
@@ -1443,6 +1470,7 @@ static jlong millis_to_nanos_bounded(jlong millis) {
   }
   return millis_to_nanos(millis);
 }
+#endif // !SVM
 
 static void to_abstime(timespec* abstime, jlong timeout,
                        bool isAbsolute, bool isRealtime) {
@@ -1474,6 +1502,7 @@ static void to_abstime(timespec* abstime, jlong timeout,
   assert(abstime->tv_nsec < NANOUNITS, "tv_nsec >= NANOUNITS");
 }
 
+#ifndef SVM
 // Create an absolute time 'millis' milliseconds in the future, using the
 // real-time (time-of-day) clock. Used by PosixSemaphore.
 void os::Posix::to_RTC_abstime(timespec* abstime, int64_t millis) {
@@ -1481,6 +1510,7 @@ void os::Posix::to_RTC_abstime(timespec* abstime, int64_t millis) {
              false /* not absolute */,
              true  /* use real-time clock */);
 }
+#endif // !SVM
 
 // Common (partly) shared time functions
 
@@ -1492,6 +1522,7 @@ jlong os::javaTimeMillis() {
     jlong(ts.tv_nsec) / NANOUNITS_PER_MILLIUNIT;
 }
 
+#ifndef SVM
 void os::javaTimeSystemUTC(jlong &seconds, jlong &nanos) {
   struct timespec ts;
   int status = clock_gettime(CLOCK_REALTIME, &ts);
@@ -1499,6 +1530,7 @@ void os::javaTimeSystemUTC(jlong &seconds, jlong &nanos) {
   seconds = jlong(ts.tv_sec);
   nanos = jlong(ts.tv_nsec);
 }
+#endif // !SVM
 
 // macOS and AIX have platform specific implementations for javaTimeNanos()
 // using native clock/timer access APIs. These have historically worked well
@@ -1514,6 +1546,7 @@ jlong os::javaTimeNanos() {
   return result;
 }
 
+#ifndef SVM
 void os::javaTimeNanos_info(jvmtiTimerInfo *info_ptr) {
   // CLOCK_MONOTONIC - amount of time since some arbitrary point in the past
   info_ptr->max_value = all_bits_jlong;
@@ -1521,6 +1554,7 @@ void os::javaTimeNanos_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->may_skip_forward = false;       // not subject to resetting or drifting
   info_ptr->kind = JVMTI_TIMER_ELAPSED;     // elapsed not CPU time
 }
+#endif // !SVM
 #endif // ! APPLE && !AIX
 
 // Time since start-up in seconds to a fine granularity.
@@ -1558,6 +1592,7 @@ bool os::getTimesSecs(double* process_real_time,
   }
 }
 
+#ifndef SVM
 char * os::local_time_string(char *buf, size_t buflen) {
   struct tm t;
   time_t long_time;
@@ -1568,11 +1603,13 @@ char * os::local_time_string(char *buf, size_t buflen) {
                t.tm_hour, t.tm_min, t.tm_sec);
   return buf;
 }
+#endif // !SVM
 
 struct tm* os::localtime_pd(const time_t* clock, struct tm*  res) {
   return localtime_r(clock, res);
 }
 
+#ifndef SVM
 // PlatformEvent
 //
 // Assumption:
@@ -1866,6 +1903,7 @@ void Parker::unpark() {
     assert_status(status == 0, status, "invariant");
   }
 }
+#endif // !SVM
 
 // Platform Mutex/Monitor implementation
 
@@ -2006,6 +2044,7 @@ int PlatformMonitor::wait(uint64_t millis) {
   }
 }
 
+#ifndef SVM
 // Darwin has no "environ" in a dynamic library.
 #ifdef __APPLE__
   #define environ (*_NSGetEnviron())
@@ -2078,6 +2117,7 @@ bool os::message_box(const char* title, const char* message) {
 
   return buf[0] == 'y' || buf[0] == 'Y';
 }
+#endif // !SVM
 
 ////////////////////////////////////////////////////////////////////////////////
 // runtime exit support
@@ -2086,22 +2126,24 @@ bool os::message_box(const char* title, const char* message) {
 // called from signal handler. Before adding something to os::shutdown(), make
 // sure it is async-safe and can handle partially initialized VM.
 void os::shutdown() {
-
+#ifndef SVM
   // allow PerfMemory to attempt cleanup of any persistent resources
   perfMemory_exit();
 
   // needs to remove object in file system
   AttachListener::abort();
+#endif // !SVM
 
   // flush buffered output, finish log files
   ostream_abort();
 
+#ifndef SVM
   // Check for abort hook
   abort_hook_t abort_hook = Arguments::abort_hook();
   if (abort_hook != nullptr) {
     abort_hook();
   }
-
+#endif // !SVM
 }
 
 // Note: os::abort() might be called very early during initialization, or
@@ -2113,16 +2155,20 @@ void os::shutdown() {
 // But note that os::shutdown() could also trigger secondary faults.
 void os::abort(bool dump_core, const void* siginfo, const void* context) {
   os::shutdown();
+  assert_svm_only(!dump_core, "SVM does not create core dumps through os::abort");
+#ifndef SVM
   if (dump_core) {
     LINUX_ONLY(if (DumpPrivateMappingsInCore) ClassLoader::close_jrt_image();)
     ::abort(); // dump core
   }
+#endif // SVM
   os::_exit(1);
 }
 
 // Die immediately, no exit hook, no abort hook, no cleanup.
 // Dump a core file, if possible, for debugging.
 void os::die() {
+#ifndef SVM
   if (TestUnresponsiveErrorHandler && !CreateCoredumpOnCrash) {
     // For TimeoutInErrorHandlingTest.java, we just kill the VM
     // and don't take the time to generate a core file.
@@ -2130,9 +2176,11 @@ void os::die() {
     // ::raise is not noreturn, even though with SIGKILL it definitely won't
     // return.  Hence "fall through" to ::abort, which is declared noreturn.
   }
+#endif // !SVM
   ::abort();
 }
 
+#ifndef SVM
 const char* os::file_separator() { return "/"; }
 const char* os::line_separator() { return "\n"; }
 const char* os::path_separator() { return ":"; }
@@ -2225,3 +2273,4 @@ const void* os::get_saved_assert_context(const void** sigInfo) {
   *sigInfo = nullptr;
   return nullptr;
 }
+#endif // !SVM

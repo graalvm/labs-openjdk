@@ -86,6 +86,10 @@ private:
   }
 
 public:
+#ifdef SVM
+  MemRegion* reserved() { return &_reserved; }
+  const uint8_t* entry_for_addr_for_read(const void* const p) const { return entry_for_addr(p); }
+#endif // SVM
 
   // Return the number of slots needed for an offset array
   // that covers mem_region_words words.
@@ -99,6 +103,11 @@ public:
   // Initialize the Block Offset Table to cover the memory region passed
   // in the heap parameter.
   G1BlockOffsetTable(MemRegion heap, G1RegionToSpaceMapper* storage);
+
+#ifdef SVM
+  // Initialize a read-only view backed by prebuilt BOT entries from the image.
+  G1BlockOffsetTable(MemRegion heap, const uint8_t* bot_entries);
+#endif // SVM
 
   static bool is_crossing_card_boundary(HeapWord* const obj_start,
                                         HeapWord* const obj_end) {

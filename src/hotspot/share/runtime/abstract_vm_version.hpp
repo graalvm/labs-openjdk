@@ -28,6 +28,7 @@
 #include "memory/allStatic.hpp"  // For declaration of class AllStatic
 #include "utilities/globalDefinitions.hpp"
 
+#ifndef SVM
 typedef enum {
   NoDetectedVirtualization,
   XenHVM,
@@ -40,6 +41,7 @@ typedef enum {
   PowerFullPartitionMode, // on Linux ppc64(le)
   PowerKVM
 } VirtualizationType;
+#endif // !SVM
 
 class outputStream;
 enum class vmIntrinsicID;
@@ -47,6 +49,7 @@ enum class vmIntrinsicID;
 // Abstract_VM_Version provides information about the VM.
 
 class Abstract_VM_Version: AllStatic {
+#ifndef SVM
   friend class VMStructs;
   friend class JVMCIVMStructs;
 
@@ -80,9 +83,10 @@ class Abstract_VM_Version: AllStatic {
   static int          _vm_patch_version;
   static int          _vm_build_number;
   static unsigned int _data_cache_line_flush_size;
+#endif // !SVM
 
  public:
-
+#ifndef SVM
   static VirtualizationType _detected_virtualization;
 
   // Called as part of the runtime services initialization which is
@@ -181,10 +185,12 @@ class Abstract_VM_Version: AllStatic {
     return _data_cache_line_flush_size != 0;
   }
 
+#endif // !SVM
   // Denominator for computing default ParallelGCThreads for machines with
   // a large number of cores.
   static uint parallel_worker_threads_denominator() { return 8; }
 
+#ifndef SVM
   // Does this CPU support spin wait instruction?
   static bool supports_on_spin_wait() { return false; }
 
@@ -229,6 +235,7 @@ class Abstract_VM_Version: AllStatic {
 
   static const char* cpu_name(void);
   static const char* cpu_description(void);
+#endif // !SVM
 };
 
 #endif // SHARE_RUNTIME_ABSTRACT_VM_VERSION_HPP

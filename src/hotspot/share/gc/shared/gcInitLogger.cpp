@@ -44,15 +44,19 @@ void GCInitLogger::print_all() {
   print_gc_specific();
 }
 
+#ifndef SVM
 void GCInitLogger::print() {
   GCInitLogger init_log;
   init_log.print_all();
 }
+#endif // !SVM
 
 void GCInitLogger::print_version() {
+#ifndef SVM
   log_info(gc, init)("Version: %s (%s)",
                      VM_Version::vm_release(),
                      VM_Version::jdk_debug_level());
+#endif // !SVM
 }
 
 void GCInitLogger::print_cpu() {
@@ -72,21 +76,27 @@ void GCInitLogger::print_large_pages() {
 }
 
 void GCInitLogger::print_numa() {
+#ifndef SVM
   if (UseNUMA) {
     log_info_p(gc, init)("NUMA Support: Enabled");
     log_info_p(gc, init)("NUMA Nodes: %zu", os::numa_get_groups_num());
   } else {
+#endif // !SVM
     log_info_p(gc, init)("NUMA Support: Disabled");
+#ifndef SVM
   }
+#endif // !SVM
 }
 
 void GCInitLogger::print_compressed_oops() {
+#ifndef SVM
   if (UseCompressedOops) {
     log_info_p(gc, init)("Compressed Oops: Enabled (%s)",
                          CompressedOops::mode_to_string(CompressedOops::mode()));
   } else {
     log_info_p(gc, init)("Compressed Oops: Disabled");
   }
+#endif // !SVM
 }
 
 void GCInitLogger::print_heap() {

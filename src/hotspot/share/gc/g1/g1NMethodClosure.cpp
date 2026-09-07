@@ -79,6 +79,7 @@ void G1NMethodClosure::do_evacuation_and_fixup(nmethod* nm) {
   // Evacuate objects pointed to by the nmethod
   nm->oops_do(&_oc);
 
+#ifndef SVM
   if (_strong) {
     // CodeCache unloading support
     nm->mark_as_maybe_on_stack();
@@ -88,17 +89,20 @@ void G1NMethodClosure::do_evacuation_and_fixup(nmethod* nm) {
   }
 
   nm->fix_oop_relocations();
+#endif // !SVM
 }
 
 void G1NMethodClosure::do_marking(nmethod* nm) {
   // Mark through oops in the nmethod
   nm->oops_do(&_marking_oc);
 
+#ifndef SVM
   // CodeCache unloading support
   nm->mark_as_maybe_on_stack();
 
   BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
   bs_nm->disarm(nm);
+#endif // !SVM
 
   // The oops were only marked, no need to update oop relocations.
 }
@@ -124,7 +128,15 @@ void G1NMethodClosure::do_nmethod(nmethod* nm) {
   G1NmethodProcessor cl(this);
 
   if (_strong) {
+#ifdef SVM
+    // NOTE (chaeubl): this code part is only called for "Concurrent Start" GCs. Our nmethod lifecycle is completely different
+    // from HotSpot, so we only mark nmethod oops if we are in a full GC or in the remark phase of concurrent marking. Doing
+    // the marking here could impede code unloading.
+    assert(G1CollectedHeap::heap()->collector_state()->in_concurrent_start_gc(), "should not be called otherwise");
+    nm->oops_do_process_weak(&cl);
+#else
     nm->oops_do_process_strong(&cl);
+#endif // SVM
   } else {
     nm->oops_do_process_weak(&cl);
   }

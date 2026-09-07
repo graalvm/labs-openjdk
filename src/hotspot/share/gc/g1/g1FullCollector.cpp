@@ -45,6 +45,9 @@
 #include "logging/log.hpp"
 #include "runtime/handles.inline.hpp"
 #include "utilities/debug.hpp"
+#ifdef SVM
+#include "runtime/threads.hpp"
+#endif // SVM
 
 static void clear_and_activate_derived_pointers() {
 #if COMPILER2_OR_JVMCI
@@ -203,6 +206,11 @@ void G1FullCollector::prepare_collection() {
 }
 
 void G1FullCollector::collect() {
+#ifdef SVM
+  StackFramesPerThread *stack_frames = Threads::set_java_stack_frames();
+  CodeInfosPerThread *code_infos = Threads::set_java_code_infos();
+#endif // SVM
+
   G1CollectedHeap::start_codecache_marking_cycle_if_inactive(false /* concurrent_mark_start */);
 
   phase1_mark_live_objects();
@@ -226,6 +234,11 @@ void G1FullCollector::collect() {
   phase5_reset_metadata();
 
   G1CollectedHeap::finish_codecache_marking_cycle();
+
+#ifdef SVM
+  Threads::free_java_code_infos(code_infos);
+  Threads::free_java_stack_frames(stack_frames);
+#endif // SVM
 }
 
 void G1FullCollector::complete_collection(size_t allocation_word_size) {
@@ -236,8 +249,10 @@ void G1FullCollector::complete_collection(size_t allocation_word_size) {
   // update the derived pointer table.
   update_derived_pointers();
 
+#ifndef SVM
   // Need completely cleared claim bits for the next concurrent marking or full gc.
   ClassLoaderDataGraph::clear_claimed_marks();
+#endif // !SVM
 
   // Prepare the bitmap for the next (potentially concurrent) marking.
   _heap->concurrent_mark()->clear_bitmap(_heap->workers());
@@ -251,6 +266,14 @@ void G1FullCollector::complete_collection(size_t allocation_word_size) {
   _heap->policy()->record_full_collection_end();
   _heap->gc_epilogue(true);
 
+#ifdef SVM
+  if (SVMGlobalData::_clean_runtime_code_cache != nullptr) {
+    // Clean the code cache now that the GC work has finished. We can't do this any earlier as this calls Java code, which can
+    // have side-effects on the GC (e.g., the Java code may modify the card table).
+    SVMGlobalData::_clean_runtime_code_cache(CompressedOops::base(), IsolateThread::current());
+  }
+#endif // SVM
+
   _heap->verify_after_full_collection();
 
   _heap->print_heap_after_full_collection();
@@ -259,7 +282,7 @@ void G1FullCollector::complete_collection(size_t allocation_word_size) {
 void G1FullCollector::before_marking_update_attribute_table(G1HeapRegion* hr) {
   if (hr->is_free()) {
     _region_attr_table.set_free(hr->hrm_index());
-  } else if (hr->is_humongous() || hr->has_pinned_objects()) {
+  } else if (hr->is_humongous() || hr->has_pinned_objects() SVM_ONLY(|| hr->is_image_heap())) {
     // Humongous objects or pinned regions will never be moved in the "main"
     // compaction phase, but non-pinned regions might afterwards in a special phase.
     _region_attr_table.set_skip_compacting(hr->hrm_index());
@@ -298,6 +321,13 @@ void G1FullCollector::phase1_mark_live_objects() {
     run_task(&marking_task);
   }
 
+#ifdef SVM
+  {
+    G1FullGCMarkCodeCacheTask code_cache_marking_task(this);
+    run_task(&code_cache_marking_task);
+  }
+#endif // SVM
+
   {
     uint old_active_mt_degree = reference_processor()->num_queues();
     reference_processor()->set_active_mt_degree(workers());
@@ -326,10 +356,12 @@ void G1FullCollector::phase1_mark_live_objects() {
     WeakProcessor::weak_oops_do(_heap->workers(), &_is_alive, &do_nothing_cl, 1);
   }
 
+#ifndef SVM
   // Class unloading and cleanup.
   if (ClassUnloading) {
     _heap->unload_classes_and_code("Phase 1: Class Unloading and Cleanup", &_is_alive, scope()->timer());
   }
+#endif // !SVM
 
   {
     GCTraceTime(Debug, gc, phases) debug("Report Object Count", scope()->timer());

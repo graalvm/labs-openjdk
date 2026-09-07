@@ -60,13 +60,16 @@
 #include "utilities/events.hpp"
 #include "utilities/ostream.hpp"
 
+#ifndef SVM
 class ClassLoaderData;
+#endif // !SVM
 
 size_t CollectedHeap::_lab_alignment_reserve = SIZE_MAX;
 Klass* CollectedHeap::_filler_object_klass = nullptr;
 size_t CollectedHeap::_filler_array_max_size = 0;
 size_t CollectedHeap::_stack_chunk_max_size = 0;
 
+#ifndef SVM
 class GCLogMessage : public FormatBuffer<1024> {};
 
 template <>
@@ -128,14 +131,17 @@ class GCMetaspaceLog : public GCLog {
 ParallelObjectIterator::ParallelObjectIterator(uint thread_num) :
   _impl(Universe::heap()->parallel_object_iterator(thread_num))
 {}
+#endif // !SVM
 
 ParallelObjectIterator::~ParallelObjectIterator() {
   delete _impl;
 }
 
+#ifndef SVM
 void ParallelObjectIterator::object_iterate(ObjectClosure* cl, uint worker_id) {
   _impl->object_iterate(cl, worker_id);
 }
+#endif // !SVM
 
 size_t CollectedHeap::unused() const {
   MutexLocker ml(Heap_lock);
@@ -154,6 +160,7 @@ GCHeapSummary CollectedHeap::create_heap_summary() {
   return GCHeapSummary(heap_space, used());
 }
 
+#ifndef SVM
 MetaspaceSummary CollectedHeap::create_metaspace_summary() {
   const MetaspaceChunkFreeListSummary& ms_chunk_free_list_summary =
     MetaspaceUtils::chunk_free_list_summary(Metaspace::NonClassType);
@@ -163,6 +170,7 @@ MetaspaceSummary CollectedHeap::create_metaspace_summary() {
                           MetaspaceUtils::get_combined_statistics(),
                           ms_chunk_free_list_summary, class_chunk_free_list_summary);
 }
+#endif // !SVM
 
 bool CollectedHeap::contains_null(const oop* p) const {
   return *p == nullptr;
@@ -182,6 +190,7 @@ void CollectedHeap::print_relative_to_gc(GCWhen::Type when) const {
     print_heap_on(&ls);
   }
 
+#ifndef SVM
   if (_heap_log != nullptr) {
     _heap_log->log_gc(this, when);
   }
@@ -198,6 +207,7 @@ void CollectedHeap::print_relative_to_gc(GCWhen::Type when) const {
   if (_metaspace_log != nullptr) {
     _metaspace_log->log_gc(this, when);
   }
+#endif // !SVM
 }
 
 void CollectedHeap::print_before_gc() const {
@@ -217,8 +227,10 @@ void CollectedHeap::trace_heap(GCWhen::Type when, const GCTracer* gc_tracer) {
   const GCHeapSummary& heap_summary = create_heap_summary();
   gc_tracer->report_gc_heap_summary(when, heap_summary);
 
+#ifndef SVM
   const MetaspaceSummary& metaspace_summary = create_metaspace_summary();
   gc_tracer->report_metaspace_summary(when, metaspace_summary);
+#endif // !SVM
 }
 
 void CollectedHeap::trace_heap_before_gc(const GCTracer* gc_tracer) {
@@ -248,10 +260,10 @@ static bool klass_is_sane(oop object) {
       return true;
     }
 
-    return Metaspace::contains(mark.klass_without_asserts());
+    return SVM_ONLY(Universe::heap()->is_in(mark.klass_without_asserts())) NOT_SVM(Metaspace::contains(mark.klass_without_asserts()));
   }
 
-  return Metaspace::contains(object->klass_without_asserts());
+  return SVM_ONLY(Universe::heap()->is_in(object->klass_without_asserts())) NOT_SVM(Metaspace::contains(object->klass_without_asserts()));
 }
 
 bool CollectedHeap::is_oop(oop object) const {
@@ -292,15 +304,25 @@ CollectedHeap::CollectedHeap() :
   size_t min_size = min_dummy_object_size();
   _lab_alignment_reserve = min_size > (size_t)MinObjAlignment ? align_object_size(min_size) : 0;
 
+  // NOTE (chaeubl): not needed because _filler_array_max_size is overwritten in G1CollectedHeap.
+#ifndef SVM
   const size_t max_len = size_t(arrayOopDesc::max_array_length(T_INT));
   const size_t elements_per_word = HeapWordSize / sizeof(jint);
   _filler_array_max_size = align_object_size(filler_array_hdr_size() +
                                              max_len / elements_per_word);
+#endif // !SVM
 
   NOT_PRODUCT(_promotion_failure_alot_count = 0;)
   NOT_PRODUCT(_promotion_failure_alot_gc_number = 0;)
 
   if (UsePerfData) {
+#ifdef SVM
+    G1GCCausesPerfData *data = G1PerfData::get()->causes();
+    _perf_gc_cause = data->cause();
+    _perf_gc_cause->set_value(GCCause::to_string(_gc_cause));
+    _perf_gc_lastcause = data->last_cause();
+    _perf_gc_lastcause->set_value(GCCause::to_string(_gc_lastcause));
+#else
     EXCEPTION_MARK;
 
     // create the gc cause jvmstat counters
@@ -310,8 +332,10 @@ CollectedHeap::CollectedHeap() :
     _perf_gc_lastcause =
                 PerfDataManager::create_string_variable(SUN_GC, "lastCause",
                              80, GCCause::to_string(_gc_lastcause), CHECK);
+#endif // SVM
   }
 
+#ifndef SVM
   // Create the ring log
   if (LogEvents) {
     _metaspace_log = new GCMetaspaceLog();
@@ -320,8 +344,10 @@ CollectedHeap::CollectedHeap() :
     _metaspace_log = nullptr;
     _heap_log = nullptr;
   }
+#endif // !SVM
 }
 
+#ifndef SVM
 // This interface assumes that it's being called by the
 // vm thread. It collects the heap assuming that the
 // heap lock is already held and that we are executing in
@@ -397,6 +423,7 @@ MetaWord* CollectedHeap::satisfy_failed_metadata_allocation(ClassLoaderData* loa
 MemoryUsage CollectedHeap::memory_usage() {
   return MemoryUsage(InitialHeapSize, used(), capacity(), max_capacity());
 }
+#endif // !SVM
 
 void CollectedHeap::set_gc_cause(GCCause::Cause v) {
   if (UsePerfData) {
@@ -410,7 +437,7 @@ void CollectedHeap::set_gc_cause(GCCause::Cause v) {
 // Returns the header size in words aligned to the requirements of the
 // array object type.
 static int int_array_header_size() {
-  size_t typesize_in_bytes = arrayOopDesc::header_size_in_bytes();
+  size_t typesize_in_bytes = SVM_ONLY(Universe::fillerArrayKlass()->base_offset_in_bytes()) NOT_SVM(arrayOopDesc::header_size_in_bytes());
   return (int)align_up(typesize_in_bytes, HeapWordSize)/HeapWordSize;
 }
 
@@ -437,6 +464,7 @@ size_t CollectedHeap::filler_array_min_size() {
   return align_object_size(filler_array_hdr_size()); // align to MinObjAlignment
 }
 
+// NOTE (chaeubl): the 4 bytes after the array length might not be zapped correctly
 void CollectedHeap::zap_filler_array_with(HeapWord* start, size_t words, juint value) {
   Copy::fill_to_words(start + filler_array_hdr_size(),
                       words - filler_array_hdr_size(), value);
@@ -469,11 +497,14 @@ CollectedHeap::fill_with_array(HeapWord* start, size_t words, bool zap)
 
   ObjArrayAllocator allocator(Universe::fillerArrayKlass(), words, (int)len, /* do_zero */ false);
   allocator.initialize(start);
+#ifndef SVM
   if (CDSConfig::is_dumping_heap()) {
     // This array is written into the CDS archive. Make sure it
     // has deterministic contents.
     zap_filler_array_with(start, words, 0);
-  } else {
+  } else
+#endif // !SVM
+  {
     DEBUG_ONLY(zap_filler_array(start, words, zap);)
   }
 }
@@ -481,6 +512,7 @@ CollectedHeap::fill_with_array(HeapWord* start, size_t words, bool zap)
 void
 CollectedHeap::fill_with_object_impl(HeapWord* start, size_t words, bool zap)
 {
+  assert_svm_only(!SVMImageHeap::is_in_image_heap(start), "must not modify image heap data");
   assert(words <= filler_array_max_size(), "too big for a single object");
 
   if (words >= filler_array_min_size()) {
@@ -564,6 +596,7 @@ void CollectedHeap::record_whole_heap_examined_timestamp() {
 
 void CollectedHeap::full_gc_dump(GCTimer* timer, bool before) {
   assert(timer != nullptr, "timer is null");
+#ifndef SVM
   static uint count = 0;
   if ((HeapDumpBeforeFullGC && before) || (HeapDumpAfterFullGC && !before)) {
     if (FullGCHeapDumpLimit == 0 || count < FullGCHeapDumpLimit) {
@@ -580,6 +613,7 @@ void CollectedHeap::full_gc_dump(GCTimer* timer, bool before) {
     VM_GC_HeapInspection inspector(&ls, false /* ! full gc */);
     inspector.doit();
   }
+#endif // !SVM
 }
 
 void CollectedHeap::pre_full_gc_dump(GCTimer* timer) {
@@ -599,12 +633,15 @@ void CollectedHeap::initialize_reserved_region(const ReservedHeapSpace& rs) {
 }
 
 void CollectedHeap::post_initialize() {
+#ifndef SVM
   StringDedup::initialize();
+#endif // !SVM
   initialize_serviceability();
 }
 
 #ifndef PRODUCT
 
+#ifndef SVM
 bool CollectedHeap::promotion_should_fail(volatile size_t* count) {
   // Access to count is not atomic; the value does not have to be exact.
   if (PromotionFailureALot) {
@@ -635,6 +672,7 @@ void CollectedHeap::reset_promotion_should_fail(volatile size_t* count) {
 void CollectedHeap::reset_promotion_should_fail() {
   reset_promotion_should_fail(&_promotion_failure_alot_count);
 }
+#endif // !SVM
 
 #endif  // #ifndef PRODUCT
 

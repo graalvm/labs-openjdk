@@ -77,6 +77,7 @@ G1CardSetConfiguration::G1CardSetConfiguration() :
          "inconsistent heap region virtualization setup");
 }
 
+#ifndef SVM
 G1CardSetConfiguration::G1CardSetConfiguration(uint max_cards_in_array,
                                                double cards_in_bitmap_threshold_percent,
                                                uint max_buckets_in_howl,
@@ -93,6 +94,7 @@ G1CardSetConfiguration::G1CardSetConfiguration(uint max_cards_in_array,
                          max_cards_in_card_set,                                /* max_cards_in_card_set */
                          log2_card_regions_per_region)
 { }
+#endif // !SVM
 
 G1CardSetConfiguration::G1CardSetConfiguration(uint inline_ptr_bits_per_card,
                                                uint max_cards_in_array,
@@ -877,6 +879,7 @@ bool G1CardSet::contains_card(uint card_region, uint card_in_region) {
   return false;
 }
 
+#ifndef SVM
 void G1CardSet::print_info(outputStream* st, uintptr_t card) {
   uint card_region;
   uint card_in_region;
@@ -914,6 +917,7 @@ void G1CardSet::print_info(outputStream* st, uintptr_t card) {
     default: st->print("Unknown card set container type %u", container_type(container)); ShouldNotReachHere(); break;
   }
 }
+#endif // !SVM
 
 template <class CardVisitor>
 void G1CardSet::iterate_cards_during_transfer(ContainerPtr const container, CardVisitor& cl) {
@@ -991,10 +995,12 @@ public:
   }
 };
 
+#ifndef SVM
 void G1CardSet::iterate_cards(CardClosure& cl) {
   G1CardSetContainersClosure<CardClosure, G1ContainerCardsClosure> cl2(this, cl);
   iterate_containers(&cl2);
 }
+#endif // !SVM
 
 bool G1CardSet::occupancy_less_or_equal_to(size_t limit) const {
   return occupied() <= limit;
@@ -1008,6 +1014,7 @@ size_t G1CardSet::occupied() const {
   return _num_occupied;
 }
 
+#ifndef SVM
 size_t G1CardSet::num_containers() {
   class GetNumberOfContainers : public ContainerPtrClosure {
   public:
@@ -1027,6 +1034,7 @@ size_t G1CardSet::num_containers() {
 G1CardSetCoarsenStats G1CardSet::coarsen_stats() {
   return _coarsen_stats;
 }
+#endif // !SVM
 
 void G1CardSet::print_coarsen_stats(outputStream* out) {
   _last_coarsen_stats.subtract_from(_coarsen_stats);

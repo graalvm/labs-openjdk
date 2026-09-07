@@ -39,7 +39,9 @@ class G1HeapTransition {
     size_t _survivor_length;
     size_t _old_length;
     size_t _humongous_length;
+#ifndef SVM
     const MetaspaceCombinedStats _meta_sizes;
+#endif // !SVM
 
     // Only includes current eden regions.
     uint* _eden_length_per_node;

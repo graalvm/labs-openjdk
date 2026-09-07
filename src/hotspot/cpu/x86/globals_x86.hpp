@@ -86,7 +86,11 @@ define_pd_global(bool, PreserveFramePointer, false);
 
 define_pd_global(intx, InitArrayShortSize, 8*BytesPerLong);
 
-#define ARCH_FLAGS(develop,                                                 \
+#define ARCH_FLAGS(ni_hosted,                                               \
+                   ni_hosted_pd,                                            \
+                   ni_runtime,                                              \
+                   ni_runtime_pd,                                           \
+                   develop,                                                 \
                    product,                                                 \
                    range,                                                   \
                    constraint)                                              \

@@ -62,8 +62,10 @@ class G1FullGCMarker : public CHeapObj<mtGC> {
   // Marking closures
   G1MarkAndPushClosure  _mark_closure;
   G1FollowStackClosure  _stack_closure;
+#ifndef SVM
   CLDToOopClosure       _cld_closure;
   StringDedup::Requests _string_dedup_requests;
+#endif // !SVM
 
 
   G1RegionMarkStatsCache _mark_stats_cache;
@@ -103,7 +105,9 @@ public:
                         TaskTerminator* terminator);
 
   // Closure getters
+#ifndef SVM
   CLDToOopClosure*      cld_closure()   { return &_cld_closure; }
+#endif // !SVM
   G1MarkAndPushClosure* mark_closure()  { return &_mark_closure; }
   G1FollowStackClosure* stack_closure() { return &_stack_closure; }
 

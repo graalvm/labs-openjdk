@@ -99,6 +99,7 @@ public:
     return _special;
   }
 
+#ifndef SVM
   ReservedSpace partition(size_t offset, size_t partition_size, size_t alignment) const {
     assert(offset + partition_size <= size(), "partition failed");
 
@@ -132,6 +133,7 @@ public:
   ReservedSpace last_part (size_t split_offset) const {
     return last_part(split_offset, _alignment);
   }
+#endif // !SVM
 };
 
 // Class encapsulating behavior specific to memory reserved for the Java heap.
@@ -140,6 +142,9 @@ private:
   const size_t _noaccess_prefix;
 
 public:
+#ifdef SVM
+  ReservedHeapSpace(char* base, size_t size, size_t alignment, size_t page_size, size_t null_regions_size);
+#else
   // Constructor for non-reserved memory.
   ReservedHeapSpace()
     : ReservedSpace(),
@@ -148,6 +153,7 @@ public:
   ReservedHeapSpace(const ReservedSpace& reserved, size_t noaccess_prefix)
     : ReservedSpace(reserved),
       _noaccess_prefix(noaccess_prefix) {}
+#endif // !SVM
 
   size_t noaccess_prefix() const { return _noaccess_prefix; }
 

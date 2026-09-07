@@ -69,6 +69,7 @@ void G1FromCardCache::invalidate(uint start_idx, size_t new_num_regions) {
 }
 
 #ifndef PRODUCT
+#ifndef SVM
 void G1FromCardCache::print(outputStream* out) {
   for (uint i = 0; i < num_par_rem_sets(); i++) {
     for (uint j = 0; j < _max_reserved_regions; j++) {
@@ -77,6 +78,7 @@ void G1FromCardCache::print(outputStream* out) {
     }
   }
 }
+#endif // !SVM
 #endif
 
 uint G1FromCardCache::num_par_rem_sets() {

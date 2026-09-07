@@ -33,6 +33,7 @@ class GCArguments;
 class GCConfig : public AllStatic {
 private:
   static GCArguments* _arguments;
+#ifndef SVM
   static bool         _gc_selected_ergonomically;
 
   static void fail_if_non_included_gc_is_selected();
@@ -41,16 +42,21 @@ private:
 
   static void select_gc_ergonomically();
   static GCArguments* select_gc();
+#endif // !SVM
 
 public:
   static void initialize();
 
+#ifndef SVM
   static bool is_gc_supported(CollectedHeap::Name name);
+#endif // !SVM
   static bool is_gc_selected(CollectedHeap::Name name);
+#ifndef SVM
   static bool is_gc_selected_ergonomically();
 
   static const char* hs_err_name();
   static const char* hs_err_name(CollectedHeap::Name name);
+#endif // !SVM
 
   static GCArguments* arguments();
 };

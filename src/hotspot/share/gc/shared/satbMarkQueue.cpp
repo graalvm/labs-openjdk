@@ -49,6 +49,7 @@ SATBMarkQueue::SATBMarkQueue(SATBMarkQueueSet* qset) :
 #ifndef PRODUCT
 // Helpful for debugging
 
+#ifndef SVM
 static void print_satb_buffer(const char* name,
                               void** buf,
                               size_t index,
@@ -61,6 +62,7 @@ static void print_satb_buffer(const char* name,
 void SATBMarkQueue::print(const char* name) {
   print_satb_buffer(name, _buf, index(), current_capacity());
 }
+#endif // !SVM
 
 #endif // PRODUCT
 
@@ -295,6 +297,7 @@ BufferNode* SATBMarkQueueSet::get_completed_buffer() {
 
 #define SATB_PRINTER_BUFFER_SIZE 256
 
+#ifndef SVM
 void SATBMarkQueueSet::print_all(const char* msg) {
   char buffer[SATB_PRINTER_BUFFER_SIZE];
   assert(SafepointSynchronize::is_at_safepoint(), "Must be at safepoint.");
@@ -329,6 +332,7 @@ void SATBMarkQueueSet::print_all(const char* msg) {
 
   tty->cr();
 }
+#endif // !SVM
 #endif // PRODUCT
 
 void SATBMarkQueueSet::abandon_completed_buffers() {

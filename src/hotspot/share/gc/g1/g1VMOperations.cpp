@@ -50,7 +50,13 @@ bool VM_G1CollectFull::skip_operation() const {
 void VM_G1CollectFull::doit() {
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
   GCCauseSetter x(g1h, _gc_cause);
+#ifdef SVM
+  // A full GC triggered by WhiteBox tests needs to clear soft references as well.
+  // Instead of manipulating soft_ref_policy(), we add some logic here to avoid races.
+  g1h->do_full_collection(_gc_cause == GCCause::_wb_full_gc,
+#else
   g1h->do_full_collection(false /* clear_all_soft_refs */,
+#endif
                           false /* do_maximal_compaction */,
                           size_t(0) /* allocation_word_size */);
 }

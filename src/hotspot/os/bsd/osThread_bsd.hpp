@@ -28,7 +28,6 @@
 #include "runtime/osThreadBase.hpp"
 #include "suspendResume_posix.hpp"
 #include "utilities/globalDefinitions.hpp"
-
 class OSThread : public OSThreadBase {
   friend class VMStructs;
 
@@ -44,20 +43,24 @@ class OSThread : public OSThreadBase {
   // (e.g. pthread_kill).
   pthread_t _pthread_id;
 
+#ifndef SVM
   // This is the "thread_id" from struct thread_identifier_info. According to a
   // comment in thread_info.h, this is a "system-wide unique 64-bit thread id".
   // The value is used by SA to correlate threads.
   uint64_t _unique_thread_id;
 
   sigset_t _caller_sigmask; // Caller's signal mask
+#endif // !SVM
 
  public:
   OSThread();
   ~OSThread();
 
+#ifndef SVM
   // Methods to save/restore caller's signal mask
   sigset_t  caller_sigmask() const       { return _caller_sigmask; }
   void    set_caller_sigmask(sigset_t sigmask)  { _caller_sigmask = sigmask; }
+#endif // !SVM
 
   thread_id_t thread_id() const {
     return _thread_id;
@@ -73,6 +76,7 @@ class OSThread : public OSThreadBase {
     _pthread_id = tid;
   }
 
+#ifndef SVM
   void set_unique_thread_id();
 
   // ***************************************************************
@@ -114,6 +118,7 @@ public:
 
   void set_alt_sig_stack(address val)     { _alt_sig_stack = val; }
   address alt_sig_stack(void)             { return _alt_sig_stack; }
+#endif // !SVM
 
 private:
   Monitor* _startThread_lock;     // sync parent and child in thread creation
@@ -128,5 +133,4 @@ public:
     return (uintx)_thread_id;
   }
 };
-
 #endif // OS_BSD_OSTHREAD_BSD_HPP

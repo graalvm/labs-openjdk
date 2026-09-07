@@ -33,6 +33,11 @@ class MarkScope : public StackObj {
   ~MarkScope();
 };
 
+#ifdef SVM
+class NMethodMarkScope : public MarkScope {
+};
+#endif // SVM
+
 // Sets up and tears down the required state for sequential/parallel root processing.
 class StrongRootsScope : public MarkScope {
   // Number of threads participating in the roots processing.

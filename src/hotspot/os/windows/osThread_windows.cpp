@@ -25,18 +25,20 @@
 #include "runtime/osThread.hpp"
 
 #include <Windows.h>
-
 OSThread::OSThread()
   : _thread_id(0),
-    _thread_handle(nullptr),
-    _interrupt_event(nullptr) {}
+    _thread_handle(nullptr)
+    NOT_SVM(COMMA _interrupt_event(nullptr)) {}
 
 OSThread::~OSThread() {
+#ifndef SVM
   if (_interrupt_event != nullptr) {
     CloseHandle(_interrupt_event);
   }
+#endif // !SVM
 }
 
+#ifndef SVM
 // We need to specialize this to interact with the _interrupt_event.
 
 void OSThread::set_interrupted(bool z) {
@@ -49,3 +51,4 @@ void OSThread::set_interrupted(bool z) {
     ResetEvent(_interrupt_event);
   }
 }
+#endif // !SVM

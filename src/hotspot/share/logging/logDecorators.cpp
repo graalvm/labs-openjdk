@@ -59,6 +59,7 @@ const LogDecorators::DefaultUndecoratedSelection LogDecorators::default_decorato
 
 const size_t LogDecorators::number_of_default_decorators = ARRAY_SIZE(default_decorators);
 
+#ifndef SVM
 LogDecorators::Decorator LogDecorators::from_string(const char* str) {
   for (size_t i = 0; i < Count; i++) {
     Decorator d = static_cast<Decorator>(i);
@@ -122,3 +123,4 @@ bool LogDecorators::has_disabled_default_decorators(const LogSelection& selectio
   }
   return false;
 }
+#endif // !SVM

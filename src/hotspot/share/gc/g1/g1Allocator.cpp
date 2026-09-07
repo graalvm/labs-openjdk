@@ -97,6 +97,8 @@ void G1Allocator::reuse_retained_old_region(G1EvacInfo* evacuation_info,
                                             G1HeapRegion** retained_old) {
   G1HeapRegion* retained_region = *retained_old;
   *retained_old = nullptr;
+  assert_svm_only(retained_region == nullptr || !retained_region->is_image_heap(),
+                        "image heap region must not be an alloc region (index %u)", retained_region->hrm_index());
 
   // We will discard the current GC alloc region if:
   // a) it's in the collection set (it can happen!),

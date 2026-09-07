@@ -391,6 +391,8 @@ public:
     }
 
     G1HeapRegion* r = _g1h->region_at(region_index);
+    assert_svm_only(!r->is_image_heap(), "image heap regions must not be freed");
+    assert_svm_only(!r->has_pinned_objects(), "regions with pinned objects must not be freed");
 
     oop obj = cast_to_oop(r->bottom());
     guarantee(obj->is_typeArray(),

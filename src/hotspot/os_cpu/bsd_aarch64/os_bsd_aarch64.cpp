@@ -79,7 +79,6 @@
 #if !defined(__APPLE__) && !defined(__NetBSD__)
 # include <pthread_np.h>
 #endif
-
 #define SPELL_REG_SP "sp"
 #define SPELL_REG_FP "fp"
 
@@ -100,6 +99,7 @@
 
 #define REG_BCP context_x[22]
 
+#ifndef SVM
 address os::current_stack_pointer() {
 #if defined(__clang__) || defined(__llvm__)
   void *sp;
@@ -348,6 +348,7 @@ void os::Bsd::init_thread_fpu_state(void) {
 size_t os::_compiler_thread_min_stack_allowed = 72 * K;
 size_t os::_java_thread_min_stack_allowed = 72 * K;
 size_t os::_vm_internal_thread_min_stack_allowed = 72 * K;
+#endif // !SVM
 
 // return default stack size for thr_type
 size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
@@ -355,6 +356,8 @@ size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
   size_t s = (thr_type == os::compiler_thread ? 4 * M : 1 * M);
   return s;
 }
+
+#ifndef SVM
 void os::current_stack_base_and_size(address* base, size_t* size) {
   address bottom;
 #ifdef __APPLE__
@@ -500,6 +503,7 @@ int os::extra_bang_size_in_bytes() {
 void os::current_thread_enable_wx(WXMode mode) {
   pthread_jit_write_protect_np(mode == WXExec);
 }
+#endif // !SVM
 
 static inline void atomic_copy64(const volatile void *src, volatile void *dst) {
   *(jlong *) dst = *(const jlong *) src;
@@ -507,7 +511,12 @@ static inline void atomic_copy64(const volatile void *src, volatile void *dst) {
 
 extern "C" {
   // needs local assembler label '1:' to avoid trouble when using linktime optimization
+
   int SpinPause() {
+#ifdef SVM
+    // SVM does not build the AArch64 spin-wait stub; use Darwin's HotSpot default directly.
+    asm volatile("isb" : : : "memory");
+#else
     // We don't use StubRoutines::aarch64::spin_wait stub in order to
     // avoid a costly call to os::current_thread_enable_wx() on MacOS.
     // We should return 1 if SpinPause is implemented, and since there
@@ -540,6 +549,7 @@ extern "C" {
         : [d]"=&r"(br_dst)
         : [o]"r"(off)
         : "memory");
+#endif // SVM
     return 1;
   }
 

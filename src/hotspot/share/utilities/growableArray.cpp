@@ -65,9 +65,11 @@ GrowableArrayNestingCheck::GrowableArrayNestingCheck(bool on_resource_area) :
     _nesting(on_resource_area ? Thread::current()->resource_area()->nesting() : 0) {
 }
 
+#ifndef SVM
 GrowableArrayNestingCheck::GrowableArrayNestingCheck(Arena* arena) :
     _nesting((arena->get_tag() == Arena::Tag::tag_ra) ? static_cast<ResourceArea*>(arena)->nesting() : 0) {
 }
+#endif // !SVM
 
 void GrowableArrayNestingCheck::on_resource_area_alloc() const {
   // Check for insidious allocation bug: if a GrowableArray overflows, the

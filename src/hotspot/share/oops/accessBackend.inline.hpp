@@ -39,7 +39,7 @@
 template <DecoratorSet decorators>
 template <DecoratorSet idecorators, typename T>
 inline typename EnableIf<
-  AccessInternal::MustConvertCompressedOop<idecorators, T>::value, T>::type
+  AccessInternal::MustDecodeOop<idecorators, T>::value, T>::type
 RawAccessBarrier<decorators>::decode_internal(typename HeapOopType<idecorators>::type value) {
   if (HasDecorator<decorators, IS_NOT_NULL>::value) {
     return CompressedOops::decode_not_null(value);
@@ -51,7 +51,7 @@ RawAccessBarrier<decorators>::decode_internal(typename HeapOopType<idecorators>:
 template <DecoratorSet decorators>
 template <DecoratorSet idecorators, typename T>
 inline typename EnableIf<
-  AccessInternal::MustConvertCompressedOop<idecorators, T>::value,
+  AccessInternal::MustEncodeCompressedOop<idecorators, T>::value,
   typename HeapOopType<idecorators>::type>::type
 RawAccessBarrier<decorators>::encode_internal(T value) {
   if (HasDecorator<decorators, IS_NOT_NULL>::value) {

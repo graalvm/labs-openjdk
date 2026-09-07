@@ -72,7 +72,9 @@
 # include <sys/wait.h>
 # include <pwd.h>
 # include <poll.h>
+#ifndef SVM
 # include <ucontext.h>
+#endif // !SVM
 #ifndef AMD64
 # include <fpu_control.h>
 #endif
@@ -92,6 +94,7 @@
 #define SPELL_REG_FP "ebp"
 #endif // AMD64
 
+#ifndef SVM
 address os::current_stack_pointer() {
   return (address)__builtin_frame_address(0);
 }
@@ -203,6 +206,7 @@ frame os::current_frame() {
     return os::get_sender_for_C_frame(&myframe);
   }
 }
+#endif // !SVM
 
 // Utility functions
 
@@ -211,6 +215,7 @@ enum {
   trap_page_fault = 0xE
 };
 
+#ifndef SVM
 bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
                                              ucontext_t* uc, JavaThread* thread) {
 
@@ -430,6 +435,7 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
 
   return false;
 }
+#endif // !SVM
 
 void os::Linux::init_thread_fpu_state(void) {
 #ifndef AMD64
@@ -438,6 +444,7 @@ void os::Linux::init_thread_fpu_state(void) {
 #endif // !AMD64
 }
 
+#ifndef SVM
 int os::Linux::get_fpu_control_word(void) {
 #ifdef AMD64
   return 0;
@@ -502,6 +509,7 @@ size_t os::_vm_internal_thread_min_stack_allowed = 64 * K;
 #else
 size_t os::_vm_internal_thread_min_stack_allowed = (48 DEBUG_ONLY(+ 4)) * K;
 #endif // _LP64
+#endif // !SVM
 
 // return default stack size for thr_type
 size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
@@ -514,6 +522,7 @@ size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
   return s;
 }
 
+#ifndef SVM
 /////////////////////////////////////////////////////////////////////////////
 // helper functions for fatal error handler
 
@@ -709,3 +718,4 @@ int os::extra_bang_size_in_bytes() {
   // JDK-8050147 requires the full cache line bang for x86.
   return VM_Version::L1_line_size();
 }
+#endif // !SVM

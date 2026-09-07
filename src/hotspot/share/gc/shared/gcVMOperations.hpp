@@ -150,6 +150,7 @@ class VM_GC_Operation: public VM_GC_Sync_Operation {
 };
 
 
+#ifndef SVM
 class VM_GC_HeapInspection: public VM_GC_Operation {
  private:
   outputStream* _out;
@@ -172,6 +173,7 @@ class VM_GC_HeapInspection: public VM_GC_Operation {
  protected:
   bool collect();
 };
+#endif // !SVM
 
 class VM_CollectForAllocation : public VM_GC_Operation {
  protected:
@@ -186,6 +188,7 @@ class VM_CollectForAllocation : public VM_GC_Operation {
   }
 };
 
+#ifndef SVM
 class VM_CollectForMetadataAllocation: public VM_GC_Operation {
  private:
   MetaWord*                _result;
@@ -205,10 +208,13 @@ class VM_CollectForMetadataAllocation: public VM_GC_Operation {
   virtual void doit();
   MetaWord* result() const       { return _result; }
 };
+#endif // !SVM
 
 class SvcGCMarker : public StackObj {
  private:
+#ifndef SVM
   JvmtiGCMarker _jgcm;
+#endif // !SVM
  public:
   typedef enum { MINOR, FULL, CONCURRENT } reason_type;
 

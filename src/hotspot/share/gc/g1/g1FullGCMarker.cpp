@@ -38,11 +38,15 @@ G1FullGCMarker::G1FullGCMarker(G1FullCollector* collector,
     _bitmap(collector->mark_bitmap()),
     _oop_stack(),
     _objarray_stack(),
-    _mark_closure(worker_id, this, ClassLoaderData::_claim_stw_fullgc_mark, G1CollectedHeap::heap()->ref_processor_stw()),
+    _mark_closure(worker_id, this, NOT_SVM(ClassLoaderData::_claim_stw_fullgc_mark COMMA) G1CollectedHeap::heap()->ref_processor_stw()),
     _stack_closure(this),
+#ifndef SVM
     _cld_closure(mark_closure(), ClassLoaderData::_claim_stw_fullgc_mark),
+#endif // !SVM
     _mark_stats_cache(mark_stats, G1RegionMarkStatsCache::RegionMarkStatsCacheSize) {
+#ifndef SVM
   ClassLoaderDataGraph::verify_claimed_marks_cleared(ClassLoaderData::_claim_stw_fullgc_mark);
+#endif // !SVM
 }
 
 G1FullGCMarker::~G1FullGCMarker() {

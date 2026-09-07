@@ -321,6 +321,7 @@ void LogOutput::update_config_string(const size_t on_level[LogLevel::Count]) {
   FREE_C_HEAP_ARRAY(Selection, selections);
 }
 
+#ifndef SVM
 bool LogOutput::parse_options(const char* options, outputStream* errstream) {
   if (options == nullptr || strlen(options) == 0) {
     return true;
@@ -361,3 +362,4 @@ bool LogOutput::parse_options(const char* options, outputStream* errstream) {
   os::free(opts);
   return success;
 }
+#endif // !SVM

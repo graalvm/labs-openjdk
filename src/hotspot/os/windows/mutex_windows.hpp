@@ -28,7 +28,6 @@
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
-
 // Platform specific implementations that underpin VM Mutex/Monitor classes.
 // Note that CRITICAL_SECTION supports recursive locking, while the semantics
 // of the VM Mutex class does not. It is up to the Mutex class to hide this
@@ -60,5 +59,4 @@ class PlatformMonitor : public PlatformMutex {
   void notify();
   void notify_all();
 };
-
 #endif // OS_WINDOWS_MUTEX_WINDOWS_HPP

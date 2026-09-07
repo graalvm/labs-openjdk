@@ -46,6 +46,7 @@ void SpinYield::yield_or_sleep() {
   }
 }
 
+#ifndef SVM
 static const char* print_separator(outputStream* s, const char* separator) {
   s->print("%s", separator);
   return ", ";
@@ -71,3 +72,4 @@ void SpinYield::report(outputStream* s) const {
     s->print("no waiting");
   }
 }
+#endif // !SVM

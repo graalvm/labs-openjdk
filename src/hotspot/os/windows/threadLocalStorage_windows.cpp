@@ -28,8 +28,6 @@
 
 static DWORD _thread_key;
 static bool _initialized = false;
-
-
 void ThreadLocalStorage::init() {
   assert(!_initialized, "initializing TLS more than once!");
   _thread_key = TlsAlloc();

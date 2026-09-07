@@ -49,7 +49,7 @@ G1MonotonicArena::Segment* G1MonotonicArena::Segment::create_segment(uint slot_s
 void G1MonotonicArena::Segment::delete_segment(Segment* segment) {
   // Wait for concurrent readers of the segment to exit before freeing; but only if the VM
   // isn't exiting.
-  if (!VM_Exit::vm_exited()) {
+  if (SVM_ONLY(true) NOT_SVM(!VM_Exit::vm_exited())) {
     GlobalCounter::write_synchronize();
   }
   segment->~Segment();

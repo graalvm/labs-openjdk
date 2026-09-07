@@ -118,6 +118,9 @@
 #include "utilities/bitMap.inline.hpp"
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/stack.inline.hpp"
+#ifdef SVM
+#include "runtime/threads.hpp"
+#endif // SVM
 
 size_t G1CollectedHeap::_humongous_object_threshold_in_words = 0;
 
@@ -385,7 +388,7 @@ HeapWord* G1CollectedHeap::humongous_obj_allocate(size_t word_size) {
 HeapWord* G1CollectedHeap::allocate_new_tlab(size_t min_size,
                                              size_t requested_size,
                                              size_t* actual_size) {
-  assert_heap_not_locked_and_not_at_safepoint();
+  SVM_ONLY(assert_heap_not_locked()) NOT_SVM(assert_heap_not_locked_and_not_at_safepoint());
   assert(!is_humongous(requested_size), "we do not allow humongous TLABs");
 
   // Do not allow a GC because we are allocating a new TLAB to avoid an issue
@@ -398,7 +401,7 @@ HeapWord* G1CollectedHeap::allocate_new_tlab(size_t min_size,
 
 HeapWord* G1CollectedHeap::mem_allocate(size_t word_size,
                                         bool*  gc_overhead_limit_was_exceeded) {
-  assert_heap_not_locked_and_not_at_safepoint();
+  SVM_ONLY(assert_heap_not_locked()) NOT_SVM(assert_heap_not_locked_and_not_at_safepoint());
 
   if (is_humongous(word_size)) {
     return attempt_allocation_humongous(word_size);
@@ -412,7 +415,7 @@ HeapWord* G1CollectedHeap::attempt_allocation_slow(uint node_index, size_t word_
 
   // Make sure you read the note in attempt_allocation_humongous().
 
-  assert_heap_not_locked_and_not_at_safepoint();
+  SVM_ONLY(assert_heap_not_locked()) NOT_SVM(assert_heap_not_locked_and_not_at_safepoint());
   assert(!is_humongous(word_size), "attempt_allocation_slow() should not "
          "be called for humongous allocation requests");
 
@@ -484,6 +487,93 @@ HeapWord* G1CollectedHeap::attempt_allocation_slow(uint node_index, size_t word_
   return nullptr;
 }
 
+#ifdef SVM
+void G1CollectedHeap::claim_image_heap() {
+  /* Create the image heap regions. */
+  int image_heap_region_count = SVMGlobalData::_closed_image_heap_regions + SVMGlobalData::_open_image_heap_regions;
+  typeArrayOop region_types = SVMIsolateData::_image_heap_region_types;
+  typeArrayOop free_spaces = SVMIsolateData::_image_heap_region_free_spaces;
+
+  guarantee(image_heap_region_count <= region_types->length(), "must be");
+  guarantee(image_heap_region_count <= free_spaces->length(), "must be");
+
+  _hrm.create_image_heap_regions(image_heap_region_count, _workers);
+
+  /* Create the BOT for the image heap. */
+  HeapWord* open_image_heap_start = (HeapWord*)SVMIsolateData::_open_image_heap_start_addr;
+  HeapWord* open_image_heap_end = (HeapWord*)SVMIsolateData::_open_image_heap_end_addr;
+
+  size_t image_heap_bot_size = SVMGlobalData::_image_heap_block_offset_table_size;
+  assert(G1HeapRegion::CardsPerRegion > 0, "cards per region must be initialized");
+  assert(image_heap_bot_size % G1HeapRegion::CardsPerRegion == 0, "prebuilt image heap BOT size must cover complete regions");
+
+  int bot_region_count = (int)(image_heap_bot_size / G1HeapRegion::CardsPerRegion);
+  assert(bot_region_count <= SVMGlobalData::_open_image_heap_regions, "prebuilt image heap BOT covers too many regions");
+  int first_image_heap_region_with_bot = image_heap_region_count - bot_region_count;
+  if (bot_region_count > 0) {
+    HeapWord* bot_heap_start = open_image_heap_start + (first_image_heap_region_with_bot - SVMGlobalData::_closed_image_heap_regions) * G1HeapRegion::GrainWords;
+    HeapWord* bot_heap_end = bot_heap_start + bot_region_count * G1HeapRegion::GrainWords;
+    guarantee(bot_heap_end == open_image_heap_end, "prebuilt image heap BOT must cover the suffix of the open image heap");
+    _image_heap_bot = new G1BlockOffsetTable(MemRegion(bot_heap_start, bot_heap_end), SVMGlobalData::_image_heap_block_offset_table);
+  }
+
+  size_t used_non_image_heap_bytes = used();
+
+  // Set the heap region information.
+  G1HeapRegion* humongous_start = nullptr;
+  for (int i = 0; i < image_heap_region_count; i++) {
+    G1HeapRegion* region = _hrm.at(i);
+    assert(region != nullptr, "must be");
+    assert(region->bottom() == (HeapWord*)(CompressedOops::base() + SVMGlobalData::_null_regions_size + G1HeapRegionSize * i), "the region address must match the address where the image heap was mapped");
+
+    region->set_type(region_types->byte_at(i));
+    assert(region->is_image_heap(), "must be");
+
+    // Set the region boundaries.
+    HeapWord* top = (HeapWord*)(((address)region->end()) - free_spaces->int_at(i));
+    region->set_top(top);
+    assert(region->top() <= region->end(), "must be");
+
+    if (region->is_starts_humongous()) {
+      region->set_starts_humongous_in_image_heap();
+      humongous_start = region;
+    } else if (region->is_continues_humongous()) {
+      assert(humongous_start != nullptr, "humongous_start heap regions must be layed out sequentially");
+      region->set_continues_humongous_in_image_heap(humongous_start);
+    } else {
+      humongous_start = nullptr;
+    }
+
+    increase_used(region->used());
+  }
+
+  /* Set the BOT for the open image heap regions. */
+  for (int i = SVMGlobalData::_closed_image_heap_regions; i < image_heap_region_count; i++) {
+    G1HeapRegion* region = _hrm.at(i);
+    if (i < first_image_heap_region_with_bot) {
+      assert(region->is_humongous(), "humongous image heap regions must precede non-humongous regions");
+    } else {
+      assert(!region->is_humongous(), "only non-humongous image heap regions need a bot");
+      assert(_image_heap_bot != nullptr, "must be");
+#ifdef ASSERT
+      /* Build the BOT using C++ code and compare it against the prebuilt BOT in the image. */
+      _hrm.commit_image_heap_bot(region, _workers);
+      region->update_bot();
+      const uint8_t* runtime_entries = _bot->entry_for_addr_for_read(region->bottom());
+      const uint8_t* prebuilt_entries = _image_heap_bot->entry_for_addr_for_read(region->bottom());
+      assert(memcmp(runtime_entries, prebuilt_entries, G1HeapRegion::CardsPerRegion) == 0, "prebuilt image heap BOT does not match the runtime-generated BOT");
+      _hrm.uncommit_image_heap_bot(region);
+#endif
+      region->set_image_heap_bot(_image_heap_bot);
+    }
+  }
+
+  size_t used_image_heap_bytes = used() - used_non_image_heap_bytes;
+  SVMGlobalData::_image_heap_used = used_image_heap_bytes;
+  assert(used_image_heap_bytes <= SVMGlobalData::_image_heap_size, "must be");
+  SVMGlobalData::_image_heap_waste = SVMGlobalData::_image_heap_size - used_image_heap_bytes;
+}
+#else
 template <typename Func>
 void G1CollectedHeap::iterate_regions_in_range(MemRegion range, const Func& func) {
   // Mark each G1 region touched by the range as old, add it to
@@ -603,12 +693,13 @@ void G1CollectedHeap::dealloc_archive_regions(MemRegion range) {
   }
   decrease_used(size_used);
 }
+#endif
 
 inline HeapWord* G1CollectedHeap::attempt_allocation(size_t min_word_size,
                                                      size_t desired_word_size,
                                                      size_t* actual_word_size,
                                                      bool allow_gc) {
-  assert_heap_not_locked_and_not_at_safepoint();
+  SVM_ONLY(assert_heap_not_locked()) NOT_SVM(assert_heap_not_locked_and_not_at_safepoint());
   assert(!is_humongous(desired_word_size), "attempt_allocation() should not "
          "be called for humongous allocation requests");
 
@@ -647,7 +738,7 @@ HeapWord* G1CollectedHeap::attempt_allocation_humongous(size_t word_size) {
   // be more readable. It will be good to keep these two in sync as
   // much as possible.
 
-  assert_heap_not_locked_and_not_at_safepoint();
+  SVM_ONLY(assert_heap_not_locked()) NOT_SVM(assert_heap_not_locked_and_not_at_safepoint());
   assert(is_humongous(word_size), "attempt_allocation_humongous() "
          "should only be called for humongous allocations");
 
@@ -822,8 +913,10 @@ void G1CollectedHeap::prepare_for_mutator_after_full_collection(size_t allocatio
   start_new_collection_set();
   _allocator->init_mutator_alloc_regions();
 
+#ifndef SVM
   // Post collection state updates.
   MetaspaceGC::compute_new_size();
+#endif // !SVM
 }
 
 void G1CollectedHeap::abort_refinement() {
@@ -1192,7 +1285,7 @@ public:
                 "master humongous set MT safety protocol outside a safepoint");
     }
   }
-  bool is_correct_type(G1HeapRegion* hr) { return hr->is_humongous(); }
+  bool is_correct_type(G1HeapRegion* hr) { return hr->is_humongous() SVM_ONLY(&& !hr->is_image_heap()); }
   const char* get_description() { return "Humongous Regions"; }
 };
 
@@ -1208,6 +1301,9 @@ G1CollectedHeap::G1CollectedHeap() :
   _old_set("Old Region Set", new OldRegionSetChecker()),
   _humongous_set("Humongous Region Set", new HumongousRegionSetChecker()),
   _bot(nullptr),
+#ifdef SVM
+  _image_heap_bot(nullptr),
+#endif // SVM
   _listener(),
   _numa(G1NUMA::create()),
   _hrm(),
@@ -1370,8 +1466,16 @@ jint G1CollectedHeap::initialize() {
   // If this happens then we could end up using a non-optimal
   // compressed oops mode.
 
+#ifdef SVM
+  // SVM reserves enough space for both the null regions & the MaxHeapSize. In most code parts of G1, the null regions
+  // are considered as out-of-heap memory, even though they are part of the heap address space (i.e., the heap base
+  // is below the null regions). G1 also does not create any region metadata for the null regions.
+  size_t total_reserved_memory = reserved_byte_size + SVMGlobalData::_null_regions_size;
+  ReservedHeapSpace heap_rs((char*)SVMIsolateData::_heap_base, total_reserved_memory, SVMGlobalData::_heap_base_alignment, os::vm_page_size(), SVMGlobalData::_null_regions_size);
+#else
   ReservedHeapSpace heap_rs = Universe::reserve_heap(reserved_byte_size,
                                                      HeapAlignment);
+#endif
 
   initialize_reserved_region(heap_rs);
 
@@ -1472,6 +1576,14 @@ jint G1CollectedHeap::initialize() {
   _cm = new G1ConcurrentMark(this, bitmap_storage);
   _cm_thread = _cm->cm_thread();
 
+#ifdef SVM
+  claim_image_heap();
+  // InitialHeapSize includes the claimed image heap. Expanding by the full value would make the
+  // initial heap too large by the image heap capacity.
+  guarantee(init_byte_size > capacity(), "initial heap must contain collected regions");
+  init_byte_size -= capacity();
+#endif // SVM
+
   // Now expand into the initial heap size.
   if (!expand(init_byte_size, _workers)) {
     vm_shutdown_during_initialization("Failed to allocate initial heap.");
@@ -1521,10 +1633,12 @@ jint G1CollectedHeap::initialize() {
 
   allocation_failure_injector()->reset();
 
+#ifndef SVM
   CPUTimeCounters::create_counter(CPUTimeGroups::CPUTimeType::gc_parallel_workers);
   CPUTimeCounters::create_counter(CPUTimeGroups::CPUTimeType::gc_conc_mark);
   CPUTimeCounters::create_counter(CPUTimeGroups::CPUTimeType::gc_conc_refine);
   CPUTimeCounters::create_counter(CPUTimeGroups::CPUTimeType::gc_service);
+#endif // !SVM
 
   G1InitLogger::print();
 
@@ -2002,6 +2116,7 @@ bool G1CollectedHeap::try_collect(GCCause::Cause cause,
   }
 }
 
+#ifndef SVM
 void G1CollectedHeap::start_concurrent_gc_for_metadata_allocation(GCCause::Cause gc_cause) {
   GCCauseSetter x(this, gc_cause);
 
@@ -2012,6 +2127,7 @@ void G1CollectedHeap::start_concurrent_gc_for_metadata_allocation(GCCause::Cause
     do_collection_pause_at_safepoint();
   }
 }
+#endif // !SVM
 
 bool G1CollectedHeap::is_in(const void* p) const {
   return is_in_reserved(p) && _hrm.is_available(addr_to_region(p));
@@ -2080,10 +2196,12 @@ void G1CollectedHeap::heap_region_par_iterate_from_worker_offset(G1HeapRegionClo
   _hrm.par_iterate(cl, hrclaimer, hrclaimer->offset_for_worker(worker_id));
 }
 
+#ifndef SVM
 void G1CollectedHeap::heap_region_par_iterate_from_start(G1HeapRegionClosure* cl,
                                                          G1HeapRegionClaimer *hrclaimer) const {
   _hrm.par_iterate(cl, hrclaimer, 0);
 }
+#endif // !SVM
 
 void G1CollectedHeap::collection_set_iterate_all(G1HeapRegionClosure* cl) {
   _collection_set.iterate(cl);
@@ -2130,6 +2248,7 @@ void G1CollectedHeap::par_iterate_regions_array(G1HeapRegionClosure* cl,
   } while (cur_pos != start_pos);
 }
 
+#ifndef SVM
 HeapWord* G1CollectedHeap::block_start(const void* addr) const {
   G1HeapRegion* hr = heap_region_containing(addr);
   // The CollectedHeap API requires us to not fail for any given address within
@@ -2145,6 +2264,7 @@ bool G1CollectedHeap::block_is_obj(const HeapWord* addr) const {
   G1HeapRegion* hr = heap_region_containing(addr);
   return hr->block_is_obj(addr, hr->parsable_bottom_acquire());
 }
+#endif // !SVM
 
 size_t G1CollectedHeap::tlab_capacity(Thread* ignored) const {
   return (_policy->young_list_target_length() - _survivor.length()) * G1HeapRegion::GrainBytes;
@@ -2173,7 +2293,15 @@ void G1CollectedHeap::prepare_for_verify() {
 }
 
 void G1CollectedHeap::verify(VerifyOption vo) {
+#ifdef SVM
+  StackFramesPerThread *stack_frames = Threads::set_java_stack_frames();
+#endif // SVM
+
   _verifier->verify(vo);
+
+#ifdef SVM
+  Threads::free_java_stack_frames(stack_frames);
+#endif // SVM
 }
 
 bool G1CollectedHeap::supports_concurrent_gc_breakpoints() const {
@@ -2239,6 +2367,7 @@ void G1CollectedHeap::print_heap_on(outputStream* st) const {
   st->print("%u survivors (%zuK)", survivor_regions,
             (size_t) survivor_regions * G1HeapRegion::GrainBytes / K);
   st->cr();
+#ifndef SVM
   if (_numa->is_enabled()) {
     uint num_nodes = _numa->num_active_nodes();
     st->print("remaining free region(s) on each NUMA node: ");
@@ -2249,6 +2378,7 @@ void G1CollectedHeap::print_heap_on(outputStream* st) const {
     }
     st->cr();
   }
+#endif // !SVM
 }
 
 void G1CollectedHeap::print_regions_on(outputStream* st) const {
@@ -2298,9 +2428,11 @@ void G1CollectedHeap::print_tracing_info() const {
   concurrent_mark()->print_summary_info();
 }
 
+#ifndef SVM
 bool G1CollectedHeap::print_location(outputStream* st, void* addr) const {
   return BlockLocationPrinter<G1CollectedHeap>::print_location(st, addr);
 }
+#endif // !SVM
 
 G1HeapSummary G1CollectedHeap::create_g1_heap_summary() {
 
@@ -2329,8 +2461,10 @@ void G1CollectedHeap::trace_heap(GCWhen::Type when, const GCTracer* gc_tracer) {
   const G1HeapSummary& heap_summary = create_g1_heap_summary();
   gc_tracer->report_gc_heap_summary(when, heap_summary);
 
+#ifndef SVM
   const MetaspaceSummary& metaspace_summary = create_metaspace_summary();
   gc_tracer->report_metaspace_summary(when, metaspace_summary);
+#endif // !SVM
 }
 
 void G1CollectedHeap::gc_prologue(bool full) {
@@ -2393,7 +2527,7 @@ HeapWord* G1CollectedHeap::do_collection_pause(size_t word_size,
                                                uint gc_count_before,
                                                bool* succeeded,
                                                GCCause::Cause gc_cause) {
-  assert_heap_not_locked_and_not_at_safepoint();
+  SVM_ONLY(assert_heap_not_locked()) NOT_SVM(assert_heap_not_locked_and_not_at_safepoint());
   VM_G1CollectForAllocation op(word_size, gc_count_before, gc_cause);
   VMThread::execute(&op);
 
@@ -2596,6 +2730,11 @@ void G1CollectedHeap::flush_region_pin_cache() {
 }
 
 void G1CollectedHeap::do_collection_pause_at_safepoint_helper() {
+#ifdef SVM
+  StackFramesPerThread *stack_frames = Threads::set_java_stack_frames();
+  CodeInfosPerThread *code_infos = Threads::set_java_code_infos();
+#endif // SVM
+
   ResourceMark rm;
 
   IsSTWGCActiveMark active_gc_mark;
@@ -2629,8 +2768,14 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper() {
     start_concurrent_cycle(collector.concurrent_operation_is_full_mark());
     ConcurrentGCBreakpoints::notify_idle_to_active();
   }
+
+#ifdef SVM
+  Threads::free_java_code_infos(code_infos);
+  Threads::free_java_stack_frames(stack_frames);
+#endif // SVM
 }
 
+#ifndef SVM
 void G1CollectedHeap::complete_cleaning(bool class_unloading_occurred) {
   uint num_workers = workers()->active_workers();
   G1ParallelCleaningTask unlink_task(num_workers, class_unloading_occurred);
@@ -2695,6 +2840,7 @@ void G1CollectedHeap::bulk_unregister_nmethods() {
   G1BulkUnregisterNMethodTask t(num_workers);
   workers()->run_task(&t);
 }
+#endif // !SVM
 
 bool G1STWSubjectToDiscoveryClosure::do_object_b(oop obj) {
   assert(obj != nullptr, "must not be null");
@@ -2750,6 +2896,7 @@ void G1CollectedHeap::free_region(G1HeapRegion* hr, G1FreeRegionList* free_list)
   assert(!hr->is_free(), "the region should not be free");
   assert(!hr->is_empty(), "the region should not be empty");
   assert(_hrm.is_available(hr->hrm_index()), "region should be committed");
+  assert_svm_only(!hr->is_image_heap(), "must not free image heap regions");
   assert(!hr->has_pinned_objects(),
          "must not free a region which contains pinned objects");
 
@@ -2870,6 +3017,11 @@ bool G1CollectedHeap::check_young_list_empty() {
 
 // Remove the given G1HeapRegion from the appropriate region set.
 void G1CollectedHeap::prepare_region_for_full_compaction(G1HeapRegion* hr) {
+#ifdef SVM
+  if (hr->is_image_heap()) {
+      // Nothing to do - image heap regions are not compacted.
+  } else
+#endif // SVM
   if (hr->is_humongous()) {
     _humongous_set.remove(hr);
   } else if (hr->is_old()) {
@@ -2935,6 +3087,11 @@ public:
     } else if (!_free_list_only) {
       assert(r->rem_set()->is_empty(), "At this point remembered sets must have been cleared.");
 
+#ifdef SVM
+      if (r->is_image_heap()) {
+        // image heap regions are not part of any region set.
+      } else
+#endif // !SVM
       if (r->is_humongous()) {
         _humongous_set->add(r);
       } else {
@@ -3105,8 +3262,90 @@ public:
     }
   }
 
-  void do_oop(narrowOop* p) { ShouldNotReachHere(); }
+  void do_oop(narrowOop* p) {
+#ifdef SVM
+    // NOTE (chaeubl): same code as RegisterNMethodOopClosure::do_oop(oop)
+    oop heap_oop = RawAccess<>::oop_load(p);
+    if (!CompressedOops::is_null(heap_oop)) {
+      oop obj = CompressedOops::decode_not_null(heap_oop);
+      G1HeapRegion* hr = _g1h->heap_region_containing(obj);
+      assert(!hr->is_continues_humongous(),
+             "trying to add code root " PTR_FORMAT " in continuation of humongous region " HR_FORMAT
+             " starting at " HR_FORMAT,
+             p2i(_nm), HR_FORMAT_PARAMS(hr), HR_FORMAT_PARAMS(hr->humongous_start_region()));
+
+      hr->add_code_root(_nm);
+    }
+#else
+    ShouldNotReachHere();
+#endif // SVM
+  }
 };
+
+#ifdef SVM
+class UnregisterNMethodOopClosure: public OopClosure {
+  G1CollectedHeap* _g1h;
+  nmethod* _nm;
+
+public:
+  UnregisterNMethodOopClosure(G1CollectedHeap* g1h, nmethod* nm) :
+    _g1h(g1h), _nm(nm) {}
+
+  void do_oop(oop* p) {
+    // NOTE (chaeubl): similar to RegisterNMethodOopClosure::do_oop(oop)
+    oop heap_oop = RawAccess<>::oop_load(p);
+    if (!CompressedOops::is_null(heap_oop)) {
+      oop obj = CompressedOops::decode_not_null(heap_oop);
+      G1HeapRegion* hr = _g1h->heap_region_containing(obj);
+      assert(!hr->is_continues_humongous(),
+             "trying to remove code root " PTR_FORMAT " in continuation of humongous region " HR_FORMAT
+             " starting at " HR_FORMAT,
+             p2i(_nm), HR_FORMAT_PARAMS(hr), HR_FORMAT_PARAMS(hr->humongous_start_region()));
+
+      hr->remove_code_root(_nm);
+    }
+  }
+
+  void do_oop(narrowOop* p) {
+    // NOTE (chaeubl): similar to RegisterNMethodOopClosure::do_oop(narrowOop)
+    oop heap_oop = RawAccess<>::oop_load(p);
+    if (!CompressedOops::is_null(heap_oop)) {
+      oop obj = CompressedOops::decode_not_null(heap_oop);
+      G1HeapRegion* hr = _g1h->heap_region_containing(obj);
+      assert(!hr->is_continues_humongous(),
+             "trying to remove code root " PTR_FORMAT " in continuation of humongous region " HR_FORMAT
+             " starting at " HR_FORMAT,
+             p2i(_nm), HR_FORMAT_PARAMS(hr), HR_FORMAT_PARAMS(hr->humongous_start_region()));
+
+      hr->remove_code_root(_nm);
+    }
+  }
+};
+
+void G1CollectedHeap::register_object_fields(nmethod* nm) {
+  guarantee(nm != nullptr, "sanity");
+  RegisterNMethodOopClosure reg_cl(this, nm);
+  nm->oops_do_object_fields(&reg_cl);
+}
+
+void G1CollectedHeap::register_code_constants(nmethod* nm) {
+  guarantee(nm != nullptr, "sanity");
+  RegisterNMethodOopClosure reg_cl(this, nm);
+  nm->oops_do_code_constants(&reg_cl);
+}
+
+void G1CollectedHeap::register_frame_metadata(nmethod* nm) {
+  guarantee(nm != nullptr, "sanity");
+  RegisterNMethodOopClosure reg_cl(this, nm);
+  nm->oops_do_frame_metadata(&reg_cl);
+}
+
+void G1CollectedHeap::register_deopt_metadata(nmethod* nm) {
+  guarantee(nm != nullptr, "sanity");
+  RegisterNMethodOopClosure reg_cl(this, nm);
+  nm->oops_do_deopt_metadata(&reg_cl);
+}
+#endif // SVM
 
 void G1CollectedHeap::register_nmethod(nmethod* nm) {
   guarantee(nm != nullptr, "sanity");
@@ -3115,8 +3354,14 @@ void G1CollectedHeap::register_nmethod(nmethod* nm) {
 }
 
 void G1CollectedHeap::unregister_nmethod(nmethod* nm) {
+#ifdef SVM
+  guarantee(nm != nullptr, "sanity");
+  UnregisterNMethodOopClosure reg_cl(this, nm);
+  nm->oops_do(&reg_cl);
+#else
   // We always unregister nmethods in bulk during code unloading only.
   ShouldNotReachHere();
+#endif // SVM
 }
 
 void G1CollectedHeap::update_used_after_gc(bool evacuation_failed) {
@@ -3138,6 +3383,11 @@ public:
 
   void do_nmethod(nmethod* nm) {
     assert(nm != nullptr, "Sanity");
+#ifdef SVM
+    if (nm->will_be_freed()) {
+      return;
+    }
+#endif // SVM
     _g1h->register_nmethod(nm);
   }
 };
@@ -3151,6 +3401,7 @@ void G1CollectedHeap::initialize_serviceability() {
   _monitoring_support->initialize_serviceability();
 }
 
+#ifndef SVM
 MemoryUsage G1CollectedHeap::memory_usage() {
   return _monitoring_support->memory_usage();
 }
@@ -3162,6 +3413,7 @@ GrowableArray<GCMemoryManager*> G1CollectedHeap::memory_managers() {
 GrowableArray<MemoryPool*> G1CollectedHeap::memory_pools() {
   return _monitoring_support->memory_pools();
 }
+#endif // !SVM
 
 void G1CollectedHeap::fill_with_dummy_object(HeapWord* start, HeapWord* end, bool zap) {
   G1HeapRegion* region = heap_region_containing(start);

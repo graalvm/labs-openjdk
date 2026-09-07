@@ -41,6 +41,7 @@ class ElapsedCounterSource {
   static uint64_t nanoseconds(Type value);
 };
 
+#ifndef SVM
 // Not guaranteed to be synchronized across hardware threads and
 // therefore software threads, and can be updated asynchronously
 // by software. now() can jump backwards as well as jump forward
@@ -105,6 +106,7 @@ class CompositeElapsedCounterSource {
   static uint64_t microseconds(Type value);
   static uint64_t nanoseconds(Type value);
 };
+#endif // !SVM
 
 template <typename TimeSource>
 class Representation {
@@ -166,6 +168,7 @@ class CounterRepresentation : public Representation<TimeSource> {
   operator typename TimeSource::Type() { return value(); }
 };
 
+#ifndef SVM
 template <typename TimeSource>
 class CompositeCounterRepresentation : public Representation<TimeSource> {
  protected:
@@ -180,6 +183,7 @@ class CompositeCounterRepresentation : public Representation<TimeSource> {
   ElapsedCounterSource::Type value() const { return this->_rep.val1; }
   FastUnorderedElapsedCounterSource::Type ft_value() const { return this->_rep.val2; }
 };
+#endif // !SVM
 
 template <template <typename> class, typename>
 class TimeInstant;

@@ -81,7 +81,9 @@ G1ParScanThreadState::G1ParScanThreadState(G1CollectedHeap* g1h,
     _surviving_words_length(collection_set->young_region_length() + 1),
     _old_gen_is_full(false),
     _partial_array_splitter(g1h->partial_array_state_manager(), num_workers, ParGCArrayScanChunk),
+#ifndef SVM
     _string_dedup_requests(),
+#endif // !SVM
     _max_num_optional_regions(collection_set->num_optional_regions()),
     _numa(g1h->numa()),
     _obj_alloc_stat(nullptr),
@@ -341,8 +343,12 @@ G1HeapRegionAttr G1ParScanThreadState::next_region_attr(G1HeapRegionAttr const r
   assert(region_attr.is_young() || region_attr.is_old(), "must be either Young or Old");
 
   if (region_attr.is_young()) {
+#ifdef SVM
+    age = m.age();
+#else
     age = !m.has_displaced_mark_helper() ? m.age()
                                          : m.displaced_mark_helper().age();
+#endif // !SVM
     if (age < _tenuring_threshold) {
       return region_attr;
     }
@@ -441,6 +447,7 @@ void G1ParScanThreadState::do_iterate_object(oop const obj,
 
     ContinuationGCSupport::transform_stack_chunk(obj);
 
+#ifndef SVM
     // Check for deduplicating young Strings.
     if (G1StringDedup::is_candidate_from_evacuation(klass,
                                                     region_attr,
@@ -450,6 +457,7 @@ void G1ParScanThreadState::do_iterate_object(oop const obj,
       // processing expects to refer to a from-space object.
       _string_dedup_requests.add(old);
     }
+#endif // !SVM
 
     assert(_scanner.skip_card_enqueue_set(), "must be");
     obj->oop_iterate_backwards(&_scanner, klass);
@@ -478,7 +486,8 @@ oop G1ParScanThreadState::do_copy_to_survivor_space(G1HeapRegionAttr const regio
   const size_t word_sz = old->size_given_klass(klass);
 
   // JNI only allows pinning of typeArrays, so we only need to keep those in place.
-  if (region_attr.is_pinned() && klass->is_typeArray_klass()) {
+  // NOTE (chaeubl): unlike HotSpot, we support pinning arbitrary objects.
+  if (region_attr.is_pinned() NOT_SVM(&& klass->is_typeArray_klass())) {
     return handle_evacuation_failure_par(old, old_mark, klass, region_attr, word_sz, true /* cause_pinned */);
   }
 

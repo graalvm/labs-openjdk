@@ -40,7 +40,11 @@
 // TODO -- currently, even if all JIT compilers are disabled, the following flags
 // are still available in HotSpot. This should eventually be fixed ...
 
-#define COMPILER_FLAGS(develop,                                             \
+#define COMPILER_FLAGS(ni_hosted,                                           \
+                       ni_hosted_pd,                                        \
+                       ni_runtime,                                          \
+                       ni_runtime_pd,                                       \
+                       develop,                                             \
                        develop_pd,                                          \
                        product,                                             \
                        product_pd,                                          \

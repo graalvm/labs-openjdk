@@ -27,7 +27,6 @@
 
 #include <intrin.h>
 #include "runtime/os.hpp"
-
 // Note that in MSVC, volatile memory accesses are explicitly
 // guaranteed to have acquire release semantics (w.r.t. compiler
 // reordering) and therefore does not even need a compiler barrier
@@ -110,5 +109,4 @@ DEFINE_INTRINSIC_CMPXCHG(InterlockedCompareExchange,   long)
 DEFINE_INTRINSIC_CMPXCHG(InterlockedCompareExchange64, __int64)
 
 #undef DEFINE_INTRINSIC_CMPXCHG
-
 #endif // OS_CPU_WINDOWS_X86_ATOMIC_WINDOWS_X86_HPP

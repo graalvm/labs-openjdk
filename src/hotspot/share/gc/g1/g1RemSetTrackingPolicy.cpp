@@ -30,6 +30,7 @@
 #include "runtime/safepoint.hpp"
 
 void G1RemSetTrackingPolicy::update_at_allocate(G1HeapRegion* r) {
+  assert_svm_only(!r->is_image_heap(), "must not be called for image heap regions");
   assert(r->is_young() || r->is_humongous() || r->is_old(),
         "Region %u with unexpected heap region type %s", r->hrm_index(), r->get_type_str());
   if (r->is_old()) {
@@ -52,6 +53,13 @@ bool G1RemSetTrackingPolicy::update_humongous_before_rebuild(G1HeapRegion* r) {
 
   assert(!r->rem_set()->is_updating(), "Remembered set of region %u is updating before rebuild", r->hrm_index());
 
+#ifdef SVM
+  if (r->is_image_heap()) {
+    assert(r->rem_set()->is_empty(), "Image heap regions must have an empty remembered set");
+    return false;
+  }
+#endif // SVM
+
   bool selected_for_rebuild = false;
   // Humongous regions containing type-array objs are remset-tracked to
   // support eager-reclaim. However, their remset state can be reset after
@@ -69,6 +77,13 @@ bool G1RemSetTrackingPolicy::update_humongous_before_rebuild(G1HeapRegion* r) {
 
 bool G1RemSetTrackingPolicy::update_old_before_rebuild(G1HeapRegion* r) {
   assert(SafepointSynchronize::is_at_safepoint(), "should be at safepoint");
+#ifdef SVM
+  if (r->is_image_heap()) {
+    assert(r->rem_set()->is_empty(), "Image heap regions must have an empty remembered set");
+    return false;
+  }
+#endif // SVM
+
   assert(r->is_old(), "Region %u should be Old", r->hrm_index());
 
   assert(!r->rem_set()->is_updating(), "Remembered set of region %u is updating before rebuild", r->hrm_index());
@@ -87,7 +102,14 @@ bool G1RemSetTrackingPolicy::update_old_before_rebuild(G1HeapRegion* r) {
 void G1RemSetTrackingPolicy::update_after_rebuild(G1HeapRegion* r) {
   assert(SafepointSynchronize::is_at_safepoint(), "should be at safepoint");
 
-  if (r->is_old_or_humongous()) {
+#ifdef SVM
+  if (r->is_image_heap()) {
+    assert(r->rem_set()->is_empty(), "Image heap regions must have an empty remembered set");
+    return;
+  }
+#endif // SVM
+
+  if (SVM_ONLY(r->is_old_or_humongous_or_open_image_heap()) NOT_SVM(r->is_old_or_humongous())) {
     if (r->rem_set()->is_updating()) {
       r->rem_set()->set_state_complete();
     }

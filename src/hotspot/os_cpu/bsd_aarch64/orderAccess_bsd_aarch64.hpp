@@ -26,7 +26,6 @@
 
 #ifndef OS_CPU_BSD_AARCH64_ORDERACCESS_BSD_AARCH64_HPP
 #define OS_CPU_BSD_AARCH64_ORDERACCESS_BSD_AARCH64_HPP
-
 // Included in orderAccess.hpp header file.
 
 // Implementation of class OrderAccess.
@@ -52,8 +51,9 @@ inline void OrderAccess::fence() {
   FULL_MEM_BARRIER;
 }
 
+#ifndef SVM
 inline void OrderAccess::cross_modify_fence_impl() {
   asm volatile("isb" : : : "memory");
 }
-
+#endif // !SVM
 #endif // OS_CPU_BSD_AARCH64_ORDERACCESS_BSD_AARCH64_HPP

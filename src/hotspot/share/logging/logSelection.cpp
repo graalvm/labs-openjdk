@@ -49,6 +49,7 @@ LogSelection::LogSelection(const LogTagType tags[LogTag::MaxTags], bool wildcard
   }
 }
 
+#ifndef SVM
 bool LogSelection::operator==(const LogSelection& ref) const {
   if (_ntags != ref._ntags ||
       _wildcard != ref._wildcard ||
@@ -175,6 +176,7 @@ LogSelection LogSelection::parse(const char* str, outputStream* error_stream) {
   os::free(copy);
   return s;
 }
+#endif // !SVM
 
 bool LogSelection::selects(const LogTagSet& ts) const {
   if (!_wildcard && _ntags != ts.ntags()) {
@@ -233,6 +235,7 @@ void LogSelection::describe_on(outputStream* out) const {
   out->print("=%s", LogLevel::name(_level));
 }
 
+#ifndef SVM
 double LogSelection::similarity(const LogSelection& other) const {
   // Compute Soerensen-Dice coefficient as the similarity measure
   size_t intersecting = 0;
@@ -348,3 +351,4 @@ void LogSelection::suggest_similar_matching(outputStream* out) const {
     suggestions[i].describe_tags_on(out);
   }
 }
+#endif // !SVM

@@ -61,11 +61,15 @@ void ReferenceProcessor::init_statics() {
   java_lang_ref_SoftReference::set_clock(_soft_ref_timestamp_clock);
 
   _always_clear_soft_ref_policy = new AlwaysClearPolicy();
+#ifndef SVM
   if (CompilerConfig::is_c2_or_jvmci_compiler_enabled()) {
+#endif // !SVM
     _default_soft_ref_policy = new LRUMaxHeapPolicy();
+#ifndef SVM
   } else {
     _default_soft_ref_policy = new LRUCurrentHeapPolicy();
   }
+#endif // !SVM
 }
 
 void ReferenceProcessor::enable_discovery() {
@@ -416,6 +420,7 @@ void ReferenceProcessor::abandon_partial_discovery() {
   }
 }
 
+#ifndef SVM
 size_t ReferenceProcessor::total_reference_count(ReferenceType type) const {
   DiscoveredList* list = nullptr;
 
@@ -438,6 +443,7 @@ size_t ReferenceProcessor::total_reference_count(ReferenceType type) const {
   }
   return total_count(list);
 }
+#endif // !SVM
 
 void RefProcTask::process_discovered_list(uint worker_id,
                                           ReferenceType ref_type,

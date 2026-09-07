@@ -35,7 +35,9 @@
 #include <netdb.h>
 
 // Aix does not have NUMA support but need these for compilation.
+#ifndef SVM
 inline bool os::numa_has_group_homing()     { AIX_ONLY(ShouldNotReachHere();) return false;  }
+#endif // !SVM
 
 // Platform Mutex/Monitor implementation
 

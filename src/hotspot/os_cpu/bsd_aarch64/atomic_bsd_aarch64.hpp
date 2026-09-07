@@ -32,7 +32,6 @@
 // Implementation of class atomic
 // Note that memory_order_conservative requires a full barrier after atomic stores.
 // See https://patchwork.kernel.org/patch/3575821/
-
 template<size_t byte_size>
 struct Atomic::PlatformAdd {
   template<typename D, typename I>
@@ -128,6 +127,5 @@ struct Atomic::PlatformOrderedStore<byte_size, RELEASE_X_FENCE>
   template <typename T>
   void operator()(volatile T* p, T v) const { release_store(p, v); OrderAccess::fence(); }
 };
-
 
 #endif // OS_CPU_BSD_AARCH64_ATOMIC_BSD_AARCH64_HPP

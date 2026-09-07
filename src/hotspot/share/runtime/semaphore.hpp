@@ -52,7 +52,9 @@ class Semaphore : public CHeapObj<mtSynchronizer> {
 
   bool trywait()              { return _impl.trywait(); }
 
+#ifndef SVM
   void wait_with_safepoint_check(JavaThread* thread);
+#endif // !SVM
 };
 
 #endif // SHARE_RUNTIME_SEMAPHORE_HPP

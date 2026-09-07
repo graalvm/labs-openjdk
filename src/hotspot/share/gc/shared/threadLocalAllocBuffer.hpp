@@ -167,7 +167,9 @@ public:
 
   // Support for TLAB sampling
   void set_back_allocation_end();
+#ifndef SVM
   void set_sampling_point(HeapWord* sampling_point);
+#endif // !SVM
 
   static size_t refill_waste_limit_increment();
 
@@ -183,7 +185,9 @@ public:
   static ByteSize start_offset()                 { return byte_offset_of(ThreadLocalAllocBuffer, _start); }
   static ByteSize end_offset()                   { return byte_offset_of(ThreadLocalAllocBuffer, _end); }
   static ByteSize top_offset()                   { return byte_offset_of(ThreadLocalAllocBuffer, _top); }
+#ifndef SVM
   static ByteSize pf_top_offset()                { return byte_offset_of(ThreadLocalAllocBuffer, _pf_top); }
+#endif // !SVM
 };
 
 class ThreadLocalAllocStats : public StackObj {

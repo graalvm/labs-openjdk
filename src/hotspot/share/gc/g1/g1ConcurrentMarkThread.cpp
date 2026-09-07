@@ -164,7 +164,9 @@ bool G1ConcurrentMarkThread::wait_for_next_cycle() {
 
 bool G1ConcurrentMarkThread::phase_clear_cld_claimed_marks() {
   G1ConcPhaseTimer p(_cm, "Concurrent Clear Claimed Marks");
+#ifndef SVM
   ClassLoaderDataGraph::clear_claimed_marks();
+#endif // !SVM
   return _cm->has_aborted();
 }
 

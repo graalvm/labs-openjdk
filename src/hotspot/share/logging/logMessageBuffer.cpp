@@ -35,6 +35,7 @@ static void grow(T*& buffer, size_t& capacity, size_t minimum_length = 0) {
   capacity = new_size;
 }
 
+#ifndef SVM
 LogMessageBuffer::LogMessageBuffer() : _message_buffer_size(0),
                                        _message_buffer_capacity(0),
                                        _message_buffer(nullptr),
@@ -45,6 +46,7 @@ LogMessageBuffer::LogMessageBuffer() : _message_buffer_size(0),
                                        _least_detailed_level(LogLevel::Off),
                                        _prefix_fn(nullptr) {
 }
+#endif // !SVM
 
 LogMessageBuffer::~LogMessageBuffer() {
   if (_allocated) {
@@ -53,10 +55,12 @@ LogMessageBuffer::~LogMessageBuffer() {
   }
 }
 
+#ifndef SVM
 void LogMessageBuffer::reset() {
   _message_buffer_size = 0;
   _line_count = 0;
 }
+#endif // !SVM
 
 void LogMessageBuffer::initialize_buffers() {
   assert(!_allocated, "buffer already initialized/allocated");
@@ -135,6 +139,7 @@ void LogMessageBuffer::vwrite(LogLevelType level, const char* fmt, va_list args)
   _line_count++;
 }
 
+#ifndef SVM
 #define LOG_LEVEL(level, name) \
 LogMessageBuffer& LogMessageBuffer::v##name(const char* fmt, va_list args) { \
   vwrite(LogLevel::level, fmt, args); \
@@ -149,3 +154,4 @@ LogMessageBuffer& LogMessageBuffer::name(const char* fmt, ...) { \
 }
 LOG_LEVEL_LIST
 #undef LOG_LEVEL
+#endif // !SVM

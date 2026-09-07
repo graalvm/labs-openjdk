@@ -33,6 +33,7 @@ const char* const LogTag::_name[] = {
 #undef LOG_TAG
 };
 
+#ifndef SVM
 LogTagType LogTag::from_string(const char* str) {
   for (uint i = 0; i < LogTag::Count; i++) {
     if (strcasecmp(str, _name[i]) == 0) {
@@ -57,6 +58,7 @@ LogTagType LogTag::fuzzy_match(const char *str) {
   }
   return match;
 }
+#endif // !SVM
 
 void LogTag::list_tags(outputStream* out) {
   for (size_t i = 1; i < LogTag::Count; i++) { // Not including __NO_TAG

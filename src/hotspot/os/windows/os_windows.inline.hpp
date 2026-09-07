@@ -30,7 +30,7 @@
 #include "runtime/javaThread.hpp"
 #include "runtime/mutex.hpp"
 #include "runtime/os.hpp"
-
+#ifndef SVM
 inline bool os::zero_page_read_protected() {
   return true;
 }
@@ -63,6 +63,7 @@ inline void os::map_stack_shadow_pages(address sp) {
 }
 
 inline bool os::numa_has_group_homing()     { return false;  }
+#endif // !SVM
 
 // Platform Mutex/Monitor implementation
 
@@ -87,7 +88,8 @@ inline void PlatformMonitor::notify_all() {
 }
 
 // Trim-native support, stubbed out for now, may be enabled later
+#ifndef SVM
 inline bool os::can_trim_native_heap() { return false; }
 inline bool os::trim_native_heap(os::size_change_t* rss_change) { return false; }
-
+#endif // !SVM
 #endif // OS_WINDOWS_OS_WINDOWS_INLINE_HPP

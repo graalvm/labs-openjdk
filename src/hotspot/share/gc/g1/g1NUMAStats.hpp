@@ -29,6 +29,7 @@
 
 // Manages statistics of multi nodes.
 class G1NUMAStats : public CHeapObj<mtGC> {
+#ifndef SVM
   struct Stat {
     // Hit count: if requested id equals to returned id.
     size_t _hit;
@@ -80,6 +81,7 @@ class G1NUMAStats : public CHeapObj<mtGC> {
     // Copy values of the given request index.
     void copy(uint req_index, size_t* stat);
   };
+#endif // !SVM
 
 public:
   enum NodeDataItems {
@@ -90,6 +92,7 @@ public:
     NodeDataItemsSentinel
   };
 
+#ifndef SVM
 private:
   const uint* _node_ids;
   uint _num_node_ids;
@@ -114,6 +117,6 @@ public:
   void copy(G1NUMAStats::NodeDataItems phase, uint requested_node_index, size_t* allocated_stat);
 
   void print_statistics();
+#endif // !SVM
 };
-
 #endif // SHARE_VM_GC_G1_NODE_TIMES_HPP

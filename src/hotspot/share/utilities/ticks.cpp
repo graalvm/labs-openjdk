@@ -51,6 +51,7 @@ uint64_t ElapsedCounterSource::milliseconds(Type value) {
   return (uint64_t)conversion<ElapsedCounterSource, MILLIUNITS>(value);
 }
 
+#ifndef SVM
 uint64_t ElapsedCounterSource::microseconds(Type value) {
   return (uint64_t)conversion<ElapsedCounterSource, MICROUNITS>(value);
 }
@@ -133,3 +134,4 @@ uint64_t CompositeElapsedCounterSource::microseconds(Type value) {
 uint64_t CompositeElapsedCounterSource::nanoseconds(Type value) {
   return (uint64_t)conversion<ElapsedCounterSource, NANOUNITS>(value.val1);
 }
+#endif // !SVM

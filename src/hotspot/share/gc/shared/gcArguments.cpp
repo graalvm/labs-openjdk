@@ -36,6 +36,7 @@ size_t HeapAlignment = 0;
 size_t SpaceAlignment = 0;
 
 void GCArguments::initialize() {
+#ifndef SVM
   if (FullGCALot && FLAG_IS_DEFAULT(MarkSweepAlwaysCompactCount)) {
     MarkSweepAlwaysCompactCount = 1;  // Move objects every gc.
   }
@@ -44,16 +45,19 @@ void GCArguments::initialize() {
     // Turn off gc-overhead-limit-exceeded checks
     FLAG_SET_DEFAULT(UseGCOverheadLimit, false);
   }
+#endif // !SVM
 
   if (MinHeapFreeRatio == 100) {
     // Keeping the heap 100% free is hard ;-) so limit it to 99%.
     FLAG_SET_ERGO(MinHeapFreeRatio, 99);
   }
 
+#ifndef SVM
   if (!ClassUnloading) {
     // If class unloading is disabled, also disable concurrent class unloading.
     FLAG_SET_CMDLINE(ClassUnloadingWithConcurrentMark, false);
   }
+#endif // !SVM
 }
 
 void GCArguments::initialize_heap_sizes() {
@@ -63,6 +67,10 @@ void GCArguments::initialize_heap_sizes() {
 }
 
 size_t GCArguments::compute_heap_alignment() {
+#ifdef SVM
+  ShouldNotReachHere();
+  return 0;
+#else
   // The card marking array and the offset arrays for old generations are
   // committed in os pages as well. Make sure they are entirely full (to
   // avoid partial page problems), e.g. if 512 bytes heap corresponds to 1
@@ -78,6 +86,7 @@ size_t GCArguments::compute_heap_alignment() {
   }
 
   return alignment;
+#endif // SVM
 }
 
 #ifdef ASSERT
@@ -160,9 +169,11 @@ void GCArguments::initialize_heap_flags_and_sizes() {
     }
   }
 
+#ifndef SVM
   if (FLAG_IS_DEFAULT(SoftMaxHeapSize)) {
     FLAG_SET_ERGO(SoftMaxHeapSize, MaxHeapSize);
   }
+#endif // !SVM
 
   FLAG_SET_ERGO(MinHeapDeltaBytes, align_up(MinHeapDeltaBytes, SpaceAlignment));
 

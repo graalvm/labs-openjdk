@@ -106,10 +106,12 @@ void G1RedirtyCardsQueueSet::verify_empty() const {
 }
 #endif // ASSERT
 
+#ifndef SVM
 BufferNode* G1RedirtyCardsQueueSet::all_completed_buffers() const {
   DEBUG_ONLY(_collecting = false;)
   return _list.top();
 }
+#endif // !SVM
 
 BufferNodeList G1RedirtyCardsQueueSet::take_all_completed_buffers() {
   DEBUG_ONLY(_collecting = false;)

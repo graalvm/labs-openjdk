@@ -46,11 +46,14 @@ void BarrierSet::set_barrier_set(BarrierSet* barrier_set) {
   // barrier set is available.
   assert(Thread::current()->is_Java_thread(),
          "Expected main thread to be a JavaThread");
+#ifndef SVM
   assert(!JavaThread::current()->on_thread_list(),
          "Main thread already on thread list.");
+#endif // !SVM
   _barrier_set->on_thread_create(Thread::current());
 }
 
+#ifndef SVM
 static BarrierSetNMethod* select_barrier_set_nmethod(BarrierSetNMethod* barrier_set_nmethod) {
   if (barrier_set_nmethod != nullptr) {
     // The GC needs nmethod entry barriers to do concurrent GC
@@ -69,26 +72,36 @@ static BarrierSetStackChunk* select_barrier_set_stack_chunk(BarrierSetStackChunk
     return new BarrierSetStackChunk();
   }
 }
+#endif // !SVM
 
-BarrierSet::BarrierSet(BarrierSetAssembler* barrier_set_assembler,
+BarrierSet::BarrierSet(
+#ifndef SVM
+                       BarrierSetAssembler* barrier_set_assembler,
                        BarrierSetC1* barrier_set_c1,
                        BarrierSetC2* barrier_set_c2,
                        BarrierSetNMethod* barrier_set_nmethod,
                        BarrierSetStackChunk* barrier_set_stack_chunk,
+#endif // !SVM
                        const FakeRtti& fake_rtti) :
-    _fake_rtti(fake_rtti),
-    _barrier_set_assembler(barrier_set_assembler),
+    _fake_rtti(fake_rtti)
+#ifndef SVM
+  , _barrier_set_assembler(barrier_set_assembler),
     _barrier_set_c1(barrier_set_c1),
     _barrier_set_c2(barrier_set_c2),
     _barrier_set_nmethod(select_barrier_set_nmethod(barrier_set_nmethod)),
-    _barrier_set_stack_chunk(select_barrier_set_stack_chunk(barrier_set_stack_chunk)) {
+    _barrier_set_stack_chunk(select_barrier_set_stack_chunk(barrier_set_stack_chunk))
+#endif // !SVM
+{
 }
 
 void BarrierSet::on_thread_attach(Thread* thread) {
+#ifndef SVM
   BarrierSetNMethod* bs_nm = barrier_set_nmethod();
   thread->set_nmethod_disarmed_guard_value(bs_nm->disarmed_guard_value());
+#endif // !SVM
 }
 
+#ifndef SVM
 // Called from init.cpp
 void gc_barrier_stubs_init() {
   BarrierSet* bs = BarrierSet::barrier_set();
@@ -97,3 +110,4 @@ void gc_barrier_stubs_init() {
   bs_assembler->barrier_stubs_init();
 #endif
 }
+#endif // !SVM

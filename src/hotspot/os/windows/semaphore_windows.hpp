@@ -29,7 +29,6 @@
 #include "utilities/globalDefinitions.hpp"
 
 #include <windows.h>
-
 class WindowsSemaphore : public CHeapObj<mtInternal> {
   HANDLE _semaphore;
 
@@ -47,5 +46,4 @@ class WindowsSemaphore : public CHeapObj<mtInternal> {
 };
 
 typedef WindowsSemaphore SemaphoreImpl;
-
 #endif // OS_WINDOWS_SEMAPHORE_WINDOWS_HPP

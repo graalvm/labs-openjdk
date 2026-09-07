@@ -32,6 +32,7 @@
 //
 // Miscellaneous internal compiler interface routines.
 
+#ifndef SVM
 // ------------------------------------------------------------------
 // basictype_to_str
 const char* basictype_to_str(BasicType t) {
@@ -39,6 +40,7 @@ const char* basictype_to_str(BasicType t) {
   if (str == nullptr) return "illegal";
   return str;
 }
+#endif // !SVM
 
 // ------------------------------------------------------------------
 // card_table_base

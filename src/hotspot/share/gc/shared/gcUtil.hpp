@@ -131,8 +131,10 @@ class AdaptivePaddedAverage : public AdaptiveWeightedAverage {
                                   // gives us an upper bound guess.
 
  protected:
+#ifndef SVM
   void set_padded_average(float avg)  { _padded_avg = avg;  }
   void set_deviation(float dev)       { _deviation  = dev;  }
+#endif // !SVM
 
  public:
   AdaptivePaddedAverage() :
@@ -145,8 +147,10 @@ class AdaptivePaddedAverage : public AdaptiveWeightedAverage {
 
   // Accessor
   float padded_average() const         { return _padded_avg; }
+#ifndef SVM
   float deviation()      const         { return _deviation;  }
   unsigned padding()     const         { return _padding;    }
+#endif // !SVM
 
   void clear() {
     AdaptiveWeightedAverage::clear();

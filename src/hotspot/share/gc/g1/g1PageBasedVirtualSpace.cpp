@@ -82,6 +82,7 @@ G1PageBasedVirtualSpace::~G1PageBasedVirtualSpace() {
   _tail_size              = 0;
 }
 
+#ifndef SVM
 size_t G1PageBasedVirtualSpace::committed_size() const {
   size_t result = _committed.count_one_bits() * _page_size;
   // The last page might not be in full.
@@ -90,14 +91,17 @@ size_t G1PageBasedVirtualSpace::committed_size() const {
   }
   return result;
 }
+#endif // !SVM
 
 size_t G1PageBasedVirtualSpace::reserved_size() const {
   return pointer_delta(_high_boundary, _low_boundary, sizeof(char));
 }
 
+#ifndef SVM
 size_t G1PageBasedVirtualSpace::uncommitted_size()  const {
   return reserved_size() - committed_size();
 }
+#endif // !SVM
 
 bool G1PageBasedVirtualSpace::is_area_committed(size_t start_page, size_t size_in_pages) const {
   size_t end_page = start_page + size_in_pages;
@@ -226,11 +230,14 @@ void G1PageBasedVirtualSpace::pretouch(size_t start_page, size_t size_in_pages, 
                          _page_size, pretouch_workers);
 }
 
+#ifndef SVM
 bool G1PageBasedVirtualSpace::contains(const void* p) const {
   return _low_boundary <= (const char*) p && (const char*) p < _high_boundary;
 }
+#endif // !SVM
 
 #ifndef PRODUCT
+#ifndef SVM
 void G1PageBasedVirtualSpace::print_on(outputStream* out) {
   out->print   ("Virtual space:");
   if (_special) out->print(" (pinned in memory)");
@@ -244,4 +251,5 @@ void G1PageBasedVirtualSpace::print_on(outputStream* out) {
 void G1PageBasedVirtualSpace::print() {
   print_on(tty);
 }
+#endif // !SVM
 #endif

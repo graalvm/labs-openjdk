@@ -76,6 +76,7 @@
 
 #include <limits>
 
+#ifndef SVM
 static const char _default_java_launcher[] = "generic";
 
 #define DEFAULT_JAVA_LAUNCHER _default_java_launcher
@@ -225,9 +226,39 @@ SystemProperty::SystemProperty(const char* key, const char* value, bool writeabl
   _internal = internal;
   _writeable = writeable;
 }
+#endif // !SVM
 
 // Check if head of 'option' matches 'name', and sets 'tail' to the remaining
 // part of the option string.
+#ifdef SVM
+static bool match_option(const char* arg, const char* name,
+                         const char** tail) {
+  size_t name_length = strlen(name);
+  assert(name[0] != '-', "the argument name must not start with a hyphen.");
+  // Due to the null terminator, this also works for args with 0 or 1 characters
+  if (arg[0] == '-') {
+    if (arg[1] == '-') {
+      // test for the format "--vm.X"
+      const char* prefix = "--vm.";
+      const int prefix_len = strlen(prefix);
+      if (strncmp(arg, prefix, prefix_len) == 0 && strncmp(arg + prefix_len, name, name_length) == 0) {
+        *tail = arg + prefix_len + name_length;
+        return true;
+      }
+    } else {
+      // test for the format "-X"
+      const int prefix_len = 1;
+      if (strncmp(arg + prefix_len, name, name_length) == 0) {
+        *tail = arg + prefix_len + name_length;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+#endif // SVM
+
+#ifndef SVM
 static bool match_option(const JavaVMOption *option, const char* name,
                          const char** tail) {
   size_t len = strlen(name);
@@ -769,6 +800,7 @@ void Arguments::describe_range_error(ArgsRange errcode) {
     ShouldNotReachHere();
   }
 }
+#endif // !SVM
 
 static bool set_bool_flag(JVMFlag* flag, bool value, JVMFlagOrigin origin) {
   if (JVMFlagAccess::set_bool(flag, &value, origin) == JVMFlag::SUCCESS) {
@@ -875,6 +907,7 @@ static bool append_to_string_flag(JVMFlag* flag, const char* new_value, JVMFlagO
   return true;
 }
 
+#ifndef SVM
 const char* Arguments::handle_aliases_and_deprecation(const char* arg) {
   const char* real_name = real_flag_name(arg);
   JDK_Version since = JDK_Version();
@@ -908,6 +941,7 @@ const char* Arguments::handle_aliases_and_deprecation(const char* arg) {
   ShouldNotReachHere();
   return nullptr;
 }
+#endif // !SVM
 
 #define BUFLEN 255
 
@@ -923,14 +957,15 @@ JVMFlag* Arguments::find_jvm_flag(const char* name, size_t name_length) {
     }
   }
 
-  const char* real_name = Arguments::handle_aliases_and_deprecation(name);
+  const char* real_name = SVM_ONLY(name) NOT_SVM(Arguments::handle_aliases_and_deprecation(name));
   if (real_name == nullptr) {
     return nullptr;
   }
-  JVMFlag* flag = JVMFlag::find_flag(real_name);
+  JVMFlag* flag = JVMFlag::find_flag(real_name SVM_ONLY(COMMA false));
   return flag;
 }
 
+// NOTE (chaeubl): ignore all arguments that are completely unparsable - let SVM handle those.
 bool Arguments::parse_argument(const char* arg, JVMFlagOrigin origin) {
   bool is_bool = false;
   bool bool_val = false;
@@ -953,18 +988,18 @@ bool Arguments::parse_argument(const char* arg, JVMFlagOrigin origin) {
 
   size_t name_len = size_t(arg - name);
   if (name_len == 0) {
-    return false;
+    return SVM_ONLY(true) NOT_SVM(false);
   }
 
   JVMFlag* flag = find_jvm_flag(name, name_len);
   if (flag == nullptr) {
-    return false;
+    return SVM_ONLY(true) NOT_SVM(false);
   }
 
   if (is_bool) {
     if (*arg != 0) {
       // Error -- extra characters such as -XX:+BoolFlag=123
-      return false;
+      return SVM_ONLY(true) NOT_SVM(false);
     }
     return set_bool_flag(flag, bool_val, origin);
   }
@@ -984,15 +1019,19 @@ bool Arguments::parse_argument(const char* arg, JVMFlagOrigin origin) {
     }
   }
 
+  // NOTE (chaeubl): Native Image does not support this option syntax.
+#ifndef SVM
   if (arg[0] == ':' && arg[1] == '=') {
     // -XX:Foo:=xxx will reset the string flag to the given value.
     const char* value = arg + 2;
     return set_string_flag(flag, value, origin);
   }
+#endif // !SVM
 
-  return false;
+  return SVM_ONLY(true) NOT_SVM(false);
 }
 
+#ifndef SVM
 void Arguments::add_string(char*** bldarray, int* count, const char* arg) {
   assert(bldarray != nullptr, "illegal argument");
 
@@ -1392,10 +1431,17 @@ void Arguments::no_shared_spaces(const char* message) {
     UseSharedSpaces = false;
   }
 }
+#endif // !SVM
 
 static void set_object_alignment() {
   // Object alignment.
   assert(is_power_of_2(ObjectAlignmentInBytes), "ObjectAlignmentInBytes must be power of 2");
+#ifdef SVM
+  // NOTE (chaeubl): in SVM, we use constants for all the values below
+  assert(MinObjAlignmentInBytes == ObjectAlignmentInBytes, "must be");
+  assert(MinObjAlignmentInBytes >= HeapWordsPerLong * HeapWordSize, "ObjectAlignmentInBytes value is too small");
+  assert(MinObjAlignmentInBytes == MinObjAlignment * HeapWordSize, "ObjectAlignmentInBytes value is incorrect");
+#else
   MinObjAlignmentInBytes     = ObjectAlignmentInBytes;
   assert(MinObjAlignmentInBytes >= HeapWordsPerLong * HeapWordSize, "ObjectAlignmentInBytes value is too small");
   MinObjAlignment            = MinObjAlignmentInBytes / HeapWordSize;
@@ -1407,9 +1453,27 @@ static void set_object_alignment() {
 
   // Oop encoding heap max
   OopEncodingHeapMax = (uint64_t(max_juint) + 1) << LogMinObjAlignmentInBytes;
+#endif // SVM
 }
 
 size_t Arguments::max_heap_for_compressed_oops() {
+#ifdef SVM
+  assert(SVMGlobalData::_null_regions_size > 0, "must be");
+  assert(OopEncodingHeapMax > SVMGlobalData::_null_regions_size, "must be");
+
+  size_t heap_limit = SVMIsolateData::_max_heap_address_space_size;
+  assert(heap_limit <= OopEncodingHeapMax, "invalid heap address space size");
+  if (ReservedAddressSpaceSize > 0) {
+    heap_limit = MIN2(heap_limit, ReservedAddressSpaceSize);
+  }
+
+  if (heap_limit < SVMGlobalData::_null_regions_size) {
+    heap_limit = 0;
+  } else {
+    heap_limit -= SVMGlobalData::_null_regions_size;
+  }
+  return heap_limit;
+#else
   // Avoid sign flip.
   assert(OopEncodingHeapMax > (uint64_t)os::vm_page_size(), "Unusual page size");
   // We need to fit both the null page and the heap into the memory budget, while
@@ -1421,8 +1485,10 @@ size_t Arguments::max_heap_for_compressed_oops() {
 
   LP64_ONLY(return OopEncodingHeapMax - displacement_due_to_null_page);
   NOT_LP64(ShouldNotReachHere(); return 0);
+#endif // SVM
 }
 
+#ifndef SVM
 void Arguments::set_use_compressed_oops() {
 #ifdef _LP64
   // MaxHeapSize is not set up properly at this point, but
@@ -1454,10 +1520,12 @@ void Arguments::set_conservative_max_heap_alignment() {
                                           GCArguments::compute_heap_alignment());
   assert(is_power_of_2(_conservative_max_heap_alignment), "Expected to be a power-of-2");
 }
+#endif // !SVM
 
 jint Arguments::set_ergonomics_flags() {
   GCConfig::initialize();
 
+#ifndef SVM
   set_conservative_max_heap_alignment();
 
 #ifdef _LP64
@@ -1466,10 +1534,12 @@ jint Arguments::set_ergonomics_flags() {
   // Also checks that certain machines are slower with compressed oops
   // in vm_version initialization code.
 #endif // _LP64
+#endif // !SVM
 
   return JNI_OK;
 }
 
+// NOTE (chaeubl): this code is only executed when the heap sizes are set ergonomically. So, heap sizes that are set via command line are never limited by this method.
 size_t Arguments::limit_heap_by_allocatable_memory(size_t limit) {
   size_t max_allocatable;
   size_t result = limit;
@@ -1486,18 +1556,22 @@ size_t Arguments::limit_heap_by_allocatable_memory(size_t limit) {
   return result;
 }
 
+#ifndef SVM
 // Use static initialization to get the default before parsing
 static const size_t DefaultHeapBaseMinAddress = HeapBaseMinAddress;
+#endif // !SVM
 
 void Arguments::set_heap_size() {
   julong phys_mem;
 
+#ifndef SVM
   // If the user specified one of these options, they
   // want specific memory sizing so do not limit memory
   // based on compressed oops addressability.
   // Also, memory limits will be calculated based on
   // available os physical memory, not our MaxRAM limit,
   // unless MaxRAM is also specified.
+  // NOTE (chaeubl): on SVM, we must never override the compressed oop limit
   bool override_coop_limit = (!FLAG_IS_DEFAULT(MaxRAMPercentage) ||
                            !FLAG_IS_DEFAULT(MinRAMPercentage) ||
                            !FLAG_IS_DEFAULT(InitialRAMPercentage) ||
@@ -1509,7 +1583,9 @@ void Arguments::set_heap_size() {
     } else {
       phys_mem = (julong)MaxRAM;
     }
-  } else {
+  } else
+#endif // !SVM
+  {
     phys_mem = FLAG_IS_DEFAULT(MaxRAM) ? MIN2(static_cast<julong>(os::physical_memory()), (julong)MaxRAM)
                                        : (julong)MaxRAM;
   }
@@ -1547,6 +1623,7 @@ void Arguments::set_heap_size() {
     }
 
 #ifdef _LP64
+#ifndef SVM
     if (UseCompressedOops || UseCompressedClassPointers) {
       // HeapBaseMinAddress can be greater than default but not less than.
       if (!FLAG_IS_DEFAULT(HeapBaseMinAddress)) {
@@ -1561,21 +1638,25 @@ void Arguments::set_heap_size() {
         }
       }
     }
+#endif // SVM
     if (UseCompressedOops) {
       // Limit the heap size to the maximum possible when using compressed oops
       julong max_coop_heap = (julong)max_heap_for_compressed_oops();
 
+#ifndef SVM
       if (HeapBaseMinAddress + MaxHeapSize < max_coop_heap) {
         // Heap should be above HeapBaseMinAddress to get zero based compressed oops
         // but it should be not less than default MaxHeapSize.
         max_coop_heap -= HeapBaseMinAddress;
       }
+#endif // !SVM
 
       // If user specified flags prioritizing os physical
       // memory limits, then disable compressed oops if
       // limits exceed max_coop_heap and UseCompressedOops
       // was not specified.
       if (reasonable_max > max_coop_heap) {
+#ifndef SVM
         if (FLAG_IS_ERGO(UseCompressedOops) && override_coop_limit) {
           aot_log_info(aot)("UseCompressedOops and UseCompressedClassPointers have been disabled due to"
             " max heap %zu > compressed oop heap %zu. "
@@ -1583,8 +1664,11 @@ void Arguments::set_heap_size() {
             ,(size_t)reasonable_max, (size_t)max_coop_heap, MaxRAMPercentage);
           FLAG_SET_ERGO(UseCompressedOops, false);
         } else {
+#endif // !SVM
           reasonable_max = MIN2(reasonable_max, max_coop_heap);
+#ifndef SVM
         }
+#endif // !SVM
       }
     }
 #endif // _LP64
@@ -1619,8 +1703,98 @@ void Arguments::set_heap_size() {
       log_trace(gc, heap)("  Minimum heap size %zu", MinHeapSize);
     }
   }
+
+#ifdef SVM
+  // Increase all heap sizes by the image heap size without loosing the information if the value was set ergonomically or on the command line.
+  assert(assert_heap_sizes(), "must be");
+
+  {
+    size_t min_heap_size = increase_by_image_heap_size(MinHeapSize);
+    if (FLAG_IS_CMDLINE(MinHeapSize)) {
+      FLAG_SET_CMDLINE(MinHeapSize, min_heap_size);
+    } else {
+      assert(FLAG_IS_ERGO(MinHeapSize), "must be");
+      FLAG_SET_ERGO(MinHeapSize, min_heap_size);
+    }
+  }
+
+  {
+    size_t initial_heap_size = increase_by_image_heap_size(InitialHeapSize);
+    if (FLAG_IS_CMDLINE(InitialHeapSize)) {
+      FLAG_SET_CMDLINE(InitialHeapSize, initial_heap_size);
+    } else {
+      assert(FLAG_IS_ERGO(InitialHeapSize), "must be");
+      FLAG_SET_ERGO(InitialHeapSize, initial_heap_size);
+    }
+  }
+
+  {
+    size_t max_heap_size = increase_by_image_heap_size(MaxHeapSize);
+    if (FLAG_IS_CMDLINE(MaxHeapSize)) {
+      FLAG_SET_CMDLINE(MaxHeapSize, max_heap_size);
+    } else {
+      assert(FLAG_IS_ERGO(MaxHeapSize), "must be");
+      FLAG_SET_ERGO(MaxHeapSize, max_heap_size);
+    }
+  }
+
+  assert(assert_heap_sizes(), "must be");
+#endif // SVM
 }
 
+#ifdef SVM
+void Arguments::verify_heap_sizes() {
+  if (FLAG_IS_CMDLINE(MinHeapSize) && MinHeapSize > max_heap_for_compressed_oops()) {
+    jio_fprintf(defaultStream::error_stream(), "MinHeapSize is larger than the maximum address space.\n");
+    vm_exit_during_initialization();
+  }
+
+  if (FLAG_IS_CMDLINE(InitialHeapSize) && InitialHeapSize > max_heap_for_compressed_oops()) {
+    jio_fprintf(defaultStream::error_stream(), "InitialHeapSize is larger than the maximum address space.\n");
+    vm_exit_during_initialization();
+  }
+
+  if (FLAG_IS_CMDLINE(MaxHeapSize) && MaxHeapSize > max_heap_for_compressed_oops()) {
+    jio_fprintf(defaultStream::error_stream(), "MaxHeapSize is larger than the maximum address space.\n");
+    vm_exit_during_initialization();
+  }
+
+  if (FLAG_IS_CMDLINE(NewSize) && NewSize > max_heap_for_compressed_oops()) {
+    jio_fprintf(defaultStream::error_stream(), "NewSize is larger than the maximum address space.\n");
+    vm_exit_during_initialization();
+  }
+
+  if (FLAG_IS_CMDLINE(MaxNewSize) && MaxNewSize > max_heap_for_compressed_oops()) {
+    jio_fprintf(defaultStream::error_stream(), "MaxNewSize is larger than the maximum address space.\n");
+    vm_exit_during_initialization();
+  }
+}
+
+bool Arguments::assert_heap_sizes() {
+  assert(MinHeapSize <= max_heap_for_compressed_oops(), "must be");
+  assert(InitialHeapSize <= max_heap_for_compressed_oops(), "must be");
+  assert(MaxHeapSize <= max_heap_for_compressed_oops(), "must be");
+  assert(NewSize <= max_heap_for_compressed_oops(), "must be");
+  // MaxNewSize can still be larger than the address space - this value is updated later on by the GC-specific initialization.
+  return true;
+}
+
+size_t Arguments::increase_by_image_heap_size(size_t size) {
+  // We increase the heap size by the size of the image heap. However, we don't limit the result to the size of the allocatable memory as this seems
+  // rather useless as the VM will need virtual memory for non heap parts as well. So, even if we would limit the heap size, the VM as a whole can
+  // exceed that limit easily.
+  assert(SVMGlobalData::_image_heap_size > 0, "must be");
+  size_t result = size + SVMGlobalData::_image_heap_size;
+  if (size + SVMGlobalData::_image_heap_size < size) {
+    // overflow
+    result = (size_t)-1;
+  }
+
+  return MIN2(result, max_heap_for_compressed_oops());
+}
+#endif // SVM
+
+#ifndef SVM
 // This option inspects the machine and attempts to set various
 // parameters to be optimal for long-running, memory allocation
 // intensive jobs.  It is intended for machines with large
@@ -1789,13 +1963,16 @@ static unsigned int addopens_count = 0;
 static unsigned int patch_mod_count = 0;
 static unsigned int enable_native_access_count = 0;
 static bool patch_mod_javabase = false;
+#endif // !SVM
 
 // Check the consistency of vm_init_args
 bool Arguments::check_vm_args_consistency() {
+#ifndef SVM
   // This may modify compiler flags. Must be called before CompilerConfig::check_args_consistency()
   if (!CDSConfig::check_vm_args_consistency(patch_mod_javabase, mode_flag_cmd_line)) {
     return false;
   }
+#endif // !SVM
 
   // Method for adding checks for flag consistency.
   // The intent is to warn the user of all possible conflicts,
@@ -1811,6 +1988,7 @@ bool Arguments::check_vm_args_consistency() {
     status = false;
   }
 
+#ifndef SVM
   status = CompilerConfig::check_args_consistency(status);
 #if INCLUDE_JVMCI
   if (status && EnableJVMCI) {
@@ -1866,9 +2044,11 @@ bool Arguments::check_vm_args_consistency() {
                 "-XX:+VerifyHeavyMonitors requires LockingMode == 0 (LM_MONITOR)\n");
     return false;
   }
+#endif // !SVM
   return status;
 }
 
+#ifndef SVM
 bool Arguments::is_bad_option(const JavaVMOption* option, jboolean ignore,
   const char* option_type) {
   if (ignore) return false;
@@ -1960,8 +2140,14 @@ Arguments::ArgsRange Arguments::parse_memory_size(const char* s,
   if (!parse_integer(s, long_arg)) return arg_unreadable;
   return check_memory_size(*long_arg, min_size, max_size);
 }
+#endif // !SVM
 
-jint Arguments::parse_vm_init_args(GrowableArrayCHeap<VMInitArgsGroup, mtArguments>* all_args) {
+jint Arguments::parse_vm_init_args(
+#ifndef SVM
+    GrowableArrayCHeap<VMInitArgsGroup, mtArguments>* all_args
+#endif // !SVM
+) {
+#ifndef SVM
   // Save default settings for some mode flags
   Arguments::_AlwaysCompileLoopMethods = AlwaysCompileLoopMethods;
   Arguments::_UseOnStackReplacement    = UseOnStackReplacement;
@@ -1981,7 +2167,56 @@ jint Arguments::parse_vm_init_args(GrowableArrayCHeap<VMInitArgsGroup, mtArgumen
       return result;
     }
   }
+#endif // !SVM
 
+#ifdef SVM
+  // Parse default values for runtime arguments that were specified at image build time using `-R:...`.
+  assert(SVMGlobalData::_image_build_runtime_args != nullptr, "must be");
+  jint result = parse_each_vm_init_arg(SVMGlobalData::_image_build_runtime_args, false, JVMFlagOrigin::COMMAND_LINE);
+  if (result != JNI_OK) {
+    return result;
+  }
+
+  // Parse args structure generated from the command line flags.
+  if (SVMIsolateData::_argc > 0) {
+    assert(SVMIsolateData::_argv != nullptr, "must be");
+    result = parse_each_vm_init_arg(SVMIsolateData::_argc, SVMIsolateData::_argv, JVMFlagOrigin::COMMAND_LINE);
+    if (result != JNI_OK) {
+      return result;
+    }
+  }
+
+  // Parse hosted options that were specified at image build time using `-H:...`.
+  assert(SVMGlobalData::_image_build_hosted_args != nullptr, "must be");
+  result = parse_each_vm_init_arg(SVMGlobalData::_image_build_hosted_args, true, JVMFlagOrigin::COMMAND_LINE);
+  if (result != JNI_OK) {
+    return result;
+  }
+
+  // The consistency of the heap flags is checked later on when G1 is really starting up. The only aspect we need to check
+  // here is that the heap sizes don't exceed the maximum address space.
+  verify_heap_sizes();
+
+  // Apply all SVM-specific options.
+  if (PrintGC || VerboseGC) {
+    LogConfiguration::configure_stdout(LogLevel::Info, !VerboseGC, LOG_TAGS(gc));
+  }
+
+  if (VerifyHeap) {
+    int result = JVMFlag::SUCCESS;
+    result |= FLAG_SET_CMDLINE(VerifyBeforeGC, true);
+    result |= FLAG_SET_CMDLINE(VerifyAfterGC, true);
+    result |= FLAG_SET_CMDLINE(VerifyDuringGC, true);
+    result |= FLAG_SET_CMDLINE(G1VerifyHeapRegionCodeRoots, true);
+
+    if (result != JVMFlag::SUCCESS) {
+      jio_fprintf(defaultStream::error_stream(), "Error while enabling 'VerifyHeap' at run-time.\n");
+      vm_exit_during_initialization();
+    }
+  }
+#endif // SVM
+
+#ifndef SVM
   // Disable CDS for exploded image
   if (!has_jimage()) {
     no_shared_spaces("CDS disabled on exploded JDK");
@@ -1996,6 +2231,7 @@ jint Arguments::parse_vm_init_args(GrowableArrayCHeap<VMInitArgsGroup, mtArgumen
   os::init_container_support();
 
   SystemMemoryBarrier::initialize();
+#endif // !SVM
 
   // Do final processing now that all arguments have been parsed
   result = finalize_vm_init_args();
@@ -2006,6 +2242,7 @@ jint Arguments::parse_vm_init_args(GrowableArrayCHeap<VMInitArgsGroup, mtArgumen
   return JNI_OK;
 }
 
+#ifndef SVM
 #if !INCLUDE_JVMTI || INCLUDE_CDS
 // Checks if name in command-line argument -agent{lib,path}:name[=options]
 // represents a valid JDWP agent.  is_path==true denotes that we
@@ -2134,7 +2371,104 @@ jint Arguments::parse_xss(const JavaVMOption* option, const char* tail, intx* ou
 
   return JNI_OK;
 }
+#endif // !SVM
 
+#ifdef SVM
+void set_heap_size_flag(const char* flag_name, const char* tail, JVMFlagOrigin origin, const char* arg) {
+  JVMFlag* flag = JVMFlag::find_flag(flag_name, false);
+  assert(flag != nullptr, "must be");
+  bool result = set_numeric_flag(flag, tail, origin);
+  if (!result) {
+    jio_fprintf(defaultStream::error_stream(), "Error while parsing '%s'\n", arg);
+    vm_exit_during_initialization();
+  }
+}
+
+// Parses the arguments stream, which is terminated by a zero-length string
+jint Arguments::parse_each_vm_init_arg(char *args, bool hosted, JVMFlagOrigin origin) {
+  const char *tail;
+
+  int length;
+  while ((length = strlen(args)) > 0) {
+    char *name = args;
+    args += length + 1;
+
+    uint64_t value = *((uint64_t*)args);
+    args += sizeof(uint64_t);
+
+    JVMFlag* flag = JVMFlag::find_flag(name, hosted);
+    guarantee(flag != nullptr, "unknown option: %s (hosted=%s, value=" UINT64_FORMAT ")", name, hosted ? "true" : "false", value);
+
+    JVMFlag::Error result;
+    if (flag->is_bool()) {
+      assert(value == 0 || value == 1, "must be");
+      bool b = value != 0;
+      result = JVMFlagAccess::set_bool(flag, &b, origin);
+    } else if (flag->is_int()) {
+      assert(value <= 0xFFFFFFFF, "must be");
+      int i = (int)value;
+      result = JVMFlagAccess::set_int(flag, &i, origin);
+    } else if (flag->is_uint()) {
+      assert(value <= 0xFFFFFFFF, "must be");
+      uint i = (uint)value;
+      result = JVMFlagAccess::set_uint(flag, &i, origin);
+    } else if (flag->is_intx()) {
+      assert(sizeof(intx) == sizeof(uint64_t), "must be");
+      result = JVMFlagAccess::set_intx(flag, (intx*)&value, origin);
+    } else if (flag->is_uintx()) {
+      assert(sizeof(uintx) == sizeof(uint64_t), "must be");
+      result = JVMFlagAccess::set_uintx(flag, (uintx*)&value, origin);
+    } else if (flag->is_uint64_t()) {
+      result = JVMFlagAccess::set_uint64_t(flag, &value, origin);
+    } else if (flag->is_size_t()) {
+      assert(sizeof(size_t) == sizeof(uint64_t), "must be");
+      result = JVMFlagAccess::set_size_t(flag, (size_t*)&value, origin);
+    } else if (flag->is_double()) {
+      assert(sizeof(double) == sizeof(uint64_t), "must be");
+      result = JVMFlagAccess::set_double(flag, (double*)&value, origin);
+    } else {
+      ShouldNotReachHere();
+    }
+
+    if (result != JVMFlag::SUCCESS) {
+      jio_fprintf(defaultStream::error_stream(), "The option '%s' was specified at image build time but couldn't be applied at runtime.\n", name);
+      vm_exit_during_initialization();
+    }
+  }
+  return JNI_OK;
+}
+
+// NOTE (chaeubl): we explicitly replace the whole method below as the original logic was too complicated for our use case.
+// For SVM, the user may specify options at image build-time and at run-time. No matter how the options are specified, we
+// need to ensure that they are always parsed consistently.
+jint Arguments::parse_each_vm_init_arg(int argc, char *argv[], JVMFlagOrigin origin) {
+  const char *tail;
+
+  for (int index = 0; index < argc; index++) {
+    char *arg = argv[index];
+    if (arg == nullptr) {
+      continue;
+    }
+
+    // We mustn't do any special handling for XX options here (would result in inconsistent parsing).
+    if (match_option(arg, "Xmn", &tail)) {
+      set_heap_size_flag("MaxNewSize", tail, origin, arg);
+      set_heap_size_flag("NewSize", tail, origin, arg);
+    } else if (match_option(arg, "Xms", &tail)) {
+      set_heap_size_flag("MinHeapSize", tail, origin, arg);
+      set_heap_size_flag("InitialHeapSize", tail, origin, arg);
+    } else if (match_option(arg, "Xmx", &tail)) {
+      set_heap_size_flag("MaxHeapSize", tail, origin, arg);
+    } else if (match_option(arg, "XX:", &tail)) {
+      if (!parse_argument(tail, origin)) {
+        jio_fprintf(defaultStream::error_stream(), "Error while parsing '%s'\n", arg);
+        vm_exit_during_initialization();
+      }
+    }
+  }
+  return JNI_OK;
+}
+#else
 jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, JVMFlagOrigin origin) {
   // For match_option to return remaining or value part of option string
   const char* tail;
@@ -2888,8 +3222,10 @@ void Arguments::fix_appclasspath() {
     FreeHeap(copy); // a copy was made by set_value, so don't need this anymore
   }
 }
+#endif // !SVM
 
 jint Arguments::finalize_vm_init_args() {
+#ifndef SVM
   // check if the default lib/endorsed directory exists; if so, error
   char path[JVM_MAXPATHLEN];
   const char* fileSep = os::file_separator();
@@ -2958,19 +3294,23 @@ jint Arguments::finalize_vm_init_args() {
   if (!CompilationModeFlag::initialize()) {
     return JNI_ERR;
   }
+#endif // !SVM
 
   if (!check_vm_args_consistency()) {
     return JNI_ERR;
   }
 
+#ifndef SVM
 
 #ifndef CAN_SHOW_REGISTERS_ON_ASSERT
   UNSUPPORTED_OPTION(ShowRegistersOnAssert);
 #endif // CAN_SHOW_REGISTERS_ON_ASSERT
+#endif // !SVM
 
   return JNI_OK;
 }
 
+#ifndef SVM
 // Helper class for controlling the lifetime of JavaVMInitArgs
 // objects.  The contents of the JavaVMInitArgs are guaranteed to be
 // deleted on the destruction of the ScopedVMInitArgs object.
@@ -3489,10 +3829,12 @@ static void apply_debugger_ergo() {
   }
 #endif // ASSERT
 }
+#endif // !SVM
 
 // Parse entry point called from JNI_CreateJavaVM
 
-jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
+jint Arguments::parse(NOT_SVM(const JavaVMInitArgs* initial_cmd_args)) {
+#ifndef SVM
   assert(verify_special_jvm_flags(false), "deprecated and obsolete flag table inconsistent");
   JVMFlag::check_all_flag_declarations();
 
@@ -3646,14 +3988,16 @@ jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
     print_options(cur_java_options_args);
     print_options(cur_jdk_aot_vm_options_args);
   }
+#endif // !SVM
 
   // Apply the settings in these args to the JVM global flags.
-  jint result = parse_vm_init_args(&all_args);
+  jint result = parse_vm_init_args(NOT_SVM(&all_args));
 
   if (result != JNI_OK) {
     return result;
   }
 
+#ifndef SVM
   // Delay warning until here so that we've had a chance to process
   // the -XX:-PrintWarnings flag
   if (needs_hotspotrc_warning) {
@@ -3691,10 +4035,12 @@ jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
   if (!handle_deprecated_print_gc_flags()) {
     return JNI_EINVAL;
   }
+#endif // !SVM
 
   // Set object alignment values.
   set_object_alignment();
 
+#ifndef SVM
 #if !INCLUDE_CDS
   if (CDSConfig::is_dumping_static_archive() || RequireSharedSpaces) {
     jio_fprintf(defaultStream::error_stream(),
@@ -3750,10 +4096,12 @@ jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
     LogStream st(Log(arguments)::info());
     Arguments::print_on(&st);
   }
+#endif // !SVM
 
   return JNI_OK;
 }
 
+#ifndef SVM
 void Arguments::set_compact_headers_flags() {
 #ifdef _LP64
   if (UseCompactObjectHeaders && FLAG_IS_CMDLINE(UseCompressedClassPointers) && !UseCompressedClassPointers) {
@@ -3781,6 +4129,7 @@ void Arguments::set_compact_headers_flags() {
   }
 #endif
 }
+#endif // !SVM
 
 jint Arguments::apply_ergo() {
   // Set flags based on ergonomics.
@@ -3792,6 +4141,7 @@ jint Arguments::apply_ergo() {
 
   GCConfig::arguments()->initialize();
 
+#ifndef SVM
   set_compact_headers_flags();
 
   if (UseCompressedClassPointers) {
@@ -3902,9 +4252,11 @@ jint Arguments::apply_ergo() {
       LogConfiguration::configure_stdout(LogLevel::Info, true, LOG_TAGS(valuebasedclasses));
     }
   }
+#endif // !SVM
   return JNI_OK;
 }
 
+#ifndef SVM
 jint Arguments::adjust_after_os() {
   if (UseNUMA) {
     if (UseParallelGC) {
@@ -4069,3 +4421,4 @@ bool Arguments::copy_expand_pid(const char* src, size_t srclen,
   *b = '\0';
   return (p == src_end); // return false if not all of the source was copied
 }
+#endif // !SVM

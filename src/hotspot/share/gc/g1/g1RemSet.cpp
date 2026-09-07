@@ -318,7 +318,7 @@ public:
   // as we do not clean up remembered sets before merging heap roots.
   bool contains_cards_to_process(uint const region_idx) const {
     G1HeapRegion* hr = G1CollectedHeap::heap()->region_at_or_null(region_idx);
-    return (hr != nullptr && !hr->in_collection_set() && hr->is_old_or_humongous());
+    return (hr != nullptr && !hr->in_collection_set() && SVM_ONLY(hr->is_old_or_humongous_or_open_image_heap()) NOT_SVM(hr->is_old_or_humongous()));
   }
 
   size_t num_visited_cards() const {
@@ -403,7 +403,7 @@ public:
   void add_dirty_region(uint const region) {
 #ifdef ASSERT
    G1HeapRegion* hr = G1CollectedHeap::heap()->region_at(region);
-   assert(!hr->in_collection_set() && hr->is_old_or_humongous(),
+   assert(!hr->in_collection_set() && SVM_ONLY(hr->is_old_or_humongous_or_open_image_heap()) NOT_SVM(hr->is_old_or_humongous()),
           "Region %u is not suitable for scanning, is %sin collection set or %s",
           hr->hrm_index(), hr->in_collection_set() ? "" : "not ", hr->get_short_type_str());
 #endif
@@ -691,7 +691,7 @@ public:
   }
 
   bool do_heap_region(G1HeapRegion* r) {
-    assert(!r->in_collection_set() && r->is_old_or_humongous(),
+    assert(!r->in_collection_set() && SVM_ONLY(r->is_old_or_humongous_or_open_image_heap()) NOT_SVM(r->is_old_or_humongous()),
            "Should only be called on old gen non-collection set regions but region %u is not.",
            r->hrm_index());
     uint const region_idx = r->hrm_index();
@@ -899,11 +899,11 @@ void G1RemSet::prepare_region_for_scan(G1HeapRegion* r) {
   // to null (don't scan) in the initialization.
   if (r->in_collection_set()) {
     assert_scan_top_is_null(hrm_index);
-  } else if (r->is_old_or_humongous()) {
+  } else if (SVM_ONLY(r->is_old_or_humongous_or_open_image_heap()) NOT_SVM(r->is_old_or_humongous())) {
     _scan_state->set_scan_top(hrm_index, r->top());
   } else {
     assert_scan_top_is_null(hrm_index);
-    assert(r->is_free(),
+    assert(r->is_free() SVM_ONLY(|| r->is_closed_image_heap()),
            "Region %u should be free region but is %s", hrm_index, r->get_type_str());
   }
 }
@@ -1569,7 +1569,7 @@ bool G1RemSet::clean_card_before_refine(CardValue** const card_ptr_addr) {
   // In the normal (non-stale) case, the synchronization between the
   // enqueueing of the card and processing it here will have ensured
   // we see the up-to-date region type here.
-  if (!r->is_old_or_humongous()) {
+  if (SVM_ONLY(!r->is_old_or_humongous_or_open_image_heap()) NOT_SVM(!r->is_old_or_humongous())) {
     return false;
   }
 

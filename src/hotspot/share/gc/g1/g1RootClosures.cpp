@@ -34,12 +34,14 @@ public:
   G1EvacuationClosures(G1CollectedHeap* g1h,
                        G1ParScanThreadState* pss,
                        bool in_young_gc) :
-      _closures(g1h, pss, in_young_gc) {}
+      _closures(g1h, pss NOT_SVM(COMMA in_young_gc)) {}
 
   OopClosure* strong_oops() { return &_closures._oops; }
 
+#ifndef SVM
   CLDClosure* weak_clds()             { return &_closures._clds; }
   CLDClosure* strong_clds()           { return &_closures._clds; }
+#endif // !SVM
 
   NMethodClosure* strong_nmethods()   { return &_closures._nmethods; }
   NMethodClosure* weak_nmethods()     { return &_closures._nmethods; }
@@ -56,13 +58,15 @@ class G1ConcurrentStartMarkClosures : public G1EvacuationRootClosures {
 public:
   G1ConcurrentStartMarkClosures(G1CollectedHeap* g1h,
                                 G1ParScanThreadState* pss) :
-      _strong(g1h, pss, /* process_only_dirty_klasses */ false),
-      _weak(g1h, pss,   /* process_only_dirty_klasses */ false) {}
+      _strong(g1h, pss NOT_SVM(COMMA /* process_only_dirty_klasses */ false)),
+      _weak(g1h, pss   NOT_SVM(COMMA /* process_only_dirty_klasses */ false)) {}
 
   OopClosure* strong_oops() { return &_strong._oops; }
 
+#ifndef SVM
   CLDClosure* weak_clds()             { return &_weak._clds; }
   CLDClosure* strong_clds()           { return &_strong._clds; }
+#endif // !SVM
 
   NMethodClosure* strong_nmethods()   { return &_strong._nmethods; }
   NMethodClosure* weak_nmethods()     { return &_weak._nmethods; }
@@ -73,7 +77,8 @@ G1EvacuationRootClosures* G1EvacuationRootClosures::create_root_closures(G1Colle
                                                                          bool process_only_dirty_klasses) {
   G1EvacuationRootClosures* res = nullptr;
   if (g1h->collector_state()->in_concurrent_start_gc()) {
-    if (ClassUnloadingWithConcurrentMark) {
+    if (SVM_ONLY(true) NOT_SVM(ClassUnloadingWithConcurrentMark)) {
+      // NOTE (chaeubl): During a "Concurrent Start" GC, we don't want not mark the nmethod oops (see nmethod.hpp).
       res = new G1ConcurrentStartMarkClosures<false>(g1h, pss);
     } else {
       res = new G1ConcurrentStartMarkClosures<true>(g1h, pss);

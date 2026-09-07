@@ -40,6 +40,8 @@ void G1FullGCCompactTask::G1CompactRegionClosure::clear_in_bitmap(oop obj) {
 }
 
 size_t G1FullGCCompactTask::G1CompactRegionClosure::apply(oop obj) {
+  assert_svm_only(!SVMImageHeap::is_image_heap_object(obj), "image heap must not be compacted");
+
   size_t size = obj->size();
   if (FullGCForwarding::is_forwarded(obj)) {
     G1FullGCCompactTask::copy_object_to_new_location(obj);
@@ -67,6 +69,7 @@ void G1FullGCCompactTask::copy_object_to_new_location(oop obj) {
 }
 
 void G1FullGCCompactTask::compact_region(G1HeapRegion* hr) {
+  assert_svm_only(!hr->is_image_heap(), "Image heap regions must not be compacted");
   assert(!hr->has_pinned_objects(), "Should be no region with pinned objects in compaction queue");
   assert(!hr->is_humongous(), "Should be no humongous regions in compaction queue");
 

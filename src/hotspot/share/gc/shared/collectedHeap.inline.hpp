@@ -31,19 +31,21 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/align.hpp"
 
-inline oop CollectedHeap::obj_allocate(Klass* klass, size_t size, TRAPS) {
-  ObjAllocator allocator(klass, size, THREAD);
+inline oop CollectedHeap::obj_allocate(Klass* klass, size_t size NOT_SVM(COMMA TRAPS)) {
+  ObjAllocator allocator(klass, size NOT_SVM(COMMA THREAD));
   return allocator.allocate();
 }
 
-inline oop CollectedHeap::array_allocate(Klass* klass, size_t size, int length, bool do_zero, TRAPS) {
-  ObjArrayAllocator allocator(klass, size, length, do_zero, THREAD);
+inline oop CollectedHeap::array_allocate(Klass* klass, size_t size, int length, bool do_zero NOT_SVM(COMMA TRAPS)) {
+  ObjArrayAllocator allocator(klass, size, length, do_zero NOT_SVM(COMMA THREAD));
   return allocator.allocate();
 }
 
+#ifndef SVM
 inline oop CollectedHeap::class_allocate(Klass* klass, size_t size, TRAPS) {
   ClassAllocator allocator(klass, size, THREAD);
   return allocator.allocate();
 }
+#endif // !SVM
 
 #endif // SHARE_GC_SHARED_COLLECTEDHEAP_INLINE_HPP

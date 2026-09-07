@@ -79,7 +79,9 @@ class PromotionFailedInfo : public CopyFailedInfo {
     _thread_trace_id = 0;
   }
 
+#ifndef SVM
   traceid thread_trace_id() const { return _thread_trace_id; }
+#endif // !SVM
 
 };
 

@@ -42,4 +42,6 @@ void OSThreadBase::print_on(outputStream *st) const {
   }
 }
 
+#ifndef SVM
 void OSThreadBase::print() const { print_on(tty); }
+#endif // !SVM

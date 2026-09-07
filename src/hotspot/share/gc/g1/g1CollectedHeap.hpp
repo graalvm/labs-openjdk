@@ -58,6 +58,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "runtime/threadSMR.hpp"
 #include "utilities/bitMap.hpp"
+#ifdef SVM
+#include "svmGlobalData.hpp"
+#endif // SVM
 
 // A "G1CollectedHeap" is an implementation of a java heap for HotSpot.
 // It uses the "Garbage First" heap organization and algorithm, which
@@ -121,7 +124,9 @@ class G1RegionMappingChangedListener : public G1MappingChangedListener {
 
 // Helper to claim contiguous sets of JavaThread for processing by multiple threads.
 class G1JavaThreadsListClaimer : public StackObj {
+#ifndef SVM
   ThreadsListHandle _list;
+#endif // !SVM
   uint _claim_step;
 
   volatile uint _cur_claim;
@@ -129,10 +134,14 @@ class G1JavaThreadsListClaimer : public StackObj {
   // Attempts to claim _claim_step JavaThreads, returning an array of claimed
   // JavaThread* with count elements. Returns null (and a zero count) if there
   // are no more threads to claim.
+#ifdef SVM
+  uint claim(uint& count);
+#else
   JavaThread* const* claim(uint& count);
+#endif // SVM
 
 public:
-  G1JavaThreadsListClaimer(uint claim_step) : _list(), _claim_step(claim_step), _cur_claim(0) {
+  G1JavaThreadsListClaimer(uint claim_step) : NOT_SVM(_list() COMMA) _claim_step(claim_step), _cur_claim(0) {
     assert(claim_step > 0, "must be");
   }
 
@@ -142,7 +151,13 @@ public:
   void apply(ThreadClosure* cl);
 
   // Total number of JavaThreads that can be claimed.
-  uint length() const { return _list.length(); }
+  uint length() const {
+#ifdef SVM
+    return IsolateThread::get_num_attached_threads();
+#else
+    return _list.length());
+#endif // SVM
+  }
 };
 
 class G1CollectedHeap : public CollectedHeap {
@@ -202,6 +217,9 @@ private:
 
   // The block offset table for the G1 heap.
   G1BlockOffsetTable* _bot;
+#ifdef SVM
+  G1BlockOffsetTable* _image_heap_bot;
+#endif // SVM
 
 public:
   void rebuild_free_region_list();
@@ -710,6 +728,7 @@ public:
   void free_humongous_region(G1HeapRegion* hr,
                              G1FreeRegionList* free_list);
 
+#ifndef SVM
   // Execute func(G1HeapRegion* r, bool is_last) on every region covered by the
   // given range.
   template <typename Func>
@@ -732,8 +751,12 @@ public:
   // at JVM init time if the archive heap's contents cannot be used (e.g., if
   // CRC check fails).
   void dealloc_archive_regions(MemRegion range);
+#endif // !SVM
 
 private:
+#ifdef SVM
+  void claim_image_heap();
+#endif // SVM
 
   // Shrink the garbage-first heap by at most the given size (in bytes!).
   // (Rounds down to a G1HeapRegion boundary.)
@@ -944,9 +967,11 @@ public:
   inline bool is_collection_set_candidate(const G1HeapRegion* r) const;
 
   void initialize_serviceability() override;
+#ifndef SVM
   MemoryUsage memory_usage() override;
   GrowableArray<GCMemoryManager*> memory_managers() override;
   GrowableArray<MemoryPool*> memory_pools() override;
+#endif // !SVM
 
   void fill_with_dummy_object(HeapWord* start, HeapWord* end, bool zap) override;
 
@@ -1006,9 +1031,11 @@ public:
   // The number of regions that can be allocated into.
   uint num_available_regions() const { return _hrm.num_available_regions(); }
 
+#ifndef SVM
   MemoryUsage get_auxiliary_data_memory_usage() const {
     return _hrm.get_auxiliary_data_memory_usage();
   }
+#endif // !SVM
 
 
 #ifdef ASSERT
@@ -1021,7 +1048,7 @@ public:
   inline void old_set_remove(G1HeapRegion* hr);
 
   size_t non_young_capacity_bytes() {
-    return (old_regions_count() + humongous_regions_count()) * G1HeapRegion::GrainBytes;
+    return (old_regions_count() + humongous_regions_count()) * G1HeapRegion::GrainBytes SVM_ONLY(+ SVMGlobalData::_image_heap_size);
   }
 
   // Determine whether the given region is one that we are using as an
@@ -1262,14 +1289,25 @@ public:
 
   // Optimized nmethod scanning support routines
 
+#ifdef SVM
+  void register_object_fields(nmethod* nm);
+  void register_code_constants(nmethod* nm);
+  void register_frame_metadata(nmethod* nm);
+  void register_deopt_metadata(nmethod* nm);
+
+  void unregister_code_constants(nmethod* nm);
+#endif // SVM
+
   // Register the given nmethod with the G1 heap.
   void register_nmethod(nmethod* nm) override;
 
   // Unregister the given nmethod from the G1 heap.
   void unregister_nmethod(nmethod* nm) override;
 
+#ifndef SVM
   // No nmethod verification implemented.
   void verify_nmethod(nmethod* nm) override {}
+#endif // !SVM
 
   // Recalculate amount of used memory after GC. Must be called after all allocation
   // has finished.
@@ -1279,12 +1317,14 @@ public:
   // after a full GC.
   void rebuild_code_roots();
 
+#ifndef SVM
   // Performs cleaning of data structures after class unloading.
   void complete_cleaning(bool class_unloading_occurred);
 
   void unload_classes_and_code(const char* description, BoolObjectClosure* cl, GCTimer* timer);
 
   void bulk_unregister_nmethods();
+#endif // !SVM
 
   // Verification
 
@@ -1329,8 +1369,10 @@ public:
   // Override
   void print_tracing_info() const override;
 
+#ifndef SVM
   // Used to print information about locations in the hs_err file.
   bool print_location(outputStream* st, void* addr) const override;
+#endif // !SVM
 };
 
 // Scoped object that performs common pre- and post-gc heap printing operations.

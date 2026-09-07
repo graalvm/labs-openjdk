@@ -118,6 +118,8 @@ void G1FullGCCompactionPoint::forward(oop object, size_t size) {
 }
 
 void G1FullGCCompactionPoint::add(G1HeapRegion* hr) {
+  assert_svm_only(!hr->is_image_heap(), "image heap must not be compacted");
+  assert_svm_only(!hr->has_pinned_objects(), "regions with pinned objects must not be compacted");
   _compaction_regions->append(hr);
 }
 
@@ -150,6 +152,7 @@ void G1FullGCCompactionPoint::add_humongous(G1HeapRegion* hr) {
 }
 
 void G1FullGCCompactionPoint::forward_humongous(G1HeapRegion* hr) {
+  assert_svm_only(!hr->is_image_heap(), "image heap regions must not be moved");
   assert(hr->is_starts_humongous(), "Sanity!");
 
   oop obj = cast_to_oop(hr->bottom());

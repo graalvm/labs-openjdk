@@ -128,6 +128,7 @@ int os::vsnprintf(char* buf, size_t len, const char* fmt, va_list args) {
   return result;
 }
 
+#ifndef SVM
 // Fill in buffer with current local time as an ISO-8601 string.
 // E.g., YYYY-MM-DDThh:mm:ss.mmm+zzzz.
 // Returns buffer, or null if it failed.
@@ -135,6 +136,7 @@ char* os::iso8601_time(char* buffer, size_t buffer_length, bool utc) {
   const jlong now = javaTimeMillis();
   return os::iso8601_time(now, buffer, buffer_length, utc);
 }
+#endif // !SVM
 
 // Fill in buffer with an ISO-8601 string corresponding to the given javaTimeMillis value
 // E.g., yyyy-mm-ddThh:mm:ss-zzzz.
@@ -255,6 +257,7 @@ OSReturn os::set_priority(Thread* thread, ThreadPriority p) {
   }
 }
 
+#ifndef SVM
 // The mapping from OS priority back to Java priority may be inexact because
 // Java priorities can map M:1 with native priorities. If you want the definite
 // Java priority then use JavaThread::java_priority()
@@ -472,9 +475,11 @@ static void signal_thread_entry(JavaThread* thread, TRAPS) {
     }
   }
 }
+#endif // !SVM
 
 void os::init_before_ergo() {
   initialize_initial_active_processor_count();
+#ifndef SVM
   // We need to initialize large page support here because ergonomics takes some
   // decisions depending on large page support and the calculated large page size.
   large_page_init();
@@ -484,8 +489,10 @@ void os::init_before_ergo() {
   // VM version initialization identifies some characteristics of the
   // platform that are used during ergonomic decisions.
   VM_Version::init_before_ergo();
+#endif // !SVM
 }
 
+#ifndef SVM
 void os::initialize_jdk_signal_support(TRAPS) {
   if (!ReduceSignalUsage) {
     // Setup JavaThread for processing signals
@@ -591,6 +598,7 @@ bool os::find_builtin_agent(JvmtiAgent* agent, const char* sym) {
   agent->set_os_lib(save_handle);
   return false;
 }
+#endif // !SVM
 
 // --------------------- heap allocation utilities ---------------------
 
@@ -612,13 +620,15 @@ char* os::strdup_check_oom(const char* str, MemTag mem_tag) {
 
 #ifdef ASSERT
 static void check_crash_protection() {
+#ifndef SVM
   assert(!ThreadCrashProtection::is_crash_protected(Thread::current_or_null()),
          "not allowed when crash protection is set");
+#endif // !SVM
 }
 static void break_if_ptr_caught(void* ptr) {
   if (p2i(ptr) == (intptr_t)MallocCatchPtr) {
     log_warning(malloc, free)("ptr caught: " PTR_FORMAT, p2i(ptr));
-    breakpoint();
+    SVM_ONLY(BREAKPOINT) NOT_SVM(breakpoint());
   }
 }
 #endif // ASSERT
@@ -629,6 +639,7 @@ void* os::malloc(size_t size, MemTag mem_tag) {
 
 void* os::malloc(size_t size, MemTag mem_tag, const NativeCallStack& stack) {
 
+#ifndef SVM
   // Special handling for NMT preinit phase before arguments are parsed
   void* rc = nullptr;
   if (NMTPreInit::handle_malloc(&rc, size)) {
@@ -636,6 +647,7 @@ void* os::malloc(size_t size, MemTag mem_tag, const NativeCallStack& stack) {
     // early allocations.
     return rc;
   }
+#endif // !SVM
 
   DEBUG_ONLY(check_crash_protection());
 
@@ -663,27 +675,34 @@ void* os::malloc(size_t size, MemTag mem_tag, const NativeCallStack& stack) {
 
   void* const inner_ptr = MemTracker::record_malloc((address)outer_ptr, size, mem_tag, stack);
 
+#ifndef SVM
   if (CDSConfig::is_dumping_static_archive()) {
     // Need to deterministically fill all the alignment gaps in C++ structures.
     ::memset(inner_ptr, 0, size);
-  } else if (ZapCHeap) {
+  } else
+#endif // !SVM
+  if (ZapCHeap) {
     ::memset(inner_ptr, uninitBlockPad, size);
   }
   DEBUG_ONLY(break_if_ptr_caught(inner_ptr);)
   return inner_ptr;
 }
 
+#ifndef SVM
 void* os::realloc(void *memblock, size_t size, MemTag mem_tag) {
   return os::realloc(memblock, size, mem_tag, CALLER_PC);
 }
+#endif // !SVM
 
 void* os::realloc(void *memblock, size_t size, MemTag mem_tag, const NativeCallStack& stack) {
 
   // Special handling for NMT preinit phase before arguments are parsed
   void* rc = nullptr;
+#ifndef SVM
   if (NMTPreInit::handle_realloc(&rc, memblock, size, mem_tag)) {
     return rc;
   }
+#endif // !SVM
 
   if (memblock == nullptr) {
     return os::malloc(size, mem_tag, stack);
@@ -696,6 +715,7 @@ void* os::realloc(void *memblock, size_t size, MemTag mem_tag, const NativeCallS
   // we chose the latter.
   size = MAX2((size_t)1, size);
 
+#ifndef SVM
   if (MemTracker::enabled()) {
     // NMT realloc handling
 
@@ -748,7 +768,9 @@ void* os::realloc(void *memblock, size_t size, MemTag mem_tag, const NativeCallS
 
     rc = new_inner_ptr;
 
-  } else {
+  } else
+#endif // !SVM
+  {
 
     // NMT disabled.
     rc = permit_forbidden_function::realloc(memblock, size);
@@ -765,10 +787,12 @@ void* os::realloc(void *memblock, size_t size, MemTag mem_tag, const NativeCallS
 
 void  os::free(void *memblock) {
 
+#ifndef SVM
   // Special handling for NMT preinit phase before arguments are parsed
   if (NMTPreInit::handle_free(memblock)) {
     return;
   }
+#endif // !SVM
 
   if (memblock == nullptr) {
     return;
@@ -782,6 +806,7 @@ void  os::free(void *memblock) {
   permit_forbidden_function::free(old_outer_ptr);
 }
 
+#ifndef SVM
 void os::init_random(unsigned int initval) {
   _rand_seed = initval;
 }
@@ -831,6 +856,7 @@ int os::random() {
     }
   }
 }
+#endif // !SVM
 
 // The INITIALIZED state is distinguished from the SUSPENDED state because the
 // conditions in which a thread is first started are different from those in which
@@ -850,9 +876,11 @@ void os::start_thread(Thread* thread) {
 }
 
 void os::abort(bool dump_core) {
+  assert_svm_only(!dump_core, "SVM does not create core dumps through os::abort");
   abort(dump_core && CreateCoredumpOnCrash, nullptr, nullptr);
 }
 
+#ifndef SVM
 //---------------------------------------------------------------------------
 // Helper functions for fatal error handler
 
@@ -1479,6 +1507,7 @@ char* os::format_boot_path(const char* format_string,
     assert((q - formatted_path) == formatted_path_len, "formatted_path size botched");
     return formatted_path;
 }
+#endif // !SVM
 
 // This function is a proxy to fopen, it tries to add a non standard flag ('e' or 'N')
 // that ensures automatic closing of the file on exec. If it can not find support in
@@ -1507,6 +1536,7 @@ FILE* os::fopen(const char* path, const char* mode) {
   return file;
 }
 
+#ifndef SVM
 bool os::set_boot_path(char fileSep, char pathSep) {
   const char* home = Arguments::get_java_home();
   int home_len = (int)strlen(home);
@@ -1595,6 +1625,7 @@ bool os::file_exists(const char* filename) {
   }
   return os::stat(filename, &statbuf) == 0;
 }
+#endif // !SVM
 
 bool os::write(int fd, const void *buf, size_t nBytes) {
   ssize_t res;
@@ -1611,7 +1642,7 @@ bool os::write(int fd, const void *buf, size_t nBytes) {
   return true;
 }
 
-
+#ifndef SVM
 // Splits a path, based on its separator, the number of
 // elements is returned back in "elements".
 // file_name_length is used as a modifier for each path's
@@ -1682,6 +1713,7 @@ bool os::stack_shadow_pages_available(Thread *thread, const methodHandle& method
   address limit = JavaThread::cast(thread)->stack_overflow_state()->shadow_zone_safe_limit();
   return sp > (limit + framesize_in_bytes);
 }
+#endif // !SVM
 
 size_t os::page_size_for_region(size_t region_size, size_t min_pages, bool must_be_aligned) {
   assert(min_pages > 0, "sanity");
@@ -1701,9 +1733,11 @@ size_t os::page_size_for_region(size_t region_size, size_t min_pages, bool must_
   return vm_page_size();
 }
 
+#ifndef SVM
 size_t os::page_size_for_region_aligned(size_t region_size, size_t min_pages) {
   return page_size_for_region(region_size, min_pages, true);
 }
+#endif // !SVM
 
 size_t os::page_size_for_region_unaligned(size_t region_size, size_t min_pages) {
   return page_size_for_region(region_size, min_pages, false);
@@ -1713,6 +1747,7 @@ size_t os::page_size_for_region_unaligned(size_t region_size, size_t min_pages) 
 #define MAX_PATH    (2 * K)
 #endif
 
+#ifndef SVM
 void os::pause() {
   char filename[MAX_PATH];
   if (PauseAtStartupFile && PauseAtStartupFile[0]) {
@@ -1737,6 +1772,7 @@ void os::pause() {
                 "Could not open pause file '%s', continuing immediately.\n", filename);
   }
 }
+#endif // !SVM
 
 static const char* errno_to_string (int e, bool short_text) {
   #define ALL_SHARED_ENUMS(X) \
@@ -1863,12 +1899,14 @@ const char* os::errno_name(int e) {
   return errno_to_string(e, true);
 }
 
+#ifndef SVM
 // create binary file, rewriting existing file if required
 int os::create_binary_file(const char* path, bool rewrite_existing) {
   int oflags = O_WRONLY | O_CREAT WINDOWS_ONLY(| O_BINARY);
   oflags |= rewrite_existing ? O_TRUNC : O_EXCL;
   return ::open(path, oflags, S_IREAD | S_IWRITE);
 }
+#endif // !SVM
 
 void os::trace_page_sizes(const char* str,
                           const size_t region_min_size,
@@ -1913,6 +1951,7 @@ void os::trace_page_sizes_for_requested_size(const char* str,
 }
 
 
+#ifndef SVM
 // This is the working definition of a server class machine:
 // >= 2 physical CPU's and >=2GB of memory, with some fuzz
 // because the graphics memory (?) sometimes masks physical memory.
@@ -1959,6 +1998,7 @@ bool os::is_server_class_machine() {
   }
   return result;
 }
+#endif // !SVM
 
 void os::initialize_initial_active_processor_count() {
   assert(_initial_active_processor_count == 0, "Initial active processor count already set.");
@@ -1966,9 +2006,11 @@ void os::initialize_initial_active_processor_count() {
   log_debug(os)("Initial active processor count set to %d" , _initial_active_processor_count);
 }
 
+#ifndef SVM
 bool os::create_stack_guard_pages(char* addr, size_t bytes) {
   return os::pd_create_stack_guard_pages(addr, bytes);
 }
+#endif // !SVM
 
 char* os::reserve_memory(size_t bytes, MemTag mem_tag, bool executable) {
   char* result = pd_reserve_memory(bytes, executable);
@@ -1993,6 +2035,7 @@ char* os::attempt_reserve_memory_at(char* addr, size_t bytes, MemTag mem_tag, bo
   return result;
 }
 
+#ifndef SVM
 #ifdef ASSERT
 static void print_points(const char* s, unsigned* points, unsigned num) {
   stringStream ss;
@@ -2197,12 +2240,14 @@ char* os::attempt_reserve_memory_between(char* min, char* max, size_t bytes, siz
 #undef ARGSFMTARGS
 #undef ERRFMTARGS
 }
+#endif // !SVM
 
 static void assert_nonempty_range(const char* addr, size_t bytes) {
   assert(addr != nullptr && bytes > 0, "invalid range [" PTR_FORMAT ", " PTR_FORMAT ")",
          p2i(addr), p2i(addr) + bytes);
 }
 
+#ifndef SVM
 bool os::used_memory(physical_memory_size_type& value) {
 #ifdef LINUX
   if (OSContainer::is_containerized()) {
@@ -2222,6 +2267,7 @@ bool os::used_memory(physical_memory_size_type& value) {
   value = phys_mem - avail_mem;
   return true;
 }
+#endif // !SVM
 
 
 bool os::commit_memory(char* addr, size_t bytes, bool executable) {
@@ -2236,6 +2282,7 @@ bool os::commit_memory(char* addr, size_t bytes, bool executable) {
   return res;
 }
 
+#ifndef SVM
 bool os::commit_memory(char* addr, size_t size, size_t alignment_hint,
                               bool executable) {
   assert_nonempty_range(addr, size);
@@ -2248,6 +2295,7 @@ bool os::commit_memory(char* addr, size_t size, size_t alignment_hint,
   }
   return res;
 }
+#endif // !SVM
 
 void os::commit_memory_or_exit(char* addr, size_t bytes, bool executable,
                                const char* mesg) {
@@ -2315,10 +2363,12 @@ bool os::release_memory(char* addr, size_t bytes) {
   return res;
 }
 
+#ifndef SVM
 // Prints all mappings
 void os::print_memory_mappings(outputStream* st) {
   os::print_memory_mappings(nullptr, SIZE_MAX, st);
 }
+#endif // !SVM
 
 // Pretouching must use a store, not just a load.  On many OSes loads from
 // fresh memory would be satisfied from a single mapped page containing all
@@ -2352,6 +2402,7 @@ void os::pretouch_memory(void* start, void* end, size_t page_size) {
   }
 }
 
+#ifndef SVM
 char* os::map_memory_to_file(size_t bytes, int file_desc, MemTag mem_tag) {
   // Could have called pd_reserve_memory() followed by replace_existing_mapping_with_file_mapping(),
   // but AIX may use SHM in which case its more trouble to detach the segment and remap memory to the file.
@@ -2398,11 +2449,13 @@ bool os::unmap_memory(char *addr, size_t bytes) {
 void os::disclaim_memory(char *addr, size_t bytes) {
   pd_disclaim_memory(addr, bytes);
 }
+#endif // !SVM
 
 void os::realign_memory(char *addr, size_t bytes, size_t alignment_hint) {
   pd_realign_memory(addr, bytes, alignment_hint);
 }
 
+#ifndef SVM
 char* os::reserve_memory_special(size_t size, size_t alignment, size_t page_size,
                                  char* addr, bool executable) {
 
@@ -2445,6 +2498,7 @@ void os::naked_sleep(jlong millis) {
   }
   naked_short_sleep(millis);
 }
+#endif // !SVM
 
 
 ////// Implementation of PageSizes
@@ -2468,6 +2522,7 @@ size_t os::PageSizes::next_smaller(size_t page_size) const {
   return round_down_power_of_2(v2);
 }
 
+#ifndef SVM
 size_t os::PageSizes::next_larger(size_t page_size) const {
   assert(is_power_of_2(page_size), "page_size must be a power of 2: 0x%zx", page_size);
   if (page_size == max_power_of_2<size_t>()) { // Shift by 32/64 would be UB
@@ -2480,6 +2535,7 @@ size_t os::PageSizes::next_larger(size_t page_size) const {
   }
   return (size_t)1 << count_trailing_zeros(v2);
 }
+#endif // !SVM
 
 size_t os::PageSizes::largest() const {
   const size_t max = max_power_of_2<size_t>();
@@ -2489,6 +2545,7 @@ size_t os::PageSizes::largest() const {
   return next_smaller(max);
 }
 
+#ifndef SVM
 size_t os::PageSizes::smallest() const {
   // Strictly speaking the set should not contain sizes < os::vm_page_size().
   // But this is not enforced.
@@ -2643,3 +2700,4 @@ char* os::build_agent_function_name(const char *sym_name, const char *lib_name,
   }
   return agent_entry_name;
 }
+#endif // !SVM

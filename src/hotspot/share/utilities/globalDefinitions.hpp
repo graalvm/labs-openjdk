@@ -208,7 +208,10 @@ const int WordAlignmentMask  = (1 << LogBytesPerWord) - 1;
 const int LongAlignmentMask  = (1 << LogBytesPerLong) - 1;
 
 const int oopSize            = sizeof(char*); // Full-width oop
+#ifndef SVM
+// NOTE (chaeubl): moved downwards
 extern int heapOopSize;                       // Oop within a java object
+#endif // !SVM
 const int wordSize           = sizeof(char*);
 const int longSize           = sizeof(jlong);
 const int jintSize           = sizeof(jint);
@@ -216,10 +219,26 @@ const int size_tSize         = sizeof(size_t);
 
 const int BytesPerOop        = BytesPerWord;  // Full-width oop
 
+#ifdef SVM
+#ifdef SVM_COMPRESSED_REFERENCES
+const int heapOopSize        = jintSize;
+const int LogBytesPerHeapOop = LogBytesPerInt;
+const int LogBitsPerHeapOop  = LogBitsPerInt;
+#else
+const int heapOopSize        = oopSize;
+const int LogBytesPerHeapOop = LogBytesPerWord;
+const int LogBitsPerHeapOop  = LogBitsPerWord;
+#endif // SVM_COMPRESSED_REFERENCES
+
+// LogBytesPerHeapOop and LogBitsPerHeapOop are set above
+const int BytesPerHeapOop    = heapOopSize;
+const int BitsPerHeapOop     = heapOopSize * BitsPerByte;
+#else
 extern int LogBytesPerHeapOop;                // Oop within a java object
 extern int LogBitsPerHeapOop;
 extern int BytesPerHeapOop;
 extern int BitsPerHeapOop;
+#endif // SVM
 
 const int BitsPerJavaInteger = 32;
 const int BitsPerJavaLong    = 64;
@@ -541,11 +560,13 @@ const int max_method_code_size = 64*K - 1;  // JVM spec, 2nd ed. section 4.8.1 (
 
 //----------------------------------------------------------------------------------------------------
 // old CDS options
+#ifndef SVM
 extern bool RequireSharedSpaces;
 extern "C" {
 // Make sure UseSharedSpaces is accessible to the serviceability agent.
 extern JNIEXPORT jboolean UseSharedSpaces;
 }
+#endif // !SVM
 
 //----------------------------------------------------------------------------------------------------
 // Object alignment, in units of HeapWords.
@@ -553,6 +574,22 @@ extern JNIEXPORT jboolean UseSharedSpaces;
 // Minimum is max(BytesPerLong, BytesPerDouble, BytesPerOop) / HeapWordSize, so jlong, jdouble and
 // reference fields can be naturally aligned.
 
+#ifdef SVM
+const int MinObjAlignmentInBytes = HeapWordSize;
+const int MinObjAlignmentInBytesMask = MinObjAlignmentInBytes - 1;
+
+const int LogMinObjAlignmentInBytes = LogHeapWordSize;
+const int LogMinObjAlignment = LogMinObjAlignmentInBytes - LogHeapWordSize;
+const int MinObjAlignment = MinObjAlignmentInBytes / HeapWordSize;
+
+#ifdef SVM_COMPRESSED_REFERENCES
+const int CompressedOopShift = 3;
+const uint64_t OopEncodingHeapMax = uint64_t(1) << (BitsPerHeapOop + CompressedOopShift);
+#else
+const int CompressedOopShift = 0;
+const uint64_t OopEncodingHeapMax = (uint64_t)-1;
+#endif // SVM_COMPRESSED_REFERENCES
+#else
 extern int MinObjAlignment;
 extern int MinObjAlignmentInBytes;
 extern int MinObjAlignmentInBytesMask;
@@ -566,6 +603,7 @@ const  uint64_t UnscaledOopHeapMax = (uint64_t(max_juint) + 1);
 // Maximal size of heap where compressed oops can be used. Also upper bound for heap
 // placement for zero based compression algorithm: UnscaledOopHeapMax << LogMinObjAlignmentInBytes.
 extern uint64_t OopEncodingHeapMax;
+#endif // !SVM
 
 // Machine dependent stuff
 
@@ -790,6 +828,7 @@ inline uint bits_per_java_integer(BasicType bt) {
 extern size_t lcm(size_t a, size_t b);
 
 
+#ifndef SVM
 // NOTE: replicated in SA in vm/agent/sun/jvm/hotspot/runtime/BasicType.java
 enum BasicTypeSize {
   T_BOOLEAN_size     = 1,
@@ -806,6 +845,7 @@ enum BasicTypeSize {
   T_NARROWKLASS_size = 1,
   T_VOID_size        = 0
 };
+#endif // !SVM
 
 // this works on valid parameter types but not T_VOID, T_CONFLICT, etc.
 inline int parameter_type_word_count(BasicType t) {
@@ -822,6 +862,8 @@ extern BasicType type2wfield[T_CONFLICT+1];
 
 
 // size in bytes
+// NOTE (chaeubl): the values in this enum are not necessarily correct (see heapOopSize).
+// So, don't use those values outside of globalDefinitions.*
 enum ArrayElementSize {
   T_BOOLEAN_aelem_bytes     = 1,
   T_CHAR_aelem_bytes        = 2,
@@ -1099,7 +1141,7 @@ template<class T> constexpr T MIN3(T a, T b, T c)      { return MIN2(MIN2(a, b),
 template<class T> constexpr T MAX4(T a, T b, T c, T d) { return MAX2(MAX3(a, b, c), d); }
 template<class T> constexpr T MIN4(T a, T b, T c, T d) { return MIN2(MIN3(a, b, c), d); }
 
-#define ABS(x) asserted_abs(x, __FILE__, __LINE__)
+#define ABS(x) asserted_abs(x, __FILENAME_ONLY__, __LINE__)
 
 template<class T> inline T asserted_abs(T x, const char* file, int line) {
   bool valid_arg = !(std::is_integral<T>::value && x == std::numeric_limits<T>::min());
@@ -1342,8 +1384,10 @@ template<typename K> int primitive_compare(const K& k0, const K& k1) {
 template<typename T>
 std::add_rvalue_reference_t<T> declval() noexcept;
 
+#ifndef SVM
 // Quickly test to make sure IEEE-754 subnormal numbers are correctly
 // handled.
 bool IEEE_subnormal_handling_OK();
+#endif // !SVM
 
 #endif // SHARE_UTILITIES_GLOBALDEFINITIONS_HPP

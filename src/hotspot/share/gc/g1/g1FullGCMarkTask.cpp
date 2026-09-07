@@ -43,6 +43,11 @@ void G1FullGCMarkTask::work(uint worker_id) {
   G1FullGCMarker* marker = collector()->marker(worker_id);
   MarkingNMethodClosure code_closure(marker->mark_closure(), !NMethodToOopClosure::FixRelocations, true /* keepalive nmethods */);
 
+#ifdef SVM
+  // NOTE (chaeubl): for code unloading, it is important to use the same logic as the one that HotSpot
+  // uses with ClassUnloading enabled (process_strong_roots instead of process_all_roots).
+  _root_processor.process_strong_roots(marker->mark_closure(), &code_closure);
+#else
   if (ClassUnloading) {
     _root_processor.process_strong_roots(marker->mark_closure(),
                                          marker->cld_closure(),
@@ -52,6 +57,7 @@ void G1FullGCMarkTask::work(uint worker_id) {
                                       marker->cld_closure(),
                                       &code_closure);
   }
+#endif // SVM
 
   // Mark stack is populated, now process and drain it.
   marker->complete_marking(collector()->oop_queue_set(), collector()->array_queue_set(), &_terminator);
@@ -61,3 +67,32 @@ void G1FullGCMarkTask::work(uint worker_id) {
   assert(marker->objarray_stack()->is_empty(), "Array marking should have completed");
   log_task("Marking task", worker_id, start);
 }
+
+#ifdef SVM
+// NOTE (chaeubl): similar to G1FullGCMarkTask
+G1FullGCMarkCodeCacheTask::G1FullGCMarkCodeCacheTask(G1FullCollector* collector) :
+    G1FullGCTask("G1 Parallel CodeCache Marking Task", collector),
+    _terminator(collector->workers(), collector->array_queue_set()) {
+}
+
+void G1FullGCMarkCodeCacheTask::work(uint worker_id) {
+  Ticks start = Ticks::now();
+  ResourceMark rm;
+  G1FullGCMarker* marker = collector()->marker(worker_id);
+
+  {
+    // Now that we have marked all strongly reachable objects, we can do the conditional marking of JIT compiled code.
+    G1IsAliveClosure is_alive(collector());
+    G1ConditionalMarkCodeCacheClosure mark_code_cache_closure(marker->mark_closure(), &is_alive, false);
+    CodeCache::nmethods_do(&mark_code_cache_closure);
+  }
+
+  // Mark stack is populated, now process and drain it.
+  marker->complete_marking(collector()->oop_queue_set(), collector()->array_queue_set(), &_terminator);
+
+  // This is the point where the entire marking should have completed.
+  assert(marker->oop_stack()->is_empty(), "Marking should have completed");
+  assert(marker->objarray_stack()->is_empty(), "Array marking should have completed");
+  log_task("Marking CodeCache task", worker_id, start);
+}
+#endif // SVM

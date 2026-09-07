@@ -176,6 +176,7 @@ bool OopStorage::ActiveArray::push(Block* block) {
   }
 }
 
+#ifndef SVM
 void OopStorage::ActiveArray::remove(Block* block) {
   assert(_block_count > 0, "array is empty");
   size_t index = block->active_index();
@@ -186,6 +187,7 @@ void OopStorage::ActiveArray::remove(Block* block) {
   *block_ptr(index) = last_block;
   _block_count = last_index;
 }
+#endif // !SVM
 
 void OopStorage::ActiveArray::copy_from(const ActiveArray* from) {
   assert(_block_count == 0, "array must be empty");
@@ -245,9 +247,11 @@ size_t OopStorage::Block::allocation_size() {
   return sizeof(Block) + block_alignment - sizeof(void*);
 }
 
+#ifndef SVM
 size_t OopStorage::Block::allocation_alignment_shift() {
   return exact_log2(block_alignment);
 }
+#endif // !SVM
 
 static inline bool is_full_bitmask(uintx bitmask) { return ~bitmask == 0; }
 static inline bool is_empty_bitmask(uintx bitmask) { return bitmask == 0; }
@@ -260,6 +264,7 @@ bool OopStorage::Block::is_empty() const {
   return is_empty_bitmask(allocated_bitmask());
 }
 
+#ifndef SVM
 uintx OopStorage::Block::bitmask_for_entry(const oop* ptr) const {
   return bitmask_for_index(get_index(ptr));
 }
@@ -275,6 +280,7 @@ bool OopStorage::Block::is_safe_to_delete() const {
   return (Atomic::load_acquire(&_release_refcount) == 0) &&
          (Atomic::load_acquire(&_deferred_updates_next) == nullptr);
 }
+#endif // !SVM
 
 OopStorage::Block* OopStorage::Block::deferred_updates_next() const {
   return _deferred_updates_next;
@@ -284,10 +290,12 @@ void OopStorage::Block::set_deferred_updates_next(Block* block) {
   _deferred_updates_next = block;
 }
 
+#ifndef SVM
 bool OopStorage::Block::contains(const oop* ptr) const {
   const oop* base = get_pointer(0);
   return (base <= ptr) && (ptr < (base + ARRAY_SIZE(_data)));
 }
+#endif // !SVM
 
 size_t OopStorage::Block::active_index() const {
   return _active_index;
@@ -297,6 +305,7 @@ void OopStorage::Block::set_active_index(size_t index) {
   _active_index = index;
 }
 
+#ifndef SVM
 size_t OopStorage::Block::active_index_safe(const Block* block) {
   STATIC_ASSERT(sizeof(intptr_t) == sizeof(block->_active_index));
   // Be careful, because block could be a false positive from block_for_ptr.
@@ -311,6 +320,7 @@ unsigned OopStorage::Block::get_index(const oop* ptr) const {
   assert(contains(ptr), PTR_FORMAT " not in block " PTR_FORMAT, p2i(ptr), p2i(this));
   return static_cast<unsigned>(ptr - get_pointer(0));
 }
+#endif // !SVM
 
 // Merge new allocation bits into _allocated_bitmask.  Only one thread at a
 // time is ever allocating from a block, but other threads may concurrently
@@ -335,6 +345,7 @@ oop* OopStorage::Block::allocate() {
   return get_pointer(index);
 }
 
+#ifndef SVM
 uintx OopStorage::Block::allocate_all() {
   uintx new_allocated = ~allocated_bitmask();
   assert(new_allocated != 0, "attempt to allocate from full block");
@@ -342,6 +353,7 @@ uintx OopStorage::Block::allocate_all() {
   atomic_add_allocated(new_allocated);
   return new_allocated;
 }
+#endif // !SVM
 
 OopStorage::Block* OopStorage::Block::new_block(const OopStorage* owner) {
   // _data must be first member: aligning block => aligning _data.
@@ -363,6 +375,7 @@ void OopStorage::Block::delete_block(const Block& block) {
   FREE_C_HEAP_ARRAY(char, memory);
 }
 
+#ifndef SVM
 // This can return a false positive if ptr is not contained by some
 // block.  For some uses, it is a precondition that ptr is valid,
 // e.g. contained in some block in owner's _active_array.  Other uses
@@ -391,6 +404,7 @@ OopStorage::Block::block_for_ptr(const OopStorage* owner, const oop* ptr) {
   }
   return nullptr;
 }
+#endif // !SVM
 
 //////////////////////////////////////////////////////////////////////////////
 // Allocation
@@ -463,6 +477,7 @@ oop* OopStorage::allocate() {
   return result;
 }
 
+#ifndef SVM
 // Bulk allocation takes the first block off the _allocation_list, and marks
 // all remaining entries in that block as allocated.  It then drops the lock
 // and fills buffer with those newly allocated entries.  If more entries
@@ -512,6 +527,7 @@ size_t OopStorage::allocate(oop** ptrs, size_t size) {
                              name(), limit, num_taken - limit);
   return limit;                 // Return number allocated.
 }
+#endif // !SVM
 
 void OopStorage::log_block_transition(Block* block, const char* new_state) const {
   log_trace(oopstorage, blocks)("%s: block %s " PTR_FORMAT, name(), new_state, p2i(block));
@@ -635,20 +651,25 @@ class OopStorage::WithActiveArray : public StackObj {
   ActiveArray* _active_array;
 
 public:
+#ifndef SVM
   WithActiveArray(const OopStorage* storage) :
     _storage(storage),
     _active_array(storage->obtain_active_array())
   {}
 
+#endif // !SVM
   ~WithActiveArray() {
     _storage->relinquish_block_array(_active_array);
   }
+#ifndef SVM
 
   ActiveArray& active_array() const {
     return *_active_array;
   }
+#endif // !SVM
 };
 
+#ifndef SVM
 OopStorage::Block* OopStorage::block_for_ptr(const oop* ptr) const {
   return Block::block_for_ptr(this, ptr);
 }
@@ -722,6 +743,7 @@ void OopStorage::Block::release_entries(uintx releasing, OopStorage* owner) {
   // Release hold on empty block deletion.
   Atomic::dec(&_release_refcount);
 }
+#endif // !SVM
 
 // Process one available deferred update.  Returns true if one was processed.
 bool OopStorage::reduce_deferred_updates() {
@@ -769,21 +791,30 @@ bool OopStorage::reduce_deferred_updates() {
   return true;              // Processed one pending update.
 }
 
+#ifndef SVM
 static inline void check_release_entry(const oop* entry) {
   assert(entry != nullptr, "Releasing null");
   assert(Universe::heap()->contains_null(entry), "Releasing uncleared entry: " PTR_FORMAT, p2i(entry));
 }
+#endif // !SVM
 
 void OopStorage::release(const oop* ptr) {
+#ifdef SVM
+  Unimplemented();
+#else
   check_release_entry(ptr);
   Block* block = block_for_ptr(ptr);
   assert(block != nullptr, "%s: invalid release " PTR_FORMAT, name(), p2i(ptr));
   log_trace(oopstorage, ref)("%s: releasing " PTR_FORMAT, name(), p2i(ptr));
   block->release_entries(block->bitmask_for_entry(ptr), this);
   Atomic::dec(&_allocation_count);
+#endif // SVM
 }
 
 void OopStorage::release(const oop* const* ptrs, size_t size) {
+#ifdef SVM
+  Unimplemented();
+#else
   size_t i = 0;
   while (i < size) {
     check_release_entry(ptrs[i]);
@@ -808,6 +839,7 @@ void OopStorage::release(const oop* const* ptrs, size_t size) {
     block->release_entries(releasing, this);
     Atomic::sub(&_allocation_count, count);
   }
+#endif // SVM
 }
 
 OopStorage* OopStorage::create(const char* name, MemTag mem_tag) {
@@ -840,16 +872,20 @@ OopStorage::OopStorage(const char* name, MemTag mem_tag) :
   _active_array->increment_refcount();
   assert(_active_mutex->rank() < _allocation_mutex->rank(),
          "%s: active_mutex must have lower rank than allocation_mutex", _name);
+#ifndef SVM
   assert(Service_lock->rank() < _active_mutex->rank(),
          "%s: active_mutex must have higher rank than Service_lock", _name);
+#endif // !SVM
 }
 
+#ifndef SVM
 void OopStorage::delete_empty_block(const Block& block) {
   assert(block.is_empty(), "discarding non-empty block");
   log_debug(oopstorage, blocks)("%s: delete empty block " PTR_FORMAT, name(), p2i(&block));
   Block::delete_block(block);
 }
 
+#endif // !SVM
 OopStorage::~OopStorage() {
   Block* block;
   while ((block = _deferred_updates) != nullptr) {
@@ -869,10 +905,12 @@ OopStorage::~OopStorage() {
   os::free(const_cast<char*>(_name));
 }
 
+#ifndef SVM
 void OopStorage::register_num_dead_callback(NumDeadCallback f) {
   assert(_num_dead_callback == nullptr, "Only one callback function supported");
   _num_dead_callback = f;
 }
+#endif // !SVM
 
 void OopStorage::report_num_dead(size_t num_dead) const {
   if (_num_dead_callback != nullptr) {
@@ -880,9 +918,11 @@ void OopStorage::report_num_dead(size_t num_dead) const {
   }
 }
 
+#ifndef SVM
 bool OopStorage::should_report_num_dead() const {
   return _num_dead_callback != nullptr;
 }
+#endif // !SVM
 
 // Managing service thread notifications.
 
@@ -896,6 +936,7 @@ bool OopStorage::should_report_num_dead() const {
 // Global cleanup request state.
 static volatile bool needs_cleanup_requested = false;
 
+#ifndef SVM
 // Time after which a cleanup is permitted.
 static jlong cleanup_permit_time = 0;
 
@@ -917,6 +958,7 @@ bool OopStorage::has_cleanup_work_and_reset() {
     return false;
   }
 }
+#endif // !SVM
 
 // Record that cleanup is needed, without notifying the Service thread, because
 // we can't lock the Service_lock.  Used by release().
@@ -927,6 +969,7 @@ void OopStorage::record_needs_cleanup() {
   Atomic::release_store_fence(&needs_cleanup_requested, true);
 }
 
+#ifndef SVM
 bool OopStorage::delete_empty_blocks() {
   // ServiceThread might have oopstorage work, but not for this object.
   // But check for deferred updates, which might provide cleanup work.
@@ -992,8 +1035,13 @@ bool OopStorage::delete_empty_blocks() {
   record_needs_cleanup();
   return true;
 }
+#endif // !SVM
 
 OopStorage::EntryStatus OopStorage::allocation_status(const oop* ptr) const {
+#ifdef SVM
+  Unimplemented();
+  return INVALID_ENTRY;
+#else
   if (ptr == nullptr) return INVALID_ENTRY;
   const Block* block = block_for_ptr(ptr);
   if (block != nullptr) {
@@ -1012,12 +1060,14 @@ OopStorage::EntryStatus OopStorage::allocation_status(const oop* ptr) const {
     }
   }
   return INVALID_ENTRY;
+#endif // SVM
 }
 
 size_t OopStorage::allocation_count() const {
   return _allocation_count;
 }
 
+#ifndef SVM
 size_t OopStorage::block_count() const {
   WithActiveArray wab(this);
   // Count access is racy, but don't care.
@@ -1035,6 +1085,7 @@ size_t OopStorage::total_memory_usage() const {
   total_size += blocks.size() * sizeof(Block*);
   return total_size;
 }
+#endif // !SVM
 
 MemTag OopStorage::mem_tag() const { return _mem_tag; }
 
@@ -1135,12 +1186,15 @@ void OopStorage::BasicParState::increment_num_dead(size_t num_dead) {
   Atomic::add(&_num_dead, num_dead);
 }
 
+#ifndef SVM
 void OopStorage::BasicParState::report_num_dead() const {
   _storage->report_num_dead(Atomic::load(&_num_dead));
 }
+#endif // !SVM
 
 const char* OopStorage::name() const { return _name; }
 
+#ifndef SVM
 bool OopStorage::print_containing(const oop* addr, outputStream* st) {
   if (addr != nullptr) {
     Block* block = block_for_ptr(addr);
@@ -1160,9 +1214,11 @@ bool OopStorage::Block::print_containing(const oop* addr, outputStream* st) {
   }
   return false;
 }
+#endif // !SVM
 
 #ifndef PRODUCT
 
+#ifndef SVM
 void OopStorage::print_on(outputStream* st) const {
   size_t allocations = _allocation_count;
   size_t blocks = _active_array->block_count();
@@ -1176,5 +1232,6 @@ void OopStorage::print_on(outputStream* st) const {
     st->print(", concurrent iteration active");
   }
 }
+#endif // !SVM
 
 #endif // !PRODUCT

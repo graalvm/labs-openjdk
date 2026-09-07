@@ -71,6 +71,7 @@ bool PosixSemaphore::trywait() {
   return ret == 0;
 }
 
+#ifndef SVM
 bool PosixSemaphore::timedwait(int64_t millis) {
   struct timespec ts;
   os::Posix::to_RTC_abstime(&ts, millis);
@@ -92,5 +93,6 @@ bool PosixSemaphore::timedwait(struct timespec ts) {
     }
   }
 }
+#endif // !SVM
 #endif // __APPLE__
 

@@ -78,7 +78,11 @@ define_pd_global(intx, InitArrayShortSize, BytesPerLong);
 define_pd_global(intx, InlineSmallCode,          1000);
 #endif
 
-#define ARCH_FLAGS(develop,                                             \
+#define ARCH_FLAGS(ni_hosted,                                           \
+                   ni_hosted_pd,                                        \
+                   ni_runtime,                                          \
+                   ni_runtime_pd,                                       \
+                   develop,                                             \
                    product,                                             \
                    range,                                               \
                    constraint)                                          \

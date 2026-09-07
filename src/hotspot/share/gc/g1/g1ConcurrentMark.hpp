@@ -380,6 +380,9 @@ class G1ConcurrentMark : public CHeapObj<mtGC> {
   friend class G1CMRefProcProxyTask;
   friend class G1CMRemarkTask;
   friend class G1CMRootRegionScanTask;
+#ifdef SVM
+  friend class G1CMRemarkCodeCacheTask;
+#endif // SVM
   friend class G1CMTask;
   friend class G1ConcurrentMarkThread;
 
@@ -873,6 +876,10 @@ public:
   void do_marking_step(double target_ms,
                        bool do_termination,
                        bool is_serial);
+
+#ifdef SVM
+  bool iterate_open_image_heap_region(G1CMBitMapClosure* cl);
+#endif // SVM
 
   // These two calls start and stop the timer
   void record_start_time() {

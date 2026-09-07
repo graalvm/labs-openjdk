@@ -55,6 +55,7 @@ void AdaptiveWeightedAverage::sample(float new_sample) {
   _last_sample = new_sample;
 }
 
+#ifndef SVM
 void AdaptiveWeightedAverage::print() const {
   print_on(tty);
 }
@@ -166,3 +167,4 @@ bool LinearLeastSquareFit::decrement_will_decrease() {
 bool LinearLeastSquareFit::increment_will_decrease() {
   return (_slope <= 0.00);
 }
+#endif // !SVM

@@ -113,22 +113,26 @@ const size_t defaultSymbolTableSize = 32768; // 2^15
 const size_t minimumSymbolTableSize = 1024;
 
 #ifdef _LP64
-#define LP64_RUNTIME_FLAGS(develop,                                         \
+#define LP64_RUNTIME_FLAGS(ni_hosted,                                       \
+                           ni_hosted_pd,                                    \
+                           ni_runtime,                                      \
+                           ni_runtime_pd,                                   \
+                           develop,                                         \
                            develop_pd,                                      \
                            product,                                         \
                            product_pd,                                      \
                            range,                                           \
                            constraint)                                      \
                                                                             \
-  product(bool, UseCompressedOops, false,                                   \
+  product(bool, UseCompressedOops, trueInSvm,                               \
           "Use 32-bit object references in 64-bit VM. "                     \
           "lp64_product means flag is always constant in 32 bit VM")        \
                                                                             \
-  product(bool, UseCompressedClassPointers, true,                           \
+  product(bool, UseCompressedClassPointers, trueInSvm,                      \
           "(Deprecated) Use 32-bit class pointers in 64-bit VM. "           \
           "lp64_product means flag is always constant in 32 bit VM")        \
                                                                             \
-  product(bool, UseCompactObjectHeaders, false,                             \
+  product(bool, UseCompactObjectHeaders, trueInSvmWithCompressedReferences, \
           "Use compact 64-bit object headers in 64-bit VM")                 \
                                                                             \
   product(int, ObjectAlignmentInBytes, 8,                                   \
@@ -139,7 +143,11 @@ const size_t minimumSymbolTableSize = 1024;
 #else
 // !_LP64
 
-#define LP64_RUNTIME_FLAGS(develop,                                         \
+#define LP64_RUNTIME_FLAGS(ni_hosted,                                       \
+                           ni_hosted_pd,                                    \
+                           ni_runtime,                                      \
+                           ni_runtime_pd,                                   \
+                           develop,                                         \
                            develop_pd,                                      \
                            product,                                         \
                            product_pd,                                      \
@@ -152,7 +160,11 @@ const int ObjectAlignmentInBytes = 8;
 
 #endif // _LP64
 
-#define RUNTIME_FLAGS(develop,                                              \
+#define RUNTIME_FLAGS(ni_hosted,                                            \
+                      ni_hosted_pd,                                         \
+                      ni_runtime,                                           \
+                      ni_runtime_pd,                                        \
+                      develop,                                              \
                       develop_pd,                                           \
                       product,                                              \
                       product_pd,                                           \
@@ -703,10 +715,10 @@ const int ObjectAlignmentInBytes = 8;
   develop(bool, PrintCodeCacheExtension, false,                             \
           "Print extension of code cache")                                  \
                                                                             \
-  product(bool, ClassUnloading, true,                                       \
+  product(bool, ClassUnloading, falseInSvm,                                 \
           "Do unloading of classes")                                        \
                                                                             \
-  product(bool, ClassUnloadingWithConcurrentMark, true,                     \
+  product(bool, ClassUnloadingWithConcurrentMark, falseInSvm,               \
           "Do unloading of classes with a concurrent marking cycle")        \
                                                                             \
   develop(bool, PrintSystemDictionaryAtExit, false,                         \
@@ -849,7 +861,7 @@ const int ObjectAlignmentInBytes = 8;
              "   also generate JFR events.")                                \
              range(0, 2)                                                    \
                                                                             \
-  product(bool, ExitOnOutOfMemoryError, false,                              \
+  ni_runtime(bool, ExitOnOutOfMemoryError, false,                           \
           "JVM exits on the first occurrence of an out-of-memory error "    \
           "thrown from JVM")                                                \
                                                                             \
@@ -1424,7 +1436,7 @@ const int ObjectAlignmentInBytes = 8;
   product(bool, PrintCompilerMemoryStatisticsAtExit, false, DIAGNOSTIC,     \
           "Print compiler memory statistics upon VM exit.")                 \
                                                                             \
-  product(uintx, MinHeapFreeRatio, 40, MANAGEABLE,                          \
+  ni_runtime(uintx, MinHeapFreeRatio, 40, MANAGEABLE,                       \
           "The minimum percentage of heap free after GC to avoid expansion."\
           " For most GCs this applies to the old generation. In G1 and"     \
           " ParallelGC it applies to the whole heap.")                      \
@@ -1438,12 +1450,12 @@ const int ObjectAlignmentInBytes = 8;
           range(0, 100)                                                     \
           constraint(MaxHeapFreeRatioConstraintFunc,AfterErgo)              \
                                                                             \
-  product(intx, SoftRefLRUPolicyMSPerMB, 1000,                              \
+  ni_runtime(intx, SoftRefLRUPolicyMSPerMB, 1000,                           \
           "Number of milliseconds per MB of free space in the heap")        \
           range(0, max_intx)                                                \
           constraint(SoftRefLRUPolicyMSPerMBConstraintFunc,AfterMemoryInit) \
                                                                             \
-  product(size_t, MinHeapDeltaBytes, ScaleForWordSize(128*K),               \
+  ni_runtime(size_t, MinHeapDeltaBytes, ScaleForWordSize(128*K),            \
           "The minimum change in heap space due to GC (in bytes)")          \
           range(0, max_uintx / 2 + 1)                                       \
                                                                             \
@@ -1724,7 +1736,7 @@ const int ObjectAlignmentInBytes = 8;
                                                                             \
   /* flags for performance data collection */                               \
                                                                             \
-  product(bool, UsePerfData, true,                                          \
+  ni_runtime(bool, UsePerfData, true,                                       \
           "Flag to disable jvmstat instrumentation for performance testing "\
           "and problem isolation purposes")                                 \
                                                                             \

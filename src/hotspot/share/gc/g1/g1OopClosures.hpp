@@ -134,7 +134,9 @@ protected:
   G1CollectedHeap* _g1h;
   G1ParScanThreadState* _par_scan_state;
   uint _worker_id;              // Cache value from par_scan_state.
+#ifndef SVM
   ClassLoaderData* _scanned_cld;
+#endif // !SVM
   G1ConcurrentMark* _cm;
 
   // Mark the object if it's not already marked. This is used to mark
@@ -145,8 +147,10 @@ protected:
   G1ParCopyHelper(G1CollectedHeap* g1h,  G1ParScanThreadState* par_scan_state);
 
  public:
+#ifndef SVM
   void set_scanned_cld(ClassLoaderData* cld) { _scanned_cld = cld; }
   inline void do_cld_barrier(oop new_obj);
+#endif // !SVM
 
   inline void trim_queue_partially();
 };
@@ -168,6 +172,7 @@ public:
   virtual void do_oop(narrowOop* p) { do_oop_work(p); }
 };
 
+#ifndef SVM
 class G1CLDScanClosure : public CLDClosure {
   G1ParCopyHelper* _closure;
   bool             _process_only_dirty;
@@ -177,6 +182,7 @@ public:
   : _closure(closure), _process_only_dirty(process_only_dirty), _count(0) {}
   void do_cld(ClassLoaderData* cld);
 };
+#endif // !SVM
 
 // Closure for iterating over object fields during concurrent marking
 class G1CMOopClosure : public ClaimMetadataVisitingOopIterateClosure {
@@ -196,7 +202,7 @@ class G1RootRegionScanClosure : public ClaimMetadataVisitingOopIterateClosure {
   uint _worker_id;
 public:
   G1RootRegionScanClosure(G1CollectedHeap* g1h, G1ConcurrentMark* cm, uint worker_id) :
-    ClaimMetadataVisitingOopIterateClosure(ClassLoaderData::_claim_strong, nullptr),
+    ClaimMetadataVisitingOopIterateClosure(NOT_SVM(ClassLoaderData::_claim_strong COMMA) nullptr),
     _g1h(g1h), _cm(cm), _worker_id(worker_id) { }
   template <class T> void do_oop_work(T* p);
   virtual void do_oop(      oop* p) { do_oop_work(p); }
@@ -233,5 +239,24 @@ public:
 
   virtual ReferenceIterationMode reference_iteration_mode() { return DO_FIELDS; }
 };
+
+#ifdef SVM
+class G1ConditionalMarkCodeCacheClosure : public NMethodClosure {
+  OopIterateClosure* _mark_cl;
+  BoolObjectClosure* _is_alive;
+  bool _remark;
+
+ public:
+  G1ConditionalMarkCodeCacheClosure(OopIterateClosure* mark_cl, BoolObjectClosure* is_alive, bool remark) :
+    _mark_cl(mark_cl),
+    _is_alive(is_alive),
+    _remark(remark) {}
+
+  void do_nmethod(nmethod* nm);
+
+ private:
+  static void unregister_nmethod(nmethod* nm);
+};
+#endif // SVM
 
 #endif // SHARE_GC_G1_G1OOPCLOSURES_HPP

@@ -303,6 +303,12 @@ class G1PrepareEvacuationTask : public WorkerTask {
     bool humongous_region_is_candidate(G1HeapRegion* region) const {
       assert(region->is_starts_humongous(), "Must start a humongous object");
 
+#ifdef SVM
+      if (region->is_image_heap()) {
+        return false;
+      }
+#endif // SVM
+
       oop obj = cast_to_oop(region->bottom());
 
       // Dead objects cannot be eager reclaim candidates. Due to class

@@ -43,13 +43,21 @@
 #if INCLUDE_JFR
 #include "jfr/support/jfrThreadExtension.hpp"
 #endif
+#ifdef SVM
+#include "svmIsolateThread.hpp"
+#include "exports/sharedGCStructs.h"
+#endif // SVM
 
 class CompilerThread;
 class HandleArea;
 class HandleMark;
+#ifndef SVM
 class JvmtiRawMonitor;
+#endif // !SVM
 class NMethodClosure;
+#ifndef SVM
 class Metadata;
+#endif // !SVM
 class OopClosure;
 class OSThread;
 class ParkEvent;
@@ -106,17 +114,20 @@ class JavaThread;
 //     - this->thread_main_inner()  // extra call level to ensure correct stack calculations
 //       - this->entry_point()  // set differently for each kind of JavaThread
 
-class Thread: public ThreadShadow {
+class Thread NOT_SVM(: public ThreadShadow) {
+#ifndef SVM
   friend class VMError;
   friend class VMErrorCallbackMark;
   friend class VMStructs;
   friend class JVMCIVMStructs;
+#endif // !SVM
   friend class JavaThread;
  private:
 
   // Current thread is maintained as a thread-local variable
   static THREAD_LOCAL Thread* _thr_current;
 
+#ifndef SVM
   // On AArch64, the high order 32 bits are used by a "patching epoch" number
   // which reflects if this thread has executed the required fences, after
   // an nmethod gets disarmed. The low order 32 bits denote the disarmed value.
@@ -134,22 +145,33 @@ class Thread: public ThreadShadow {
     assert(in_bytes(offset) < 128, "Offset >= 128");
     return offset;
   }
+#endif // !SVM
 
  private:
+#ifndef SVM
   // Poll data is used in generated code for safepoint polls.
   // It is important for performance to put this at lower offset
   // in Thread. The accessors are in JavaThread.
   SafepointMechanism::ThreadData _poll_data;
+#endif // !SVM
 
   // Thread local data area available to the GC. The internal
   // structure and contents of this data area is GC-specific.
   // Only GC and GC barrier code should access this data area.
   GCThreadLocalData _gc_data;
+#ifdef SVM
+  uint _gc_id; // The current GC id when a thread takes part in GC
+#endif // SVM
 
  public:
   static ByteSize gc_data_offset() {
     return byte_offset_of(Thread, _gc_data);
   }
+
+#ifdef SVM
+  void set_gc_id(uint gc_id) { _gc_id = gc_id; }
+  uint gc_id() { return _gc_id; }
+#endif // SVM
 
   template <typename T> T* gc_data() {
     STATIC_ASSERT(sizeof(T) <= sizeof(_gc_data));
@@ -162,6 +184,7 @@ class Thread: public ThreadShadow {
   // const char* _exception_file;                   // file information for exception (debugging only)
   // int         _exception_line;                   // line information for exception (debugging only)
  protected:
+#ifndef SVM
   // JavaThread lifecycle support:
   friend class SafeThreadsListPtr;  // for _threads_list_ptr, cmpxchg_threads_hazard_ptr(), {dec_,inc_,}nested_threads_hazard_ptr_cnt(), {g,s}et_threads_hazard_ptr(), inc_nested_handle_cnt(), tag_hazard_ptr() access
   friend class ScanHazardPtrGatherProtectedThreadsClosure;  // for cmpxchg_threads_hazard_ptr(), get_threads_hazard_ptr(), is_hazard_ptr_tagged() access
@@ -197,14 +220,17 @@ class Thread: public ThreadShadow {
   uint nested_threads_hazard_ptr_cnt() {
     return _nested_threads_hazard_ptr_cnt;
   }
+#endif // !SVM
 
  public:
+#ifndef SVM
   // Is the target JavaThread protected by the calling Thread or by some other
   // mechanism?
   static bool is_JavaThread_protected(const JavaThread* target);
   // Is the target JavaThread protected by a ThreadsListHandle (TLH) associated
   // with the calling Thread?
   static bool is_JavaThread_protected_by_TLH(const JavaThread* target);
+#endif // !SVM
 
  private:
   DEBUG_ONLY(static Thread* _starting_thread;)
@@ -216,7 +242,11 @@ class Thread: public ThreadShadow {
 #ifdef ASSERT
   static bool is_starting_thread(const Thread* t);
 
-  void set_suspendible_thread()   { _suspendible_thread = true; }
+  void set_suspendible_thread()   {
+    assert_svm_only(!is_Java_thread(), "suspendible thread must not be a Java thread");
+    _suspendible_thread = true;
+  }
+
   void clear_suspendible_thread() { _suspendible_thread = false; }
   bool is_suspendible_thread()    { return _suspendible_thread; }
 
@@ -230,8 +260,10 @@ class Thread: public ThreadShadow {
 #endif
 
  private:
+#ifndef SVM
   // Point to the last handle mark
   HandleMark* _last_handle_mark;
+#endif // !SVM
 
   // Claim value for parallel iteration over threads.
   uintx _threads_do_token;
@@ -244,20 +276,25 @@ class Thread: public ThreadShadow {
     return &_rcu_counter;
   }
 
+#ifndef SVM
  public:
   void set_last_handle_mark(HandleMark* mark)   { _last_handle_mark = mark; }
   HandleMark* last_handle_mark() const          { return _last_handle_mark; }
+#endif // SVM
 
  private:
+#ifndef SVM
   // Used by SkipGCALot class.
   NOT_PRODUCT(bool _skip_gcalot;)               // Should we elide gc-a-lot?
 
   friend class GCLocker;
+#endif // !SVM
 
  private:
   ThreadLocalAllocBuffer _tlab;                 // Thread-local eden
   jlong _allocated_bytes;                       // Cumulative number of bytes allocated on
                                                 // the Java heap
+#ifndef SVM
   ThreadHeapSampler _heap_sampler;              // For use when sampling the memory.
 
   ThreadStatisticalInfo _statistical_info;      // Statistics about the thread
@@ -266,6 +303,7 @@ class Thread: public ThreadShadow {
 
   JvmtiRawMonitor* _current_pending_raw_monitor; // JvmtiRawMonitor this thread
                                                  // is waiting to lock
+#endif // !SVM
  public:
   // Constructor
   Thread(MemTag mem_tag = mtThread);
@@ -299,7 +337,11 @@ class Thread: public ThreadShadow {
   void call_run();
 
   // Testers
+#ifdef SVM
+  bool is_VM_thread() const;
+#else
   virtual bool is_VM_thread()       const            { return false; }
+#endif
   virtual bool is_Java_thread()     const            { return false; }
   virtual bool is_Compiler_thread() const            { return false; }
   virtual bool is_service_thread() const             { return false; }
@@ -314,6 +356,7 @@ class Thread: public ThreadShadow {
   virtual bool is_AttachListener_thread() const      { return false; }
   virtual bool is_monitor_deflation_thread() const   { return false; }
 
+#ifndef SVM
   // Convenience cast functions
   CompilerThread* as_Compiler_thread() const {
     assert(is_Compiler_thread(), "Must be compiler thread");
@@ -322,6 +365,7 @@ class Thread: public ThreadShadow {
 
   // Can this thread make Java upcalls
   virtual bool can_call_java() const                 { return false; }
+#endif // !SVM
 
   // Is this a JavaThread that is on the VM's current ThreadsList?
   // If so it must participate in the safepoint protocol.
@@ -349,7 +393,9 @@ class Thread: public ThreadShadow {
 #ifdef ASSERT
   static void check_for_dangling_thread_pointer(Thread *thread);
 #endif
+#ifndef SVM
   static void set_priority(Thread* thread, ThreadPriority priority);
+#endif // !SVM
   static void start(Thread* thread);
 
   void set_native_thread_name(const char *name) {
@@ -382,10 +428,12 @@ class Thread: public ThreadShadow {
 #endif // CHECK_UNHANDLED_OOPS
 
  public:
+#ifndef SVM
 #ifndef PRODUCT
   bool skip_gcalot()           { return _skip_gcalot; }
   void set_skip_gcalot(bool v) { _skip_gcalot = v;    }
 #endif
+#endif // !SVM
 
   // Resource area
   ResourceArea* resource_area() const            { return _resource_area; }
@@ -394,12 +442,14 @@ class Thread: public ThreadShadow {
   OSThread* osthread() const                     { return _osthread;   }
   void set_osthread(OSThread* thread)            { _osthread = thread; }
 
+#ifndef SVM
   // Internal handle support
   HandleArea* handle_area() const                { return _handle_area; }
   void set_handle_area(HandleArea* area)         { _handle_area = area; }
 
   GrowableArray<Metadata*>* metadata_handles() const          { return _metadata_handles; }
   void set_metadata_handles(GrowableArray<Metadata*>* handles){ _metadata_handles = handles; }
+#endif // !SVM
 
   // Thread-Local Allocation Buffer (TLAB) support
   ThreadLocalAllocBuffer& tlab()                 { return _tlab; }
@@ -412,6 +462,7 @@ class Thread: public ThreadShadow {
   void incr_allocated_bytes(jlong size) { _allocated_bytes += size; }
   inline jlong cooked_allocated_bytes();
 
+#ifndef SVM
   ThreadHeapSampler& heap_sampler()     { return _heap_sampler; }
 
   ThreadStatisticalInfo& statistical_info() { return _statistical_info; }
@@ -425,6 +476,7 @@ class Thread: public ThreadShadow {
   void set_current_pending_raw_monitor(JvmtiRawMonitor* monitor) {
     _current_pending_raw_monitor = monitor;
   }
+#endif // !SVM
 
   // GC support
   // Apply "f->do_oop" to all root oops in "this".
@@ -456,6 +508,7 @@ class Thread: public ThreadShadow {
 
   uintx threads_do_token() const { return _threads_do_token; }
 
+#ifndef SVM
   // jvmtiRedefineClasses support
   void metadata_handles_do(void f(Metadata*));
 
@@ -501,6 +554,7 @@ class Thread: public ThreadShadow {
     assert(Thread::current() == this, "is_in_live_stack can only be called from current thread");
     return is_in_stack_range_incl(adr, os::current_stack_pointer());
   }
+#endif // !SVM
 
   // Sets the argument thread as starting thread. Returns failure if thread
   // creation fails due to lack of memory, too many threads etc.
@@ -515,6 +569,7 @@ protected:
 
   DEBUG_ONLY(ResourceMark* _current_resource_mark;)
 
+#ifndef SVM
   // Thread local handle area for allocation of handles within the VM
   HandleArea* _handle_area;
   GrowableArray<Metadata*>* _metadata_handles;
@@ -523,8 +578,10 @@ protected:
   address          _stack_base;
   size_t           _stack_size;
   int              _lgrp_id;
+#endif // !SVM
 
  public:
+#ifndef SVM
   // Stack overflow support
   address stack_base() const DEBUG_ONLY(;) NOT_DEBUG({ return _stack_base; })
   // Needed for code that can query a new thread before the stack has been set.
@@ -539,6 +596,7 @@ protected:
 
   int     lgrp_id() const        { return _lgrp_id; }
   void    set_lgrp_id(int value) { _lgrp_id = value; }
+#endif // !SVM
 
   // Printing
   void print_on(outputStream* st, bool print_extended_info) const;
@@ -569,6 +627,7 @@ protected:
   void set_current_resource_mark(ResourceMark* rm) { _current_resource_mark = rm; }
 #endif // ASSERT
 
+#ifndef SVM
  private:
   volatile int _jvmti_env_iteration_count;
 
@@ -583,15 +642,19 @@ protected:
 
   static ByteSize stack_base_offset()            { return byte_offset_of(Thread, _stack_base); }
   static ByteSize stack_size_offset()            { return byte_offset_of(Thread, _stack_size); }
+#endif // !SVM
 
   static ByteSize tlab_start_offset()            { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::start_offset(); }
   static ByteSize tlab_end_offset()              { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::end_offset(); }
   static ByteSize tlab_top_offset()              { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::top_offset(); }
+#ifndef SVM
   static ByteSize tlab_pf_top_offset()           { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::pf_top_offset(); }
 
   JFR_ONLY(DEFINE_THREAD_LOCAL_OFFSET_JFR;)
+#endif // !SVM
 
  public:
+#ifndef SVM
   ParkEvent * volatile _ParkEvent;            // for Object monitors, JVMTI raw monitors,
                                               // and ObjectSynchronizer::read_stable_mark
 
@@ -604,12 +667,13 @@ protected:
   jint _hashStateX;                           // thread-specific hashCode generator state
   jint _hashStateY;
   jint _hashStateZ;
+#endif // !SVM
 
   // Low-level leaf-lock primitives used to implement synchronization.
   // Not for general synchronization use.
   static void SpinAcquire(volatile int * Lock);
   static void SpinRelease(volatile int * Lock);
-
+#ifndef SVM
 #if defined(__APPLE__) && defined(AARCH64)
  private:
   DEBUG_ONLY(bool _wx_init);
@@ -622,6 +686,7 @@ protected:
     assert(_wx_state == expected, "wrong state");
   }
 #endif // __APPLE__ && AARCH64
+#endif // !SVM
 
  private:
   bool _in_asgct = false;

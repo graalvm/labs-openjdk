@@ -134,9 +134,11 @@ class LogOutputList {
       return _current != ref;
     }
 
+#ifndef SVM
     LogLevelType level() const {
       return _current->_level;
     }
+#endif // !SVM
   };
 
   Iterator iterator(LogLevelType level = LogLevel::Last) {

@@ -50,8 +50,13 @@ inline void G1ScanClosureBase::prefetch_and_push(T* p, const oop obj) {
   // stall. We'll try to prefetch the object (for write, given that
   // we might need to install the forwarding reference) and we'll
   // get back to it when pop it from the queue
+#ifdef SVM
+  Prefetch::write(obj, 0);
+  Prefetch::read(obj, (HeapWordSize*2));
+#else
   Prefetch::write(obj->mark_addr(), 0);
   Prefetch::read(obj->mark_addr(), (HeapWordSize*2));
+#endif // SVM
 
   // slightly paranoid test; I'm trying to catch potential
   // problems before we go into push_on_queue to know where the
@@ -168,7 +173,7 @@ inline void G1ScanCardClosure::do_oop_work(T* p) {
 
   check_obj_during_refinement(p, obj);
 
-  assert(!_g1h->is_in_cset((HeapWord*)p),
+  assert(!_g1h->is_in_cset((HeapWord*)p) SVM_ONLY(|| _g1h->region_attr(p).is_pinned()),
          "Oop originates from " PTR_FORMAT " (region: %u) which is in the collection set.",
          p2i(p), _g1h->addr_to_region(p));
 
@@ -190,18 +195,34 @@ inline void G1ScanRSForOptionalClosure::do_oop_work(T* p) {
   // Entries in the optional collection set may start to originate from the collection
   // set after one or more increments. In this case, previously optional regions
   // became actual collection set regions. Filter them out here.
-  if (region_attr.is_in_cset()) {
+  // NOTE (chaeubl): unlike HotSpot, we support pinning of arbitrary objects. So, we need some
+  // special handling for the following case:
+  // - we have an eden region with pinned objects
+  //   - this eden region contains references that point to an old, retained region (which is part
+  //     of the optional collection set)
+  // - the eden region triggers an evacuation failure
+  //   - when visiting the oops in the eden region, the old, retained region is not part of the
+  //     collection set yet (therefore, the references to the old region are not updated because
+  //     we assume that none of them move)
+  // - later on, the old, retained region becomes part of the collection set
+  //   - all objects get evacuated
+  //   - the region is freed at the end of the GC
+  // - once this method (G1ScanRSForOptionalClosure::do_oop_work) is called, we need to update
+  //   the references in the eden region so that they point to the moved objects
+  if (region_attr.is_in_cset() SVM_ONLY(&& !region_attr.is_pinned())) {
     return;
   }
   _scan_cl->do_oop_work(p);
   _scan_cl->trim_queue_partially();
 }
 
+#ifndef SVM
 void G1ParCopyHelper::do_cld_barrier(oop new_obj) {
   if (_g1h->heap_region_containing(new_obj)->is_young()) {
     _scanned_cld->record_modified_oops();
   }
 }
+#endif // !SVM
 
 void G1ParCopyHelper::mark_object(oop obj) {
   assert(!_g1h->heap_region_containing(obj)->in_collection_set(), "should not mark objects in the CSet");
@@ -239,9 +260,11 @@ void G1ParCopyClosure<barrier, should_mark>::do_oop_work(T* p) {
     assert(forwardee != nullptr, "forwardee should not be null");
     RawAccess<IS_NOT_NULL>::oop_store(p, forwardee);
 
+#ifndef SVM
     if (barrier == G1BarrierCLD) {
       do_cld_barrier(forwardee);
     }
+#endif // !SVM
   } else {
     if (state.is_humongous_candidate()) {
       _g1h->set_humongous_is_live(obj);

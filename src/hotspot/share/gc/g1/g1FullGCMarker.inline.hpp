@@ -46,17 +46,19 @@
 
 inline bool G1FullGCMarker::mark_object(oop obj) {
   // Try to mark.
-  if (!_bitmap->par_mark(obj)) {
+  if (SVM_ONLY(SVMImageHeap::is_image_heap_object(obj) ||) !_bitmap->par_mark(obj)) {
     // Lost mark race.
     return false;
   }
 
+#ifndef SVM
   // Check if deduplicatable string.
   if (StringDedup::is_enabled() &&
       java_lang_String::is_instance(obj) &&
       G1StringDedup::is_candidate_from_mark(obj)) {
     _string_dedup_requests.add(obj);
   }
+#endif // !SVM
 
   ContinuationGCSupport::transform_stack_chunk(obj);
 
@@ -70,10 +72,13 @@ template <class T> inline void G1FullGCMarker::mark_and_push(T* p) {
   T heap_oop = RawAccess<>::oop_load(p);
   if (!CompressedOops::is_null(heap_oop)) {
     oop obj = CompressedOops::decode_not_null(heap_oop);
+    assert_svm_only(!VerifyDuringGC || G1CollectedHeap::heap()->is_in(obj), "must be");
+    assert_svm_only(!VerifyDuringGC || !G1CollectedHeap::heap()->heap_region_containing(obj)->is_free(), "object must be in a valid heap region");
+
     if (mark_object(obj)) {
       _oop_stack.push(obj);
     }
-    assert(_bitmap->is_marked(obj), "Must be marked");
+    assert(_bitmap->is_marked(obj) SVM_ONLY(|| SVMImageHeap::is_image_heap_object(obj)), "Must be marked");
   }
 }
 
@@ -88,7 +93,9 @@ inline void G1FullGCMarker::push_objarray(oop obj, size_t index) {
 }
 
 inline void G1FullGCMarker::follow_array(objArrayOop array) {
+#ifndef SVM
   mark_closure()->do_klass(array->klass());
+#endif // !SVM
   // Don't push empty arrays to avoid unnecessary work.
   if (array->length() > 0) {
     push_objarray(array, 0);

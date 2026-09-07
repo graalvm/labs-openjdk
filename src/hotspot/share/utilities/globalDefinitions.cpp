@@ -30,6 +30,7 @@
 
 // Basic error support
 
+#ifndef SVM
 // Info for oops within a java object.  Defaults are zero so
 // things will break badly if incorrectly initialized.
 int heapOopSize        = 0;
@@ -55,6 +56,7 @@ int LogMinObjAlignmentInBytes  = -1;
 
 // Oop encoding heap max
 uint64_t OopEncodingHeapMax = 0;
+#endif // !SVM
 
 // Something to help porters sleep at night
 
@@ -69,7 +71,9 @@ static BasicType char2type(int ch) {
   return T_ILLEGAL;
 }
 
+#ifndef SVM
 extern bool signature_constants_sane();
+#endif // !SVM
 #endif //ASSERT
 
 void basic_types_init() {
@@ -105,13 +109,17 @@ void basic_types_init() {
   static_assert(wordSize == BytesPerWord, "should be the same since they're used interchangeably");
   static_assert(wordSize == HeapWordSize, "should be the same since they're also used interchangeably");
 
+#ifndef SVM
   assert(signature_constants_sane(), "");
+#endif // !SVM
 
   int num_type_chars = 0;
   for (int i = 0; i < 99; i++) {
     if (type2char((BasicType)i) != 0) {
       assert(char2type(type2char((BasicType)i)) == i, "proper inverses");
+#ifndef SVM
       assert(Signature::basic_type(type2char((BasicType)i)) == i, "proper inverses");
+#endif // !SVM
       num_type_chars++;
     }
   }
@@ -179,6 +187,12 @@ void basic_types_init() {
   if(JavaPriority10_To_OSPriority != -1 )
     os::java_to_os_priority[10] = JavaPriority10_To_OSPriority;
 
+#ifdef SVM
+  // NOTE (chaeubl): we use constants for all those values below as we compile two different binaries anyways.
+  assert(heapOopSize == sizeof(narrowOop), "must be");
+  _type2aelembytes[T_NARROWOOP] = heapOopSize;
+  _type2aelembytes[T_NARROWKLASS] = heapOopSize;
+#else
   // Set the size of basic types here (after argument parsing but before
   // stub generation).
   if (UseCompressedOops) {
@@ -195,6 +209,7 @@ void basic_types_init() {
     BytesPerHeapOop    = BytesPerWord;
     BitsPerHeapOop     = BitsPerWord;
   }
+#endif // !SVM
   _type2aelembytes[T_OBJECT] = heapOopSize;
   _type2aelembytes[T_ARRAY]  = heapOopSize;
 }
@@ -232,6 +247,8 @@ const char* type2name_tab[T_CONFLICT+1] = {
   "*narrowklass*",
   "*conflict*"
 };
+
+#ifndef SVM
 const char* type2name(BasicType t) {
   if (t < ARRAY_SIZE(type2name_tab)) {
     return type2name_tab[t];
@@ -253,6 +270,7 @@ BasicType name2type(const char* name) {
   }
   return T_ILLEGAL;
 }
+#endif // !SVM
 
 // Map BasicType to size in words
 int type2size[T_CONFLICT+1]={ -1, 0, 0, 0, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 0, 1, 1, 1, 1, -1};
@@ -329,10 +347,12 @@ int _type2aelembytes[T_CONFLICT+1] = {
 };
 
 #ifdef ASSERT
+#ifndef SVM
 int type2aelembytes(BasicType t, bool allow_address) {
   assert((allow_address || t != T_ADDRESS) && t <= T_CONFLICT, "unexpected basic type");
   return _type2aelembytes[t];
 }
+#endif // !SVM
 #endif
 
 // Support for 64-bit integer arithmetic
@@ -342,6 +362,7 @@ int type2aelembytes(BasicType t, bool allow_address) {
 static const jlong high_bit   = (jlong)1 << (jlong)63;
 static const jlong other_bits = ~high_bit;
 
+#ifndef SVM
 jlong float2long(jfloat f) {
   jlong tmp = (jlong) f;
   if (tmp != high_bit) {
@@ -374,6 +395,7 @@ jlong double2long(jdouble f) {
     }
   }
 }
+#endif // !SVM
 
 // least common multiple
 size_t lcm(size_t a, size_t b) {
@@ -408,6 +430,7 @@ STATIC_ASSERT(right_n_bits(1|2) == 0x7);
 
 // Check for Flush-To-Zero mode
 
+#ifndef SVM
 // On some processors faster execution can be achieved by setting a
 // mode to return zero for extremely small results, rather than an
 // IEEE-754 subnormal number. This mode is not compatible with the
@@ -434,3 +457,4 @@ bool IEEE_subnormal_handling_OK() {
   return (large_subnormal_double + small_subnormal_double > large_subnormal_double
           && -large_subnormal_double - small_subnormal_double < -large_subnormal_double);
 }
+#endif // !SVM

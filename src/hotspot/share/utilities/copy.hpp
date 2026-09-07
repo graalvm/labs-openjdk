@@ -34,6 +34,7 @@
 #include "utilities/macros.hpp"
 
 // Assembly code for platforms that need it.
+// NOTE (chaeubl): extern "C" is needed because these functions are defined in assembly
 extern "C" {
   void _Copy_conjoint_words(const HeapWord* from, HeapWord* to, size_t count);
   void _Copy_disjoint_words(const HeapWord* from, HeapWord* to, size_t count);
@@ -92,12 +93,14 @@ class Copy : AllStatic {
     pd_disjoint_words(from, to, count);
   }
 
+#ifndef SVM
   // Word-aligned words,    disjoint, atomic on each word
   static void disjoint_words_atomic(const HeapWord* from, HeapWord* to, size_t count) {
     assert_params_ok(from, to, HeapWordSize);
     assert_disjoint(from, to, count);
     pd_disjoint_words_atomic(from, to, count);
   }
+#endif // !SVM
 
   // Object-aligned words,  conjoint, not atomic on each word
   static void aligned_conjoint_words(const HeapWord* from, HeapWord* to, size_t count) {
@@ -142,6 +145,7 @@ class Copy : AllStatic {
     pd_conjoint_jlongs_atomic(from, to, count);
   }
 
+#ifndef SVM
   // oops,                  conjoint, atomic on each oop
   static void conjoint_oops_atomic(const oop* from, oop* to, size_t count) {
     assert_params_ok(from, to, BytesPerHeapOop);
@@ -154,6 +158,7 @@ class Copy : AllStatic {
     assert_params_ok(from, to, BytesPerInt);
     pd_conjoint_jints_atomic((const jint*)from, (jint*)to, count);
   }
+#endif // !SVM
 
   // Copy a span of memory.  If the span is an integral number of aligned
   // longs, words, or ints, copy those units atomically.
@@ -184,11 +189,13 @@ class Copy : AllStatic {
     pd_arrayof_conjoint_jlongs(from, to, count);
   }
 
+#ifndef SVM
   // oops,                  conjoint array, atomic on each oop
   static void arrayof_conjoint_oops(const HeapWord* from, HeapWord* to, size_t count) {
     assert_params_ok(from, to, BytesPerHeapOop);
     pd_arrayof_conjoint_oops(from, to, count);
   }
+#endif // !SVM
 
   // Known overlap methods
 
@@ -299,6 +306,7 @@ class Copy : AllStatic {
   }
 
  protected:
+#ifndef SVM
   inline static void shared_disjoint_words_atomic(const HeapWord* from,
                                                   HeapWord* to, size_t count) {
 
@@ -319,6 +327,7 @@ class Copy : AllStatic {
       break;
     }
   }
+#endif // !SVM
 
  private:
   static bool params_disjoint(const HeapWord* from, HeapWord* to, size_t count) {

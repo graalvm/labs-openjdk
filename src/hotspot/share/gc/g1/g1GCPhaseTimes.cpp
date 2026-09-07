@@ -60,6 +60,9 @@ G1GCPhaseTimes::G1GCPhaseTimes(STWGCTimer* gc_timer, uint max_gc_threads) :
   _gc_par_phases[ThreadRoots] = new WorkerDataArray<double>("ThreadRoots", "Thread Roots (ms):", max_gc_threads);
   _gc_par_phases[CLDGRoots] = new WorkerDataArray<double>("CLDGRoots", "CLDG Roots (ms):", max_gc_threads);
   _gc_par_phases[CMRefRoots] = new WorkerDataArray<double>("CMRefRoots", "CM RefProcessor Roots (ms):", max_gc_threads);
+#ifdef SVM
+  _gc_par_phases[ImageHeap] = new WorkerDataArray<double>("ImageHeap", "Image heap (ms):", max_gc_threads);
+#endif // SVM
 
   for (auto id : EnumRange<OopStorageSet::StrongId>()) {
     GCParPhases phase = strong_oopstorage_phase(id);
@@ -277,9 +280,11 @@ void G1GCPhaseTimes::record_or_add_time_secs(GCParPhases phase, uint worker_id, 
   _gc_par_phases[phase]->set_or_add(worker_id, secs);
 }
 
+#ifndef SVM
 double G1GCPhaseTimes::get_time_secs(GCParPhases phase, uint worker_id) {
   return _gc_par_phases[phase]->get(worker_id);
 }
+#endif // !SVM
 
 void G1GCPhaseTimes::record_thread_work_item(GCParPhases phase, uint worker_id, size_t count, uint index) {
   _gc_par_phases[phase]->set_thread_work_item(worker_id, count, index);
@@ -289,9 +294,11 @@ void G1GCPhaseTimes::record_or_add_thread_work_item(GCParPhases phase, uint work
   _gc_par_phases[phase]->set_or_add_thread_work_item(worker_id, count, index);
 }
 
+#ifndef SVM
 size_t G1GCPhaseTimes::get_thread_work_item(GCParPhases phase, uint worker_id, uint index) {
   return _gc_par_phases[phase]->get_thread_work_item(worker_id, index);
 }
+#endif // !SVM
 
 // return the average time for a phase in milliseconds
 double G1GCPhaseTimes::average_time_ms(GCParPhases phase) const {
@@ -403,9 +410,11 @@ void G1GCPhaseTimes::trace_time(const char* name, double value) const {
   log_trace(gc, phases)("      %s: " TIME_FORMAT, name, value);
 }
 
+#ifndef SVM
 void G1GCPhaseTimes::trace_count(const char* name, size_t value) const {
   log_trace(gc, phases)("      %s: %zu", name, value);
 }
+#endif // !SVM
 
 double G1GCPhaseTimes::print_pre_evacuate_collection_set() const {
   const double sum_ms = _cur_prepare_concurrent_task_time_ms +
@@ -611,7 +620,7 @@ void G1EvacPhaseWithTrimTimeTracker::stop() {
 }
 
 G1GCParPhaseTimesTracker::G1GCParPhaseTimesTracker(G1GCPhaseTimes* phase_times, G1GCPhaseTimes::GCParPhases phase, uint worker_id, bool allow_multiple_record) :
-  _start_time(), _phase(phase), _phase_times(phase_times), _worker_id(worker_id), _event(), _allow_multiple_record(allow_multiple_record) {
+  _start_time(), _phase(phase), _phase_times(phase_times), _worker_id(worker_id), NOT_SVM(_event() COMMA) _allow_multiple_record(allow_multiple_record) {
   if (_phase_times != nullptr) {
     _start_time = Ticks::now();
   }

@@ -27,7 +27,6 @@
 
 #include <windows.h>
 #include <errno.h>
-
 WindowsSemaphore::WindowsSemaphore(uint value) {
   _semaphore = ::CreateSemaphore(nullptr, value, LONG_MAX, nullptr);
 

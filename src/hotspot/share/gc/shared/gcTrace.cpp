@@ -120,6 +120,7 @@ void GCTracer::report_gc_heap_summary(GCWhen::Type when, const GCHeapSummary& he
   send_gc_heap_summary_event(when, heap_summary);
 }
 
+#ifndef SVM
 void GCTracer::report_metaspace_summary(GCWhen::Type when, const MetaspaceSummary& summary) const {
   send_meta_space_summary_event(when, summary);
 
@@ -128,6 +129,7 @@ void GCTracer::report_metaspace_summary(GCWhen::Type when, const MetaspaceSummar
     send_metaspace_chunk_free_list_summary(when, Metaspace::ClassType, summary.class_chunk_free_list_summary());
   }
 }
+#endif // !SVM
 
 void YoungGCTracer::report_gc_end_impl(const Ticks& timestamp, TimePartitions* time_partitions) {
   assert(_tenuring_threshold != UNSET_TENURING_THRESHOLD, "Tenuring threshold has not been reported");
@@ -138,9 +140,11 @@ void YoungGCTracer::report_gc_end_impl(const Ticks& timestamp, TimePartitions* t
   _tenuring_threshold = UNSET_TENURING_THRESHOLD;
 }
 
+#ifndef SVM
 void YoungGCTracer::report_promotion_failed(const PromotionFailedInfo& pf_info) const {
   send_promotion_failed_event(pf_info);
 }
+#endif // !SVM
 
 void YoungGCTracer::report_tenuring_threshold(const uint tenuring_threshold) {
   _tenuring_threshold = tenuring_threshold;
@@ -175,6 +179,7 @@ void OldGCTracer::report_gc_end_impl(const Ticks& timestamp, TimePartitions* tim
   send_old_gc_event();
 }
 
+#ifndef SVM
 void ParallelOldTracer::report_gc_end_impl(const Ticks& timestamp, TimePartitions* time_partitions) {
   OldGCTracer::report_gc_end_impl(timestamp, time_partitions);
   send_parallel_old_event();
@@ -183,6 +188,7 @@ void ParallelOldTracer::report_gc_end_impl(const Ticks& timestamp, TimePartition
 void ParallelOldTracer::report_dense_prefix(void* dense_prefix) {
   _parallel_old_gc_info.report_dense_prefix(dense_prefix);
 }
+#endif // !SVM
 
 void OldGCTracer::report_concurrent_mode_failure() {
   send_concurrent_mode_failure_event();

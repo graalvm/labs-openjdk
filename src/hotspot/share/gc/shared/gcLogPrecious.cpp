@@ -58,6 +58,7 @@ void GCLogPrecious::vwrite(LogTargetHandle log, const char* format, va_list args
   vwrite_inner(log, format, args);
 }
 
+#ifndef SVM
 void GCLogPrecious::vwrite_and_debug(LogTargetHandle log,
                                      const char* format,
                                      va_list args
@@ -98,3 +99,4 @@ void GCLogPrecious::print_on_error(outputStream* st) {
 
   _lock->unlock();
 }
+#endif // !SVM

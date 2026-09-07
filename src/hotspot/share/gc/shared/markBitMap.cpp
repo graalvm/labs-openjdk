@@ -24,6 +24,9 @@
 
 #include "gc/shared/markBitMap.inline.hpp"
 #include "memory/universe.hpp"
+#ifdef SVM
+#include "svmImageHeap.hpp"
+#endif // SVM
 
 void MarkBitMap::print_on(outputStream* st, const char* prefix) const {
   _bm.print_range_on(st, prefix);
@@ -48,6 +51,16 @@ void MarkBitMap::do_clear(MemRegion mr, bool large) {
   assert(!intersection.is_empty(),
          "Given range from " PTR_FORMAT " to " PTR_FORMAT " is completely outside the heap",
          p2i(mr.start()), p2i(mr.end()));
+#if defined(SVM) && defined(ASSERT)
+  {
+    HeapWord *pos = intersection.start();
+    while (pos < intersection.end()) {
+      assert(!SVMImageHeap::is_in_image_heap(pos), "image heap regions are never marked");
+      pos++;
+    }
+  }
+#endif // ASSERT && SVM
+
   // convert address range into offset range
   size_t beg = addr_to_offset(intersection.start());
   size_t end = addr_to_offset(intersection.end());
@@ -63,5 +76,6 @@ void MarkBitMap::check_mark(HeapWord* addr) {
   assert(Universe::heap()->is_in(addr),
          "Trying to access bitmap " PTR_FORMAT " for address " PTR_FORMAT " not in the heap.",
          p2i(this), p2i(addr));
+  assert_svm_only(!SVMImageHeap::is_in_image_heap(addr), "image heap regions are never marked");
 }
 #endif

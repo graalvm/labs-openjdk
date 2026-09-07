@@ -86,7 +86,7 @@ void PeriodicTask::enroll() {
   // not already own the PeriodicTask_lock. Otherwise, we don't try to
   // enter it again because VM internal Mutexes do not support recursion.
   //
-  ConditionalMutexLocker ml(PeriodicTask_lock, !PeriodicTask_lock->owned_by_self());
+  ConditionalMutexLocker ml(PeriodicTask_lock, !PeriodicTask_lock->owned_by_self() SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
 
   if (_num_tasks == PeriodicTask::max_tasks) {
     fatal("Overflow in PeriodicTask table");
@@ -107,7 +107,7 @@ void PeriodicTask::disenroll() {
   // not already own the PeriodicTask_lock. Otherwise, we don't try to
   // enter it again because VM internal Mutexes do not support recursion.
   //
-  ConditionalMutexLocker ml(PeriodicTask_lock, !PeriodicTask_lock->owned_by_self());
+  ConditionalMutexLocker ml(PeriodicTask_lock, !PeriodicTask_lock->owned_by_self() SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
 
   int index;
   for(index = 0; index < _num_tasks && _tasks[index] != this; index++)

@@ -45,10 +45,18 @@
 #include "runtime/threads.hpp"
 #include "utilities/enumIterator.hpp"
 #include "utilities/macros.hpp"
+#ifdef SVM
+#include "runtime/atomic.hpp"
+#include "svmGlobalData.hpp"
+#include "svmIsolateThread.hpp"
+#endif // SVM
 
 G1RootProcessor::G1RootProcessor(G1CollectedHeap* g1h, uint n_workers) :
     _g1h(g1h),
     _process_strong_tasks(G1RP_PS_NumElements),
+#ifdef SVM
+    _next_open_image_heap_region(0),
+#endif // SVM
     _srs(n_workers) {}
 
 void G1RootProcessor::evacuate_roots(G1ParScanThreadState* pss, uint worker_id) {
@@ -72,30 +80,41 @@ void G1RootProcessor::evacuate_roots(G1ParScanThreadState* pss, uint worker_id) 
   }
 
   // CodeCache is already processed in java roots
-  _process_strong_tasks.all_tasks_claimed(G1RP_PS_CodeCache_oops_do);
+  // NOTE (chaeubl): image heap is processed like any other dirty region.
+  _process_strong_tasks.all_tasks_claimed(G1RP_PS_CodeCache_oops_do SVM_ONLY(COMMA G1RP_PS_ImageHeap_oops_do));
 }
 
 // Adaptor to pass the closures to the strong roots in the VM.
 class StrongRootsClosures : public G1RootClosures {
   OopClosure* _roots;
+#ifndef SVM
   CLDClosure* _clds;
+#endif // !SVM
   NMethodClosure* _nmethods;
 public:
-  StrongRootsClosures(OopClosure* roots, CLDClosure* clds, NMethodClosure* nmethods) :
-      _roots(roots), _clds(clds), _nmethods(nmethods) {}
+  StrongRootsClosures(OopClosure* roots, NOT_SVM(CLDClosure* clds COMMA) NMethodClosure* nmethods) :
+      _roots(roots), NOT_SVM(_clds(clds) COMMA) _nmethods(nmethods) {}
 
   OopClosure* strong_oops() { return _roots; }
 
+#ifndef SVM
   CLDClosure* weak_clds()        { return nullptr; }
   CLDClosure* strong_clds()      { return _clds; }
+#endif // !SVM
 
   NMethodClosure* strong_nmethods() { return _nmethods; }
 };
 
 void G1RootProcessor::process_strong_roots(OopClosure* oops,
+#ifndef SVM
                                            CLDClosure* clds,
+#endif // !SVM
                                            NMethodClosure* nmethods) {
-  StrongRootsClosures closures(oops, clds, nmethods);
+  StrongRootsClosures closures(oops, NOT_SVM(clds COMMA) nmethods);
+
+#ifdef SVM
+  process_image_heap(&closures, nullptr, 0);
+#endif // SVM
 
   process_java_roots(&closures, nullptr, 0);
   process_vm_roots(&closures, nullptr, 0);
@@ -109,18 +128,22 @@ void G1RootProcessor::process_strong_roots(OopClosure* oops,
 // Adaptor to pass the closures to all the roots in the VM.
 class AllRootsClosures : public G1RootClosures {
   OopClosure* _roots;
+#ifndef SVM
   CLDClosure* _clds;
+#endif // !SVM
 public:
-  AllRootsClosures(OopClosure* roots, CLDClosure* clds) :
-      _roots(roots), _clds(clds) {}
+  AllRootsClosures(OopClosure* roots NOT_SVM(COMMA CLDClosure* clds)) :
+      _roots(roots) NOT_SVM(COMMA _clds(clds)) {}
 
   OopClosure* strong_oops() { return _roots; }
 
+#ifndef SVM
   // By returning the same CLDClosure for both weak and strong CLDs we ensure
   // that a single walk of the CLDG will invoke the closure on all CLDs i the
   // system.
   CLDClosure* weak_clds() { return _clds; }
   CLDClosure* strong_clds() { return _clds; }
+#endif // !SVM
 
   // We don't want to visit nmethods more than once, so we return null for the
   // strong case and walk the entire code cache as a separate step.
@@ -128,22 +151,42 @@ public:
 };
 
 void G1RootProcessor::process_all_roots(OopClosure* oops,
+#ifdef SVM
+                                        bool process_image_heap,
+#else
                                         CLDClosure* clds,
+#endif // !SVM
                                         NMethodClosure* nmethods) {
-  AllRootsClosures closures(oops, clds);
+  AllRootsClosures closures(oops NOT_SVM(COMMA clds));
+
+#ifdef SVM
+  if (process_image_heap) {
+    this->process_image_heap(&closures, nullptr, 0);
+  }
+#endif // SVM
 
   process_java_roots(&closures, nullptr, 0);
   process_vm_roots(&closures, nullptr, 0);
 
   process_code_cache_roots(nmethods, nullptr, 0);
 
+#ifdef SVM
+  if (process_image_heap) {
+    _process_strong_tasks.all_tasks_claimed(G1RP_PS_refProcessor_oops_do);
+  } else {
+    _process_strong_tasks.all_tasks_claimed(G1RP_PS_refProcessor_oops_do, G1RP_PS_ImageHeap_oops_do);
+  }
+#else
   // refProcessor is not needed since we are inside a safe point
   _process_strong_tasks.all_tasks_claimed(G1RP_PS_refProcessor_oops_do);
+#endif // SVM
 }
 
 void G1RootProcessor::process_java_roots(G1RootClosures* closures,
                                          G1GCPhaseTimes* phase_times,
                                          uint worker_id) {
+  // NOTE (chaeubl): things work differently with Native Image (see nmethod.hpp).
+
   // In the concurrent start pause, when class unloading is enabled, G1
   // processes nmethods in two ways, as "strong" and "weak" nmethods.
   //
@@ -181,11 +224,46 @@ void G1RootProcessor::process_java_roots(G1RootClosures* closures,
                                        closures->strong_nmethods());
   }
 
+#ifndef SVM
   if (_process_strong_tasks.try_claim_task(G1RP_PS_ClassLoaderDataGraph_oops_do)) {
     G1GCParPhaseTimesTracker x(phase_times, G1GCPhaseTimes::CLDGRoots, worker_id);
     ClassLoaderDataGraph::roots_cld_do(closures->strong_clds(), closures->weak_clds());
   }
 }
+#endif // !SVM
+}
+
+#ifdef SVM
+void G1RootProcessor::process_image_heap(G1RootClosures* closures,
+                                         G1GCPhaseTimes* phase_times,
+                                         uint worker_id) {
+  // NOTE (chaeubl): This is not necessary for CDS as the heap objects are reachable via the Klass objects.
+  G1GCParPhaseTimesTracker x(phase_times, G1GCPhaseTimes::ImageHeap, worker_id);
+  // Keep the image heap entry claimed for SubTasksDone verification. Regions are claimed
+  // separately so that all workers can participate.
+  _process_strong_tasks.try_claim_task(G1RP_PS_ImageHeap_oops_do);
+
+  OopClosure* closure = closures->strong_oops();
+  const uint open_image_heap_regions = static_cast<uint>(SVMGlobalData::_open_image_heap_regions);
+  const uint first_open_image_heap_region = static_cast<uint>(SVMGlobalData::_closed_image_heap_regions);
+  while (true) {
+    uint claimed_region = Atomic::fetch_then_add(&_next_open_image_heap_region, 1u, memory_order_relaxed);
+    if (claimed_region >= open_image_heap_regions) {
+      return;
+    }
+
+    uint region_index = first_open_image_heap_region + claimed_region;
+    G1HeapRegion* hr = _g1h->region_at(region_index);
+    assert(hr->is_open_image_heap(), "must be");
+    if (hr->is_humongous()) {
+      oop obj = cast_to_oop(hr->humongous_start_region()->bottom());
+      obj->oop_iterate(closure, MemRegion(hr->bottom(), hr->top()));
+    } else {
+      hr->oop_iterate(closure);
+    }
+  }
+}
+#endif // SVM
 
 void G1RootProcessor::process_vm_roots(G1RootClosures* closures,
                                        G1GCPhaseTimes* phase_times,

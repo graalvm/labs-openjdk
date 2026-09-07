@@ -44,6 +44,7 @@ void G1HeapRegionRemSet::set_state_untracked() {
 }
 
 void G1HeapRegionRemSet::set_state_updating() {
+  assert_svm_only(!_hr->is_image_heap(), "objects in image heap regions are always alive, so there is no need for tracking");
   guarantee(SafepointSynchronize::is_at_safepoint() && !is_tracked(),
             "Should only set to Updating from Untracked during safepoint but is %s", get_state_str());
   clear_fcc();
@@ -51,6 +52,7 @@ void G1HeapRegionRemSet::set_state_updating() {
 }
 
 void G1HeapRegionRemSet::set_state_complete() {
+  assert_svm_only(!_hr->is_image_heap(), "objects in image heap regions are always alive, so there is no need for tracking");
   clear_fcc();
   _state = Complete;
 }

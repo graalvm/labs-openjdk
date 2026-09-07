@@ -109,7 +109,6 @@
 #include <mmsystem.h>
 #include <winsock2.h>
 #include <versionhelpers.h>
-
 // For DLL loading/load error detection
 // Values of PE COFF
 #define IMAGE_FILE_PTR_TO_SIGNATURE 0x3c
@@ -119,10 +118,12 @@ static HANDLE main_process;
 static HANDLE main_thread;
 static int    main_thread_id;
 
+#ifndef SVM
 static FILETIME process_creation_time;
 static FILETIME process_exit_time;
 static FILETIME process_user_time;
 static FILETIME process_kernel_time;
+#endif // !SVM
 
 #if defined(_M_ARM64)
   #define __CPU__ aarch64
@@ -132,6 +133,7 @@ static FILETIME process_kernel_time;
   #error "Unknown CPU"
 #endif
 
+#ifndef SVM
 #if defined(USE_VECTORED_EXCEPTION_HANDLING)
 PVOID  topLevelVectoredExceptionHandler = nullptr;
 LPTOP_LEVEL_EXCEPTION_FILTER previousUnhandledExceptionFilter = nullptr;
@@ -188,6 +190,7 @@ static inline double fileTimeAsDouble(FILETIME* time) {
 
 #define RANGE_FORMAT                "[" PTR_FORMAT "-" PTR_FORMAT ")"
 #define RANGE_FORMAT_ARGS(p, len)   p2i(p), p2i((address)p + len)
+#endif // !SVM
 
 // A number of wrappers for more frequently used system calls, to add standard logging.
 
@@ -271,6 +274,7 @@ static BOOL unmapViewOfFile(LPCVOID lpBaseAddress) {
   return result;
 }
 
+#ifndef SVM
 char** os::get_environ() { return _environ; }
 
 // No setuid programs under Windows.
@@ -496,6 +500,7 @@ bool os::committed_in_range(address start, size_t size, address& committed_start
     return true;
   }
 }
+#endif // !SVM
 
 struct tm* os::localtime_pd(const time_t* clock, struct tm* res) {
   const struct tm* time_struct_ptr = localtime(clock);
@@ -520,26 +525,32 @@ enum Ept { EPT_THREAD, EPT_PROCESS, EPT_PROCESS_DIE };
 [[noreturn]]
 static void exit_process_or_thread(Ept what, int code);
 
+#ifndef SVM
 JNIEXPORT
 LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo);
+#endif // !SVM
 
 // Thread start routine for all newly created threads.
 // Called with the associated Thread* as the argument.
 static unsigned thread_native_entry(void* t) {
   Thread* thread = static_cast<Thread*>(t);
 
+#ifndef SVM
   thread->record_stack_base_and_size();
+#endif // !SVM
   thread->initialize_thread_current();
 
   OSThread* osthr = thread->osthread();
   assert(osthr->get_state() == RUNNABLE, "invalid os thread state");
 
+#ifndef SVM
   if (UseNUMA) {
     int lgrp_id = os::numa_get_group_id();
     if (lgrp_id != -1) {
       thread->set_lgrp_id(lgrp_id);
     }
   }
+#endif // !SVM
 
   // Diagnostic code to investigate JDK-6573254
   int res = 30115;  // non-java thread
@@ -547,9 +558,11 @@ static unsigned thread_native_entry(void* t) {
     res = 20115;    // java thread
   }
 
+#ifndef SVM
   log_info(os, thread)("Thread is alive (tid: %zu, stacksize: %zuk).", os::current_thread_id(), thread->stack_size() / K);
+#endif // !SVM
 
-#ifdef USE_VECTORED_EXCEPTION_HANDLING
+#if defined(SVM) || defined(USE_VECTORED_EXCEPTION_HANDLING)
   // Any exception is caught by the Vectored Exception Handler, so VM can
   // generate error dump when an exception occurred in non-Java thread
   // (e.g. VM thread).
@@ -583,6 +596,7 @@ static OSThread* create_os_thread(Thread* thread, HANDLE thread_handle,
   OSThread* osthread = new (std::nothrow) OSThread();
   if (osthread == nullptr) return nullptr;
 
+#ifndef SVM
   // Initialize the JDK library's interrupt event.
   // This should really be done when OSThread is constructed,
   // but there is no way for a constructor to report failure to
@@ -593,17 +607,20 @@ static OSThread* create_os_thread(Thread* thread, HANDLE thread_handle,
     return nullptr;
   }
   osthread->set_interrupt_event(interrupt_event);
+#endif // !SVM
 
   // Store info on the Win32 thread into the OSThread
   osthread->set_thread_handle(thread_handle);
   osthread->set_thread_id(thread_id);
 
+#ifndef SVM
   if (UseNUMA) {
     int lgrp_id = os::numa_get_group_id();
     if (lgrp_id != -1) {
       thread->set_lgrp_id(lgrp_id);
     }
   }
+#endif // !SVM
 
   // Initial thread state is INITIALIZED, not SUSPENDED
   osthread->set_state(INITIALIZED);
@@ -613,9 +630,11 @@ static OSThread* create_os_thread(Thread* thread, HANDLE thread_handle,
 
 
 bool os::create_attached_thread(JavaThread* thread) {
+#ifndef SVM
 #ifdef ASSERT
   thread->verify_not_published();
 #endif
+#endif // !SVM
   HANDLE thread_h;
   if (!DuplicateHandle(main_process, GetCurrentThread(), GetCurrentProcess(),
                        &thread_h, THREAD_ALL_ACCESS, false, 0)) {
@@ -632,18 +651,22 @@ bool os::create_attached_thread(JavaThread* thread) {
 
   thread->set_osthread(osthread);
 
+#ifndef SVM
   log_info(os, thread)("Thread attached (tid: %zu, stack: "
                        PTR_FORMAT " - " PTR_FORMAT " (%zuK) ).",
                        os::current_thread_id(), p2i(thread->stack_base()),
                        p2i(thread->stack_end()), thread->stack_size() / K);
+#endif // !SVM
 
   return true;
 }
 
 bool os::create_main_thread(JavaThread* thread) {
+#ifndef SVM
 #ifdef ASSERT
   thread->verify_not_published();
 #endif
+#endif // !SVM
   if (_starting_thread == nullptr) {
     _starting_thread = create_os_thread(thread, main_thread, main_thread_id);
     if (_starting_thread == nullptr) {
@@ -693,6 +716,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
   // Initial state is ALLOCATED but not INITIALIZED
   osthread->set_state(ALLOCATED);
 
+#ifndef SVM
   // Initialize the JDK library's interrupt event.
   // This should really be done when OSThread is constructed,
   // but there is no way for a constructor to report failure to
@@ -706,16 +730,19 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
   // We don't call set_interrupted(false) as it will trip the assert in there
   // as we are not operating on the current thread. We don't need to call it
   // because the initial state is already correct.
+#endif // !SVM
 
   thread->set_osthread(osthread);
 
   if (stack_size == 0) {
     switch (thr_type) {
     case os::java_thread:
+#ifndef SVM
       // Java threads use ThreadStackSize which default value can be changed with the flag -Xss
       if (JavaThread::stack_size_at_create() > 0) {
         stack_size = JavaThread::stack_size_at_create();
       }
+#endif // !SVM
       break;
     case os::compiler_thread:
       if (CompilerThreadStackSize > 0) {
@@ -793,10 +820,12 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
   } else {
     log_warning(os, thread)("Failed to start thread \"%s\" - _beginthreadex failed (%s) for attributes: %s.",
                             thread->name(), os::errno_name(errno), describe_beginthreadex_attributes(buf, sizeof(buf), stack_size, initflag));
+#ifndef SVM
     // Log some OS information which might explain why creating the thread failed.
     log_info(os, thread)("Number of threads approx. running in the VM: %d", Threads::number_of_threads());
     LogStream st(Log(os, thread)::info());
     os::print_memory_info(&st);
+#endif // !SVM
   }
 
   if (thread_handle == nullptr) {
@@ -822,16 +851,20 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
 void os::free_thread(OSThread* osthread) {
   assert(osthread != nullptr, "osthread not set");
 
+#ifndef SVM
   // We are told to free resources of the argument thread, but we can only really operate
   // on the current thread. The current thread may be already detached at this point.
   assert(Thread::current_or_null() == nullptr || Thread::current()->osthread() == osthread,
          "os::free_thread but not current thread");
+#endif // !SVM
 
   CloseHandle(osthread->thread_handle());
   delete osthread;
 }
 
+#ifndef SVM
 static jlong first_filetime;
+#endif // !SVM
 static jlong initial_performance_count;
 static jlong performance_frequency;
 static double nanos_per_count; // NANOSECS_PER_SEC / performance_frequency
@@ -848,6 +881,7 @@ jlong os::elapsed_frequency() {
 }
 
 
+#ifndef SVM
 bool os::available_memory(physical_memory_size_type& value) {
   return win32::available_memory(value);
 }
@@ -896,11 +930,13 @@ bool os::free_swap_space(physical_memory_size_type& value) {
     return false;
   }
 }
+#endif // !SVM
 
 physical_memory_size_type os::physical_memory() {
   return win32::physical_memory();
 }
 
+#ifndef SVM
 size_t os::rss() {
   size_t rss = 0;
   PROCESS_MEMORY_COUNTERS_EX pmex;
@@ -913,6 +949,7 @@ size_t os::rss() {
   }
   return rss;
 }
+#endif // !SVM
 
 bool os::has_allocatable_memory_limit(size_t* limit) {
   MEMORYSTATUSEX ms;
@@ -932,11 +969,13 @@ int os::active_processor_count() {
   }
 
   bool schedules_all_processor_groups = win32::is_windows_11_or_greater() || win32::is_windows_server_2022_or_greater();
+#ifndef SVM
   if (UseAllWindowsProcessorGroups && !schedules_all_processor_groups && !win32::processor_group_warning_displayed()) {
     win32::set_processor_group_warning_displayed(true);
     FLAG_SET_DEFAULT(UseAllWindowsProcessorGroups, false);
     warning("The UseAllWindowsProcessorGroups flag is not supported on this Windows version and will be ignored.");
   }
+#endif // !SVM
 
   DWORD active_processor_groups = 0;
   DWORD processors_in_job_object = win32::active_processors_in_job_object(&active_processor_groups);
@@ -1046,9 +1085,11 @@ int os::active_processor_count() {
   return logical_processors == 0 ? si.dwNumberOfProcessors : logical_processors;
 }
 
+#ifndef SVM
 uint os::processor_id() {
   return (uint)GetCurrentProcessorNumber();
 }
+#endif // !SVM
 
 // For dynamic lookup of SetThreadDescription API
 typedef HRESULT (WINAPI *SetThreadDescriptionFnPtr)(HANDLE, PCWSTR);
@@ -1198,6 +1239,7 @@ jlong windows_to_java_time(FILETIME wt) {
 }
 
 // Returns time ticks in (10th of micro seconds)
+#ifndef SVM
 jlong windows_to_time_ticks(FILETIME wt) {
   jlong a = jlong_from(wt.dwHighDateTime, wt.dwLowDateTime);
   return (a - offset());
@@ -1210,6 +1252,7 @@ FILETIME java_to_windows_time(jlong l) {
   result.dwLowDateTime  = low(a);
   return result;
 }
+#endif // !SVM
 
 bool os::supports_vtime() { return true; }
 
@@ -1232,6 +1275,7 @@ jlong os::javaTimeMillis() {
   return windows_to_java_time(wt);
 }
 
+#ifndef SVM
 void os::javaTimeSystemUTC(jlong &seconds, jlong &nanos) {
   FILETIME wt;
   GetSystemTimeAsFileTime(&wt);
@@ -1240,6 +1284,7 @@ void os::javaTimeSystemUTC(jlong &seconds, jlong &nanos) {
   seconds = secs;
   nanos = jlong(ticks - (secs*10000000)) * 100;
 }
+#endif // !SVM
 
 jlong os::javaTimeNanos() {
     LARGE_INTEGER current_count;
@@ -1249,6 +1294,7 @@ jlong os::javaTimeNanos() {
     return time;
 }
 
+#ifndef SVM
 void os::javaTimeNanos_info(jvmtiTimerInfo *info_ptr) {
   jlong freq = performance_frequency;
   if (freq < NANOSECS_PER_SEC) {
@@ -1280,6 +1326,7 @@ char* os::local_time_string(char *buf, size_t buflen) {
                st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
   return buf;
 }
+#endif // !SVM
 
 bool os::getTimesSecs(double* process_real_time,
                       double* process_user_time,
@@ -1307,20 +1354,25 @@ bool os::getTimesSecs(double* process_real_time,
 }
 
 void os::shutdown() {
+#ifndef SVM
   // allow PerfMemory to attempt cleanup of any persistent resources
   perfMemory_exit();
+#endif // !SVM
 
   // flush buffered output, finish log files
   ostream_abort();
 
+#ifndef SVM
   // Check for abort hook
   abort_hook_t abort_hook = Arguments::abort_hook();
   if (abort_hook != nullptr) {
     abort_hook();
   }
+#endif // !SVM
 }
 
 
+#ifndef SVM
 static HANDLE dumpFile = nullptr;
 
 // Check if core dump is active and if a core dump file can be created
@@ -1368,8 +1420,10 @@ void os::check_core_dump_prerequisites(char* buffer, size_t bufferSize, bool che
     }
   }
 }
+#endif // !SVM
 
 void os::abort(bool dump_core, const void* siginfo, const void* context) {
+#ifndef SVM
   EXCEPTION_POINTERS ep;
   MINIDUMP_EXCEPTION_INFORMATION mei;
   MINIDUMP_EXCEPTION_INFORMATION* pmei;
@@ -1377,13 +1431,19 @@ void os::abort(bool dump_core, const void* siginfo, const void* context) {
   HANDLE hProcess = GetCurrentProcess();
   DWORD processId = GetCurrentProcessId();
   MINIDUMP_TYPE dumpType;
+#endif // !SVM
 
   shutdown();
+
+  assert_svm_only(!dump_core, "SVM does not create minidumps through os::abort");
+#ifndef SVM
   if (!dump_core || dumpFile == nullptr) {
     if (dumpFile != nullptr) {
       CloseHandle(dumpFile);
     }
+#endif // !SVM
     exit_process_or_thread(EPT_PROCESS, 1);
+#ifndef SVM
   }
 
   dumpType = (MINIDUMP_TYPE)(MiniDumpWithFullMemory | MiniDumpWithHandleData |
@@ -1408,6 +1468,7 @@ void os::abort(bool dump_core, const void* siginfo, const void* context) {
   }
   CloseHandle(dumpFile);
   exit_process_or_thread(EPT_PROCESS, 1);
+#endif // !SVM
 }
 
 // Die immediately, no exit hook, no abort hook, no cleanup.
@@ -1415,6 +1476,7 @@ void os::die() {
   exit_process_or_thread(EPT_PROCESS_DIE, -1);
 }
 
+#ifndef SVM
 void  os::dll_unload(void *lib) {
   char name[MAX_PATH];
   if (::GetModuleFileName((HMODULE)lib, name, sizeof(name)) == 0) {
@@ -2257,6 +2319,7 @@ void os::jvm_path(char *buf, jint buflen) {
   strncpy(saved_jvm_path, buf, MAX_PATH);
   saved_jvm_path[MAX_PATH - 1] = '\0';
 }
+#endif // !SVM
 
 
 // This method is a copy of JDK's sysGetLastErrorString
@@ -2306,6 +2369,7 @@ int os::get_last_error() {
   return (int)error;
 }
 
+#ifndef SVM
 // sun.misc.Signal
 // NOTE that this is a workaround for an apparent kernel bug where if
 // a signal handler for SIGBREAK is installed then that signal handler
@@ -2950,9 +3014,11 @@ class NUMANodeListHolder {
   }
 
 } numa_node_list_holder;
+#endif // !SVM
 
 static size_t _large_page_size = 0;
 
+#ifndef SVM
 bool os::win32::request_lock_memory_privilege() {
   HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE,
                                 os::current_process_id());
@@ -3233,6 +3299,7 @@ int os::create_file_for_heap(const char* dir) {
   }
   return fd;
 }
+#endif // !SVM
 
 // If 'base' is not null, function will return null if it cannot get 'base'
 char* os::map_memory_to_file(char* base, size_t size, int fd) {
@@ -3271,6 +3338,7 @@ char* os::replace_existing_mapping_with_file_mapping(char* base, size_t size, in
 // virtual space to get requested alignment, like posix-like os's.
 // Windows prevents multiple thread from remapping over each other so this loop is thread-safe.
 static char* map_or_reserve_memory_aligned(size_t size, size_t alignment, int file_desc, MemTag mem_tag) {
+  assert_svm_only(file_desc == -1, "file mapping is not supported");
   assert(is_aligned(alignment, os::vm_allocation_granularity()),
       "Alignment must be a multiple of allocation granularity (page size)");
   assert(is_aligned(size, os::vm_allocation_granularity()),
@@ -3283,16 +3351,24 @@ static char* map_or_reserve_memory_aligned(size_t size, size_t alignment, int fi
   static const int max_attempts = 20;
 
   for (int attempt = 0; attempt < max_attempts && aligned_base == nullptr; attempt ++) {
+#ifdef SVM
+    char* extra_base = os::reserve_memory(extra_size, mem_tag);
+#else // SVM
     char* extra_base = file_desc != -1 ? os::map_memory_to_file(extra_size, file_desc, mem_tag) :
                                          os::reserve_memory(extra_size, mem_tag);
+#endif // SVM
     if (extra_base == nullptr) {
       return nullptr;
     }
     // Do manual alignment
     aligned_base = align_up(extra_base, alignment);
 
+#ifdef SVM
+    bool rc = os::release_memory(extra_base, extra_size);
+#else // SVM
     bool rc = (file_desc != -1) ? os::unmap_memory(extra_base, extra_size) :
                                   os::release_memory(extra_base, extra_size);
+#endif // SVM
     assert(rc, "release failed");
     if (!rc) {
       return nullptr;
@@ -3300,8 +3376,12 @@ static char* map_or_reserve_memory_aligned(size_t size, size_t alignment, int fi
 
     // Attempt to map, into the just vacated space, the slightly smaller aligned area.
     // Which may fail, hence the loop.
+#ifdef SVM
+    aligned_base = os::attempt_reserve_memory_at(aligned_base, size, mem_tag);
+#else // SVM
     aligned_base = file_desc != -1 ? os::attempt_map_memory_to_file_at(aligned_base, size, file_desc, mem_tag) :
                                      os::attempt_reserve_memory_at(aligned_base, size, mem_tag);
+#endif // SVM
   }
 
   assert(aligned_base != nullptr,
@@ -3315,9 +3395,11 @@ char* os::reserve_memory_aligned(size_t size, size_t alignment, MemTag mem_tag, 
   return map_or_reserve_memory_aligned(size, alignment, -1/* file_desc */, mem_tag);
 }
 
+#ifndef SVM
 char* os::map_memory_to_file_aligned(size_t size, size_t alignment, int fd, MemTag mem_tag) {
   return map_or_reserve_memory_aligned(size, alignment, fd, mem_tag);
 }
+#endif // !SVM
 
 char* os::pd_reserve_memory(size_t bytes, bool exec) {
   return pd_attempt_reserve_memory_at(nullptr /* addr */, bytes, exec);
@@ -3336,6 +3418,9 @@ char* os::pd_attempt_reserve_memory_at(char* addr, size_t bytes, bool exec) {
   if (!use_individual) {
     res = (char*)virtualAlloc(addr, bytes, MEM_RESERVE, PAGE_READWRITE);
   } else {
+#ifdef SVM
+    ShouldNotReachHere();
+#else
     elapsedTimer reserveTimer;
     if (Verbose && PrintMiscellaneous) reserveTimer.start();
     // in numa interleaving, we have to allocate pages individually
@@ -3349,6 +3434,7 @@ char* os::pd_attempt_reserve_memory_at(char* addr, size_t bytes, bool exec) {
       tty->print_cr("reserve_memory of %zx bytes took " JLONG_FORMAT " ms (" JLONG_FORMAT " ticks)", bytes,
                     reserveTimer.milliseconds(), reserveTimer.ticks());
     }
+#endif // SVM
   }
   assert(res == nullptr || addr == nullptr || addr == res,
          "Unexpected address from reserve.");
@@ -3356,6 +3442,7 @@ char* os::pd_attempt_reserve_memory_at(char* addr, size_t bytes, bool exec) {
   return res;
 }
 
+#ifndef SVM
 size_t os::vm_min_address() {
   assert(is_aligned(_vm_min_address_default, os::vm_allocation_granularity()), "Sanity");
   return _vm_min_address_default;
@@ -3487,6 +3574,7 @@ bool os::pd_release_memory_special(char* base, size_t bytes) {
   assert(base != nullptr, "Sanity check");
   return pd_release_memory(base, bytes);
 }
+#endif // !SVM
 
 static void warn_fail_commit_memory(char* addr, size_t bytes, bool exec) {
   int err = os::get_last_error();
@@ -3559,11 +3647,13 @@ bool os::pd_commit_memory(char* addr, size_t bytes, bool exec) {
   return true;
 }
 
+#ifndef SVM
 bool os::pd_commit_memory(char* addr, size_t size, size_t alignment_hint,
                           bool exec) {
   // alignment_hint is ignored on this OS
   return pd_commit_memory(addr, size, exec);
 }
+#endif // !SVM
 
 void os::pd_commit_memory_or_exit(char* addr, size_t size, bool exec,
                                   const char* mesg) {
@@ -3642,6 +3732,7 @@ bool os::pd_release_memory(char* addr, size_t bytes) {
   return true;
 }
 
+#ifndef SVM
 bool os::pd_create_stack_guard_pages(char* addr, size_t size) {
   return os::commit_memory(addr, size, !ExecMem);
 }
@@ -3736,14 +3827,19 @@ bool os::unguard_memory(char* addr, size_t bytes) {
   DWORD old_status;
   return VirtualProtect(addr, bytes, PAGE_READWRITE, &old_status) != 0;
 }
+#endif // !SVM
 
 void os::pd_realign_memory(char *addr, size_t bytes, size_t alignment_hint) { }
+
+#ifndef SVM
 void os::pd_disclaim_memory(char *addr, size_t bytes) { }
+#endif // !SVM
 
 size_t os::pd_pretouch_memory(void* first, void* last, size_t page_size) {
   return page_size;
 }
 
+#ifndef SVM
 void os::numa_make_global(char *addr, size_t bytes)    { }
 void os::numa_make_local(char *addr, size_t bytes, int lgrp_hint)    { }
 bool os::numa_topology_changed()                       { return false; }
@@ -3784,6 +3880,7 @@ char* os::non_memory_address_word() {
   return (char*)-1;
 #endif
 }
+#endif // !SVM
 
 #define MAX_ERROR_COUNT 100
 #define SYS_THREAD_ERROR 0xffffffffUL
@@ -3798,6 +3895,7 @@ void os::pd_start_thread(Thread* thread) {
 }
 
 
+#ifndef SVM
 // Short sleep, direct OS call.
 //
 // ms = 0, means allow others (if any) to run.
@@ -3806,6 +3904,7 @@ void os::naked_short_sleep(jlong ms) {
   assert(ms < 1000, "Un-interruptable sleep, short time use only");
   Sleep(ms);
 }
+#endif // !SVM
 
 // Windows does not provide sleep functionality with nanosecond resolution, so we
 // try to approximate this with spinning combined with yielding if another thread
@@ -3931,7 +4030,9 @@ int                       os::win32::_minor_version             = 0;
 int                       os::win32::_build_number              = 0;
 int                       os::win32::_build_minor               = 0;
 
+#ifndef SVM
 bool                      os::win32::_processor_group_warning_displayed = false;
+#endif // !SVM
 bool                      os::win32::_job_object_processor_group_warning_displayed = false;
 
 void getWindowsInstallationType(char* buffer, int bufferSize) {
@@ -4164,6 +4265,7 @@ void os::win32::initialize_system_info() {
 }
 
 
+#ifndef SVM
 HINSTANCE os::win32::load_Windows_dll(const char* name, char *ebuf,
                                       int ebuflen) {
   char path[MAX_PATH];
@@ -4210,6 +4312,7 @@ HINSTANCE os::win32::load_Windows_dll(const char* name, char *ebuf,
                "os::win32::load_windows_dll() cannot load %s from system directories.", name);
   return nullptr;
 }
+#endif // !SVM
 
 #define MAXIMUM_THREADS_TO_KEEP (16 * MAXIMUM_WAIT_OBJECTS)
 #define EXIT_TIMEOUT 300000 /* 5 minutes */
@@ -4249,7 +4352,7 @@ static void exit_process_or_thread(Ept what, int exit_code) {
 
     // The first thread that reached this point, initializes the critical section.
     if (!InitOnceExecuteOnce(&init_once_crit_sect, init_crit_sect_call, &crit_sect, nullptr)) {
-      warning("crit_sect initialization failed in %s: %d\n", __FILE__, __LINE__);
+      warning("crit_sect initialization failed in %s: %d\n", __FILENAME_ONLY__, __LINE__);
     } else if (Atomic::load_acquire(&process_exiting) == 0) {
       if (what != EPT_THREAD) {
         // Atomically set process_exiting before the critical section
@@ -4267,7 +4370,7 @@ static void exit_process_or_thread(Ept what, int exit_code) {
           } else {
             if (res == WAIT_FAILED) {
               warning("WaitForSingleObject failed (%u) in %s: %d\n",
-                      GetLastError(), __FILE__, __LINE__);
+                      GetLastError(), __FILENAME_ONLY__, __LINE__);
             }
             // Don't keep the handle, if we failed waiting for it.
             CloseHandle(handles[i]);
@@ -4290,7 +4393,7 @@ static void exit_process_or_thread(Ept what, int exit_code) {
           } else {
             warning("WaitForMultipleObjects %s (%u) in %s: %d\n",
                     (res == WAIT_FAILED ? "failed" : "timed out"),
-                    GetLastError(), __FILE__, __LINE__);
+                    GetLastError(), __FILENAME_ONLY__, __LINE__);
             // Don't keep handles, if we failed waiting for them.
             for (i = 0; i < MAXIMUM_THREADS_TO_KEEP; ++i) {
               CloseHandle(handles[i]);
@@ -4305,7 +4408,7 @@ static void exit_process_or_thread(Ept what, int exit_code) {
         if (!DuplicateHandle(hproc, hthr, hproc, &handles[handle_count],
                              0, FALSE, DUPLICATE_SAME_ACCESS)) {
           warning("DuplicateHandle failed (%u) in %s: %d\n",
-                  GetLastError(), __FILE__, __LINE__);
+                  GetLastError(), __FILENAME_ONLY__, __LINE__);
 
           // We can't register this thread (no more handles) so this thread
           // may be racing with a thread that is calling exit(). If the thread
@@ -4351,7 +4454,7 @@ static void exit_process_or_thread(Ept what, int exit_code) {
           if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
             warning("WaitForMultipleObjects %s (%u) in %s: %d\n",
                     (res == WAIT_FAILED ? "failed" : "timed out"),
-                    GetLastError(), __FILE__, __LINE__);
+                    GetLastError(), __FILENAME_ONLY__, __LINE__);
             // Reset portion_count so we close the remaining
             // handles due to this error.
             portion_count = handle_count - i;
@@ -4408,6 +4511,7 @@ void os::win32::setmode_streams() {
   _setmode(_fileno(stderr), _O_BINARY);
 }
 
+#ifndef SVM
 void os::wait_for_keypress_at_exit(void) {
   if (PauseAtExit) {
     fprintf(stderr, "Press any key to continue...\n");
@@ -4421,9 +4525,11 @@ bool os::message_box(const char* title, const char* message) {
                           MB_YESNO | MB_ICONERROR | MB_SYSTEMMODAL | MB_DEFAULT_DESKTOP_ONLY);
   return result == IDYES;
 }
+#endif // !SVM
 
 // This is called _before_ the global arguments have been parsed
 void os::init(void) {
+#ifndef SVM
   if (is_vm_statically_linked()) {
     // Mimick what is done in DllMain for non-static builds
     HMODULE hModule = nullptr;
@@ -4431,6 +4537,7 @@ void os::init(void) {
     windows_preinit(hModule);
     atexit(windows_atexit);
   }
+#endif // !SVM
 
   _initial_pid = _getpid();
 
@@ -4439,8 +4546,10 @@ void os::init(void) {
   win32::setmode_streams();
   _page_sizes.add(os::vm_page_size());
 
+#ifndef SVM
   // This may be overridden later when argument processing is done.
   FLAG_SET_ERGO(UseLargePagesIndividualAllocation, false);
+#endif // !SVM
 
   // Initialize main_process and main_thread
   main_process = GetCurrentProcess();  // Remember main_process is a pseudo handle
@@ -4451,6 +4560,7 @@ void os::init(void) {
   main_thread_id = (int) GetCurrentThreadId();
 }
 
+#ifndef SVM
 // To install functions for atexit processing
 extern "C" {
   static void perfMemory_exit_helper() {
@@ -4472,6 +4582,8 @@ size_t os::_vm_internal_thread_min_stack_allowed = 64 * K;
 // If -Xss is given to the launcher, it will pick 64K as default stack size and pass that.
 size_t os::_os_min_stack_allowed = 64 * K;
 
+#endif // !SVM
+
 // this is called _after_ the global arguments have been parsed
 jint os::init_2(void) {
   const char* auto_schedules_message = "Host Windows OS automatically schedules threads across all processor groups.";
@@ -4487,6 +4599,7 @@ jint os::init_2(void) {
 
   // Setup Windows Exceptions
 
+#ifndef SVM
 #if defined(USE_VECTORED_EXCEPTION_HANDLING)
   topLevelVectoredExceptionHandler = AddVectoredExceptionHandler(1, topLevelVectoredExceptionFilter);
   previousUnhandledExceptionFilter = SetUnhandledExceptionFilter(topLevelUnhandledExceptionFilter);
@@ -4514,10 +4627,12 @@ jint os::init_2(void) {
       warning("os::init_2 atexit(perfMemory_exit_helper) failed");
     }
   }
+#endif // !SVM
 
   // initialize thread priority policy
   prio_init();
 
+#ifndef SVM
   UseNUMA = false; // We don't fully support this yet
 
   if (UseNUMAInterleaving || (UseNUMA && FLAG_IS_DEFAULT(UseNUMAInterleaving))) {
@@ -4540,6 +4655,7 @@ jint os::init_2(void) {
   if (!ReduceSignalUsage) {
     jdk_misc_signal_init();
   }
+#endif // !SVM
 
   // Lookup SetThreadDescription - the docs state we must use runtime-linking of
   // kernelbase.dll, so that is what we do.
@@ -4562,6 +4678,7 @@ jint os::init_2(void) {
   return JNI_OK;
 }
 
+#ifndef SVM
 // combine the high and low DWORD into a ULONGLONG
 static ULONGLONG make_double_word(DWORD high_word, DWORD low_word) {
   ULONGLONG value = high_word;
@@ -4586,6 +4703,7 @@ static void file_attribute_data_to_stat(struct stat* sbuf, WIN32_FILE_ATTRIBUTE_
     sbuf->st_mode |= S_IFREG;
   }
 }
+#endif // !SVM
 
 static errno_t convert_to_unicode(char const* char_path, LPWSTR* unicode_path) {
   // Get required buffer size to convert to Unicode
@@ -4608,6 +4726,7 @@ static errno_t convert_to_unicode(char const* char_path, LPWSTR* unicode_path) {
   return ERROR_SUCCESS;
 }
 
+#ifndef SVM
 static errno_t get_full_path(LPCWSTR unicode_path, LPWSTR* full_path) {
   // Get required buffer size to convert to full path. The return
   // value INCLUDES the terminating null character.
@@ -4876,11 +4995,13 @@ bool os::same_files(const char* file1, const char* file2) {
 
   return result;
 }
+#endif // !SVM
 
 #define FT2INT64(ft) \
   ((jlong)((jlong)(ft).dwHighDateTime << 32 | (julong)(ft).dwLowDateTime))
 
 
+#ifndef SVM
 // current_thread_cpu_time(bool) and thread_cpu_time(Thread*, bool)
 // are used by JVM M&M and JVMTI to get user+sys or user CPU time
 // of a thread.
@@ -4893,15 +5014,18 @@ jlong os::current_thread_cpu_time() {
   // return user + sys since the cost is the same
   return os::thread_cpu_time(Thread::current(), true /* user+sys */);
 }
+#endif // SVM
 
 jlong os::thread_cpu_time(Thread* thread) {
   // consistent with what current_thread_cpu_time() returns.
   return os::thread_cpu_time(thread, true /* user+sys */);
 }
 
+#ifndef SVM
 jlong os::current_thread_cpu_time(bool user_sys_cpu_time) {
   return os::thread_cpu_time(Thread::current(), user_sys_cpu_time);
 }
+#endif // !SVM
 
 jlong os::thread_cpu_time(Thread* thread, bool user_sys_cpu_time) {
   // This code is copy from classic VM -> hpi::sysThreadCPUTime
@@ -4921,6 +5045,7 @@ jlong os::thread_cpu_time(Thread* thread, bool user_sys_cpu_time) {
   }
 }
 
+#ifndef SVM
 void os::current_thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->max_value = all_bits_jlong;     // the max value -- all 64 bits
   info_ptr->may_skip_backward = false;      // GetThreadTimes returns absolute time
@@ -4934,6 +5059,7 @@ void os::thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->may_skip_forward = false;       // GetThreadTimes returns absolute time
   info_ptr->kind = JVMTI_TIMER_TOTAL_CPU;   // user+system time is returned
 }
+#endif // !SVM
 
 bool os::is_thread_cpu_time_supported() {
   // see os::thread_cpu_time
@@ -4975,6 +5101,7 @@ int os::loadavg(double loadavg[], int nelem) {
   return -1;
 }
 
+#ifndef SVM
 int os::open(const char *path, int oflag, int mode) {
   errno_t err;
   wchar_t* wide_path = wide_abs_unc_path(path, err);
@@ -5014,6 +5141,7 @@ int os::open(const char *path, int oflag, int mode) {
 FILE* os::fdopen(int fd, const char* mode) {
   return ::_fdopen(fd, mode);
 }
+#endif // !SVM
 
 ssize_t os::pd_write(int fd, const void *buf, size_t nBytes) {
   ssize_t original_len = (ssize_t)nBytes;
@@ -5030,14 +5158,17 @@ ssize_t os::pd_write(int fd, const void *buf, size_t nBytes) {
   return original_len;
 }
 
+#ifndef SVM
 void os::exit(int num) {
   exit_process_or_thread(EPT_PROCESS, num);
 }
+#endif // !SVM
 
 void os::_exit(int num) {
   exit_process_or_thread(EPT_PROCESS_DIE, num);
 }
 
+#ifndef SVM
 // Is a (classpath) directory empty?
 bool os::dir_is_empty(const char* path) {
   errno_t err;
@@ -5248,6 +5379,7 @@ int os::ftruncate(int fd, jlong length) {
 int os::get_fileno(FILE* fp) {
   return _fileno(fp);
 }
+#endif // !SVM
 
 void os::flockfile(FILE* fp) {
   _lock_file(fp);
@@ -5257,6 +5389,7 @@ void os::funlockfile(FILE* fp) {
   _unlock_file(fp);
 }
 
+#ifndef SVM
 char* os::realpath(const char* filename, char* outbuf, size_t outbuflen) {
 
   if (filename == nullptr || outbuf == nullptr || outbuflen < 1) {
@@ -5712,6 +5845,7 @@ void Parker::unpark() {
   guarantee(_ParkHandle != nullptr, "invariant");
   SetEvent(_ParkHandle);
 }
+#endif // !SVM
 
 // Platform Mutex/Monitor implementation
 
@@ -5752,6 +5886,7 @@ int PlatformMonitor::wait(uint64_t millis) {
   return ret;
 }
 
+#ifndef SVM
 // Run the specified command in a separate process. Return its exit value,
 // or -1 on failure (e.g. can't create a new process).
 int os::fork_and_exec(const char* cmd) {
@@ -5964,6 +6099,7 @@ int os::get_signal_number(const char* name) {
 bool os::supports_map_sync() {
   return false;
 }
+#endif // !SVM
 
 #ifdef ASSERT
 static void check_meminfo(MEMORY_BASIC_INFORMATION* minfo) {
@@ -6032,6 +6168,7 @@ bool os::win32::find_mapping(address addr, mapping_info_t* mi) {
   return rc;
 }
 
+#ifndef SVM
 // Helper for print_one_mapping: print n words, both as hex and ascii.
 // Use Safefetch for all values.
 static void print_snippet(const void* p, outputStream* st) {
@@ -6191,6 +6328,7 @@ void os::print_memory_mappings(char* addr, size_t bytes, outputStream* st) {
     }
   }
 }
+#endif // !SVM
 
 #if INCLUDE_JFR
 
@@ -6219,6 +6357,7 @@ void os::jfr_report_memory_info() {
 #endif // INCLUDE_JFR
 
 
+#ifndef SVM
 // File conventions
 const char* os::file_separator() { return "\\"; }
 const char* os::line_separator() { return "\r\n"; }
@@ -6254,3 +6393,4 @@ const void* os::get_saved_assert_context(const void** sigInfo) {
   *sigInfo = nullptr;
   return nullptr;
 }
+#endif // !SVM

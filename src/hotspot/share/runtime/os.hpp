@@ -36,8 +36,10 @@
 # include <mach/mach_time.h>
 #endif
 
+#ifndef SVM
 class frame;
 class JvmtiAgent;
+#endif // !SVM
 
 // Rules for using and implementing methods declared in the "os" class
 // ===================================================================
@@ -149,8 +151,10 @@ enum WXMode {
 // os::commit_memory_or_exit().
 const bool ExecMem = true;
 
+#ifndef SVM
 // Typedef for structured exception handling support
 typedef void (*java_call_t)(JavaValue* value, const methodHandle& method, JavaCallArguments* args, JavaThread* thread);
+#endif // !SVM
 
 class MallocTracker;
 
@@ -205,18 +209,22 @@ class os: AllStatic {
   static OSThread*          _starting_thread;
   static PageSizes          _page_sizes;
 
+#ifndef SVM
   // The default value for os::vm_min_address() unless the platform knows better. This value
   // is chosen to give us reasonable protection against null pointer dereferences while being
   // low enough to leave most of the valuable low-4gb address space open.
   static constexpr size_t _vm_min_address_default = 16 * M;
+#endif // !SVM
 
   static char*  pd_reserve_memory(size_t bytes, bool executable);
 
   static char*  pd_attempt_reserve_memory_at(char* addr, size_t bytes, bool executable);
 
   static bool   pd_commit_memory(char* addr, size_t bytes, bool executable);
+#ifndef SVM
   static bool   pd_commit_memory(char* addr, size_t size, size_t alignment_hint,
                                  bool executable);
+#endif // !SVM
   // Same as pd_commit_memory() that either succeeds or calls
   // vm_exit_out_of_memory() with the specified mesg.
   static void   pd_commit_memory_or_exit(char* addr, size_t bytes,
@@ -227,6 +235,7 @@ class os: AllStatic {
   static bool   pd_uncommit_memory(char* addr, size_t bytes, bool executable);
   static bool   pd_release_memory(char* addr, size_t bytes);
 
+#ifndef SVM
   static char*  pd_attempt_map_memory_to_file_at(char* addr, size_t bytes, int file_desc);
 
   static char*  pd_map_memory(int fd, const char* file_name, size_t file_offset,
@@ -234,51 +243,64 @@ class os: AllStatic {
                            bool allow_exec = false);
   static bool   pd_unmap_memory(char *addr, size_t bytes);
   static void   pd_disclaim_memory(char *addr, size_t bytes);
+#endif // !SVM
   static void   pd_realign_memory(char *addr, size_t bytes, size_t alignment_hint);
 
   // Returns 0 if pretouch is done via platform dependent method, or otherwise
   // returns page_size that should be used for the common method.
   static size_t pd_pretouch_memory(void* first, void* last, size_t page_size);
 
+#ifndef SVM
   static char*  pd_reserve_memory_special(size_t size, size_t alignment, size_t page_size,
 
                                           char* addr, bool executable);
   static bool   pd_release_memory_special(char* addr, size_t bytes);
+#endif // !SVM
 
   static size_t page_size_for_region(size_t region_size, size_t min_pages, bool must_be_aligned);
 
+#ifndef SVM
   // Get summary strings for system information in buffer provided
   static void  get_summary_cpu_info(char* buf, size_t buflen);
   static void  get_summary_os_info(char* buf, size_t buflen);
+#endif // !SVM
   // Returns number of bytes written on success, OS_ERR on failure.
   static ssize_t pd_write(int fd, const void *buf, size_t nBytes);
 
   static void initialize_initial_active_processor_count();
 
+#ifndef SVM
   LINUX_ONLY(static void pd_init_container_support();)
+#endif // !SVM
 
  public:
   static void init(void);                      // Called before command line parsing
 
+#ifndef SVM
   static void init_container_support() {       // Called during command line parsing.
      LINUX_ONLY(pd_init_container_support();)
   }
+#endif // !SVM
 
   static void init_before_ergo(void);          // Called after command line parsing
                                                // before VM ergonomics processing.
   static jint init_2(void);                    // Called after command line parsing
                                                // and VM ergonomics processing
 
+#ifndef SVM
   // Get environ pointer, platform independently
   static char** get_environ();
 
   static bool have_special_privileges();
+#endif // !SVM
 
   static jlong  javaTimeMillis();
   static jlong  javaTimeNanos();
+#ifndef SVM
   static void   javaTimeNanos_info(jvmtiTimerInfo *info_ptr);
   static void   javaTimeSystemUTC(jlong &seconds, jlong &nanos);
   static void   run_periodic_checks(outputStream* st);
+#endif // !SVM
 
   // Returns the elapsed time in seconds since the vm started.
   static double elapsedTime();
@@ -303,7 +325,9 @@ class os: AllStatic {
   // Return current local time in a string (YYYY-MM-DD HH:MM:SS).
   // It is MT safe, but not async-safe, as reading time zone
   // information may require a lock on some platforms.
+#ifndef SVM
   static char*      local_time_string(char *buf, size_t buflen);
+#endif // !SVM
   static struct tm* localtime_pd     (const time_t* clock, struct tm*  res);
   static struct tm* gmtime_pd        (const time_t* clock, struct tm*  res);
 
@@ -333,6 +357,7 @@ class os: AllStatic {
     return (_processor_count != 1);
   }
 
+#ifndef SVM
   // On some platforms there is a distinction between "available" memory and "free" memory.
   // For example, on Linux, "available" memory (`MemAvailable` in `/proc/meminfo`) is greater
   // than "free" memory (`MemFree` in `/proc/meminfo`) because Linux can free memory
@@ -343,15 +368,18 @@ class os: AllStatic {
 
   [[nodiscard]] static bool total_swap_space(physical_memory_size_type& value);
   [[nodiscard]] static bool free_swap_space(physical_memory_size_type& value);
+#endif // !SVM
 
   static physical_memory_size_type physical_memory();
   static bool has_allocatable_memory_limit(size_t* limit);
+#ifndef SVM
   static bool is_server_class_machine();
   static size_t rss();
 
   // Returns the id of the processor on which the calling thread is currently executing.
   // The returned value is guaranteed to be between 0 and (os::processor_count() - 1).
   static uint processor_id();
+#endif // !SVM
 
   // number of CPUs
   static int processor_count() {
@@ -373,6 +401,7 @@ class os: AllStatic {
   // Give a name to the current thread.
   static void set_native_thread_name(const char *name);
 
+#ifndef SVM
   // Interface for stack banging (predetect possible stack overflow for
   // exception processing)  There are guard pages, and above that shadow
   // pages for stack overflow checking.
@@ -402,6 +431,7 @@ class os: AllStatic {
   // Find committed memory region within specified range (start, start + size),
   // return true if found any
   static bool committed_in_range(address start, size_t size, address& committed_start, size_t& committed_size);
+#endif // !SVM
 
   // OS interface to Virtual Memory
 
@@ -453,10 +483,12 @@ class os: AllStatic {
 
   static size_t align_up_vm_allocation_granularity(size_t size) { return align_up(size, os::vm_allocation_granularity()); }
 
+#ifndef SVM
   // Returns the lowest address the process is allowed to map against.
   static size_t vm_min_address();
 
   inline static size_t cds_core_region_alignment();
+#endif // !SVM
 
   // Reserves virtual memory.
   static char*  reserve_memory(size_t bytes, MemTag mem_tag, bool executable = false);
@@ -468,9 +500,11 @@ class os: AllStatic {
   // Does not overwrite existing mappings.
   static char*  attempt_reserve_memory_at(char* addr, size_t bytes, MemTag mem_tag, bool executable = false);
 
+#ifndef SVM
   // Given an address range [min, max), attempts to reserve memory within this area, with the given alignment.
   // If randomize is true, the location will be randomized.
   static char* attempt_reserve_memory_between(char* min, char* max, size_t bytes, size_t alignment, bool randomize);
+#endif // !SVM
 
   static bool   commit_memory(char* addr, size_t bytes, bool executable);
   static bool   commit_memory(char* addr, size_t size, size_t alignment_hint,
@@ -485,6 +519,7 @@ class os: AllStatic {
   static bool   uncommit_memory(char* addr, size_t bytes, bool executable = false);
   static bool   release_memory(char* addr, size_t bytes);
 
+#ifndef SVM
   // Does the platform support trimming the native heap?
   static bool can_trim_native_heap();
 
@@ -498,12 +533,14 @@ class os: AllStatic {
   static void print_memory_mappings(char* addr, size_t bytes, outputStream* st);
   // Prints all mappings
   static void print_memory_mappings(outputStream* st);
+#endif // !SVM
 
   // Touch memory pages that cover the memory range from start to end
   // (exclusive) to make the OS back the memory range with actual memory.
   // Other threads may use the memory range concurrently with pretouch.
   static void   pretouch_memory(void* start, void* end, size_t page_size = vm_page_size());
 
+#ifndef SVM
   enum ProtType { MEM_PROT_NONE, MEM_PROT_READ, MEM_PROT_RW, MEM_PROT_RWX };
   static bool   protect_memory(char* addr, size_t bytes, ProtType prot,
                                bool is_committed = true);
@@ -520,18 +557,24 @@ class os: AllStatic {
   // and is added to be used for implementation of -XX:AllocateHeapAt
   static char* map_memory_to_file(size_t size, int fd, MemTag mem_tag);
   static char* map_memory_to_file_aligned(size_t size, size_t alignment, int fd, MemTag mem_tag);
+#endif // !SVM
   static char* map_memory_to_file(char* base, size_t size, int fd);
+#ifndef SVM
   static char* attempt_map_memory_to_file_at(char* base, size_t size, int fd, MemTag mem_tag);
+#endif // !SVM
   // Replace existing reserved memory with file mapping
   static char* replace_existing_mapping_with_file_mapping(char* base, size_t size, int fd);
 
+#ifndef SVM
   static char*  map_memory(int fd, const char* file_name, size_t file_offset,
                            char *addr, size_t bytes, MemTag mem_tag, bool read_only = false,
                            bool allow_exec = false);
   static bool   unmap_memory(char *addr, size_t bytes);
   static void   disclaim_memory(char *addr, size_t bytes);
+#endif // !SVM
   static void   realign_memory(char *addr, size_t bytes, size_t alignment_hint);
 
+#ifndef SVM
   // NUMA-specific interface
   static bool   numa_has_group_homing();
   static void   numa_make_local(char *addr, size_t bytes, int lgrp_hint);
@@ -560,6 +603,7 @@ class os: AllStatic {
   // Check if pointer points to readable memory (by 4-byte read access)
   static bool    is_readable_pointer(const void* p);
   static bool    is_readable_range(const void* from, const void* to);
+#endif // !SVM
 
   // threads
 
@@ -581,6 +625,7 @@ class os: AllStatic {
   // that loads/creates the JVM via JNI_CreateJavaVM.
   static bool create_main_thread(JavaThread* thread);
 
+#ifndef SVM
   // The primordial thread is the initial process thread. The java
   // launcher never uses the primordial thread as the main thread, but
   // applications that host the JVM directly may do so. Some platforms
@@ -593,13 +638,16 @@ class os: AllStatic {
 #else
   ;
 #endif
+#endif // !SVM
 
   static bool create_attached_thread(JavaThread* thread);
   static void pd_start_thread(Thread* thread);
   static void start_thread(Thread* thread);
 
+#ifndef SVM
   // Returns true if successful.
   static bool signal_thread(Thread* thread, int sig, const char* reason);
+#endif // !SVM
 
   static void free_thread(OSThread* osthread);
 
@@ -613,15 +661,18 @@ class os: AllStatic {
   // Maximum sleep time is just under 1 second.
   static void naked_short_sleep(jlong ms);
   static void naked_short_nanosleep(jlong ns);
+#ifndef SVM
   // Longer standalone OS sleep routine - a convenience wrapper around
   // multiple calls to naked_short_sleep. Only for use by non-JavaThreads.
   static void naked_sleep(jlong millis);
+#endif // !SVM
   // Never returns, use with CAUTION
   [[noreturn]] static void infinite_sleep();
   static void naked_yield () ;
   static OSReturn set_priority(Thread* thread, ThreadPriority priority);
   static OSReturn get_priority(const Thread* const thread, ThreadPriority& priority);
 
+#ifndef SVM
   static address    fetch_frame_from_context(const void* ucVoid, intptr_t** sp, intptr_t** fp);
   static frame      fetch_frame_from_context(const void* ucVoid);
   static frame      fetch_compiled_frame_from_context(const void* ucVoid);
@@ -647,6 +698,7 @@ class os: AllStatic {
 
   // Call ::exit() on all platforms
   [[noreturn]] static void exit(int num);
+#endif // !SVM
 
   // Call ::_exit() on all platforms. Similar semantics to die() except we never
   // want a core dump.
@@ -668,9 +720,12 @@ class os: AllStatic {
   [[noreturn]] static void die();
 
   // File i/o operations
+#ifndef SVM
   static int open(const char *path, int oflag, int mode);
   static FILE* fdopen(int fd, const char* mode);
+#endif // !SVM
   static FILE* fopen(const char* path, const char* mode);
+#ifndef SVM
   static int64_t ftell(FILE* file);
   static int fseek(FILE* file, int64_t offset, int whence);
   static jlong lseek(int fd, jlong offset, int whence);
@@ -686,9 +741,11 @@ class os: AllStatic {
   static char* native_path(char *path);
   static int ftruncate(int fd, jlong length);
   static int get_fileno(FILE* fp);
+#endif // !SVM
   static void flockfile(FILE* fp);
   static void funlockfile(FILE* fp);
 
+#ifndef SVM
   // A safe implementation of realpath which will not cause a buffer overflow if the resolved path
   // is longer than PATH_MAX.
   // On success, returns 'outbuf', which now contains the path.
@@ -703,9 +760,11 @@ class os: AllStatic {
   //File i/o operations
 
   static ssize_t read_at(int fd, void *buf, unsigned int nBytes, jlong offset);
+#endif // !SVM
   // Writes the bytes completely. Returns true on success, false otherwise.
   static bool write(int fd, const void *buf, size_t nBytes);
 
+#ifndef SVM
   // Reading directories.
   static DIR*           opendir(const char* dirname);
   static struct dirent* readdir(DIR* dirp);
@@ -801,6 +860,7 @@ class os: AllStatic {
 
   // Find agent entry point
   static void* find_agent_function(JvmtiAgent* agent_lib, bool check_lib, const char* sym);
+#endif // !SVM
 
   // Provide wrapper versions of these functions to guarantee NUL-termination
   // in all cases.
@@ -811,6 +871,7 @@ class os: AllStatic {
   // an encoding error) and that the output was not truncated.
   static int snprintf_checked(char* buf, size_t len, const char* fmt, ...) ATTRIBUTE_PRINTF(3, 4);
 
+#ifndef SVM
   // Get host name in buffer provided
   static bool get_host_name(char* buf, size_t buflen);
 
@@ -844,6 +905,7 @@ class os: AllStatic {
   static void print_dhm(outputStream* st, const char* startStr, long sec);
 
   static void print_location(outputStream* st, intptr_t x, bool verbose = false);
+#endif // !SVM
   static size_t lasterror(char *buf, size_t len);
   static int get_last_error();
 
@@ -866,6 +928,7 @@ class os: AllStatic {
   // Will not change the value of errno.
   static const char* errno_name(int e);
 
+#ifndef SVM
   // wait for a key press if PauseAtExit is set
   static void wait_for_keypress_at_exit(void);
 
@@ -923,6 +986,7 @@ class os: AllStatic {
   //   toSkip: number of stack frames to skip at the beginning.
   // Return: number of stack frames captured.
   static int get_native_stack(address* stack, int size, int toSkip = 0);
+#endif // !SVM
 
   // General allocation (must be MT-safe)
   static void* malloc  (size_t size, MemTag mem_tag, const NativeCallStack& stack);
@@ -936,6 +1000,7 @@ class os: AllStatic {
   // Like strdup, but exit VM when strdup() returns null
   static char* strdup_check_oom(const char*, MemTag mem_tag = mtInternal);
 
+#ifndef SVM
   // SocketInterface (ex HPI SocketInterface )
   static int socket_close(int fd);
   static ssize_t recv(int fd, char* buf, size_t nBytes, uint flags);
@@ -949,10 +1014,12 @@ class os: AllStatic {
   static int   signal_wait();
   static void  terminate_signal_thread();
   static int   sigexitnum_pd();
+#endif // !SVM
 
   // random number generation
   static int random();                     // return 32bit pseudorandom number
   static int next_random(unsigned int rand_seed); // pure version of random()
+#ifndef SVM
   static void init_random(unsigned int initval);    // initialize random sequence
 
   // Structured OS Exception support
@@ -979,26 +1046,32 @@ class os: AllStatic {
   //            - otherwise: very slow /proc fs - user+sys
   // On Windows - GetThreadTimes - user+sys
   static jlong current_thread_cpu_time();
+#endif // !SVM
   static jlong thread_cpu_time(Thread* t);
 
   // Thread CPU Time with user_sys_cpu_time parameter.
   //
   // If user_sys_cpu_time is true, user+sys time is returned.
   // Otherwise, only user time is returned
+#ifndef SVM
   static jlong current_thread_cpu_time(bool user_sys_cpu_time);
+#endif // !SVM
   static jlong thread_cpu_time(Thread* t, bool user_sys_cpu_time);
 
   // Return a bunch of info about the timers.
   // Note that the returned info for these two functions may be different
   // on some platforms
+#ifndef SVM
   static void current_thread_cpu_time_info(jvmtiTimerInfo *info_ptr);
   static void thread_cpu_time_info(jvmtiTimerInfo *info_ptr);
+#endif // !SVM
 
   static bool is_thread_cpu_time_supported();
 
   // System loadavg support.  Returns -1 if load average cannot be obtained.
   static int loadavg(double loadavg[], int nelem);
 
+#ifndef SVM
   // Amount beyond the callee frame size that we bang the stack.
   static int extra_bang_size_in_bytes();
 
@@ -1019,12 +1092,15 @@ class os: AllStatic {
 
   static void setup_fpu();
   static juint cpu_microcode_revision();
+#endif // !SVM
 
   static inline jlong rdtsc();
 
+#ifndef SVM
   // Used to register dynamic code cache area with the OS
   // Note: Currently only used in 64 bit Windows implementations
   inline static bool register_code_area(char *low, char *high);
+#endif // !SVM
 
   // Platform-specific code for interacting with individual OSes.
   // TODO: This is for compatibility only with current usage of os::Linux, etc.
@@ -1050,16 +1126,19 @@ class os: AllStatic {
 #endif
 
  public:
+#ifndef SVM
   inline static bool platform_print_native_stack(outputStream* st, const void* context,
                                                  char *buf, int buf_size, address& lastpc);
 
   // debugging support (mostly used by debug.cpp but also fatal error handler)
   static bool find(address pc, outputStream* st = tty); // OS specific function to make sense out of an address
+#endif // !SVM
 
   // Thread priority helpers (implemented in OS-specific part)
   static OSReturn set_native_priority(Thread* thread, int native_prio);
   static OSReturn get_native_priority(const Thread* const thread, int* priority_ptr);
   static int java_to_os_priority[CriticalPriority + 1];
+#ifndef SVM
   // Hint to the underlying OS that a task switch would not be good.
   // Void return because it's a hint and can fail.
   static const char* native_thread_creation_failed_msg() {
@@ -1081,12 +1160,14 @@ class os: AllStatic {
   // Enables write or execute access to writeable and executable pages.
   static void current_thread_enable_wx(WXMode mode);
 #endif // __APPLE__ && AARCH64
+#endif // !SVM
 
  protected:
   static volatile unsigned int _rand_seed;    // seed for random number generator
   static int _processor_count;                // number of processors
   static int _initial_active_processor_count; // number of active processors during initialization.
 
+#ifndef SVM
   static char* format_boot_path(const char* format_string,
                                 const char* home,
                                 int home_len,
@@ -1095,6 +1176,7 @@ class os: AllStatic {
   static bool set_boot_path(char fileSep, char pathSep);
 
   static bool pd_dll_unload(void* libhandle, char* ebuf, int ebuflen);
+#endif // !SVM
 };
 
 // Note that "PAUSE" is almost always used with synchronization
@@ -1102,6 +1184,7 @@ class os: AllStatic {
 // of the global SpinPause() with C linkage.
 // It'd also be eligible for inlining on many platforms.
 
+// NOTE (chaeubl): extern "C" is needed because this function is defined in assembly
 extern "C" int SpinPause();
 
 #endif // SHARE_RUNTIME_OS_HPP

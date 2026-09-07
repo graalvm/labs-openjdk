@@ -174,17 +174,21 @@ int LogFileStreamOutput::write_blocking(const LogDecorations& decorations, const
 }
 
 int LogFileStreamOutput::write(const LogDecorations& decorations, const char* msg) {
+#ifndef SVM
   if (AsyncLogWriter::enqueue(*this, decorations, msg)) {
     return 0;
   }
+#endif // !SVM
 
   return write_blocking(decorations, msg);
 }
 
 int LogFileStreamOutput::write(LogMessageBuffer::Iterator msg_iterator) {
+#ifndef SVM
   if (AsyncLogWriter::enqueue(*this, msg_iterator)) {
     return 0;
   }
+#endif // !SVM
 
   int written = 0;
   FileLocker flocker(_stream);

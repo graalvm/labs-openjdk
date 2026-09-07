@@ -56,6 +56,7 @@ class AlwaysClearPolicy : public ReferencePolicy {
   }
 };
 
+#ifndef SVM
 class LRUCurrentHeapPolicy : public ReferencePolicy {
  private:
   jlong _max_interval;
@@ -67,6 +68,7 @@ class LRUCurrentHeapPolicy : public ReferencePolicy {
   void setup();
   virtual bool should_clear_reference(oop p, jlong timestamp_clock);
 };
+#endif // !SVM
 
 class LRUMaxHeapPolicy : public ReferencePolicy {
  private:

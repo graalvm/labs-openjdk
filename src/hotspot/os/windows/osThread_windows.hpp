@@ -27,7 +27,6 @@
 
 #include "runtime/osThreadBase.hpp"
 #include "utilities/globalDefinitions.hpp"
-
 class OSThread : public OSThreadBase {
   friend class VMStructs;
 
@@ -38,8 +37,10 @@ class OSThread : public OSThreadBase {
 
   // Win32-specific thread information
   HANDLE _thread_handle;        // Win32 thread handle
+#ifndef SVM
   HANDLE _interrupt_event;      // Event signalled on thread interrupt for use by
                                 // Process.waitFor().
+#endif // !SVM
 
  public:
   OSThread();
@@ -52,14 +53,15 @@ class OSThread : public OSThreadBase {
   // be visible in the concrete class, not this which should be an abstract base class
   HANDLE thread_handle() const                     { return _thread_handle; }
   void set_thread_handle(HANDLE handle)            { _thread_handle = handle; }
+#ifndef SVM
   HANDLE interrupt_event() const                   { return _interrupt_event; }
   void set_interrupt_event(HANDLE interrupt_event) { _interrupt_event = interrupt_event; }
   // This is specialized on Windows to interact with the _interrupt_event.
   void set_interrupted(bool z);
+#endif // !SVM
 
   uintx thread_id_for_printing() const override {
     return (uintx)_thread_id;
   }
 };
-
 #endif // OS_WINDOWS_OSTHREAD_WINDOWS_HPP

@@ -45,6 +45,10 @@ constexpr JVMFlagLookup::JVMFlagLookup() : _buckets(), _table(), _hashes() {
             DO_FLAG,
             DO_FLAG,
             DO_FLAG,
+            IGNORE_FLAG,
+            IGNORE_FLAG,
+            IGNORE_FLAG,
+            IGNORE_FLAG,
             IGNORE_RANGE,
             IGNORE_CONSTRAINT)
 }

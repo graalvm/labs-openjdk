@@ -30,7 +30,6 @@
 
 #ifdef __APPLE__
 // OS X doesn't support unnamed POSIX semaphores, so the implementation in os_posix.cpp can't be used.
-
 static const char* sem_init_strerror(kern_return_t value) {
   switch (value) {
     case KERN_INVALID_ARGUMENT:  return "Invalid argument";

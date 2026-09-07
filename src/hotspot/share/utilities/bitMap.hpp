@@ -202,7 +202,9 @@ class BitMap {
 
   idx_t size() const          { return _size; }
   idx_t size_in_words() const { return calc_size_in_words(size()); }
+#ifndef SVM
   idx_t size_in_bytes() const { return size_in_words() * BytesPerWord; }
+#endif // !SVM
 
   bool at(idx_t index) const {
     verify_index(index);

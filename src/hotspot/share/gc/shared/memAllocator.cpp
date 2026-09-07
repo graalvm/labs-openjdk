@@ -88,6 +88,7 @@ public:
   oop obj() const { return *_obj_ptr; }
 };
 
+#ifndef SVM
 class MemAllocator::Allocation::PreserveObj: StackObj {
   HandleMark _handle_mark;
   Handle     _handle;
@@ -110,8 +111,13 @@ public:
     return _handle();
   }
 };
+#endif // !SVM
 
 bool MemAllocator::Allocation::check_out_of_memory() {
+#ifdef SVM
+  // NOTE (chaeubl): return null so that SVM can throw an OutOfMemoryError.
+  return obj() == nullptr;
+#else
   JavaThread* THREAD = _thread; // For exception macros.
   assert(!HAS_PENDING_EXCEPTION, "Unexpected exception, will result in uninitialized storage");
 
@@ -140,6 +146,7 @@ bool MemAllocator::Allocation::check_out_of_memory() {
   } else {
     THROW_OOP_(Universe::out_of_memory_error_java_heap_without_backtrace(), true);
   }
+#endif // !SVM
 }
 
 void MemAllocator::Allocation::verify_before() {
@@ -163,6 +170,7 @@ void MemAllocator::Allocation::check_for_valid_allocation_state() const {
 }
 #endif
 
+#ifndef SVM
 void MemAllocator::Allocation::notify_allocation_jvmti_sampler() {
   // support for JVMTI VMObjectAlloc event (no-op if not enabled)
   JvmtiExport::vm_object_alloc_event_collector(obj());
@@ -228,12 +236,15 @@ void MemAllocator::Allocation::notify_allocation_dtrace_sampler() {
     }
   }
 }
+#endif // !SVM
 
 void MemAllocator::Allocation::notify_allocation() {
+#ifndef SVM
   notify_allocation_low_memory_detector();
   notify_allocation_jfr_sampler();
   notify_allocation_dtrace_sampler();
   notify_allocation_jvmti_sampler();
+#endif // !SVM
 }
 
 HeapWord* MemAllocator::mem_allocate_outside_tlab(Allocation& allocation) const {
@@ -245,7 +256,9 @@ HeapWord* MemAllocator::mem_allocate_outside_tlab(Allocation& allocation) const 
 
   size_t size_in_bytes = _word_size * HeapWordSize;
   _thread->incr_allocated_bytes(size_in_bytes);
+#ifndef SVM
   _thread->heap_sampler().inc_outside_tlab_bytes(size_in_bytes);
+#endif // !SVM
 
   return mem;
 }
@@ -258,6 +271,7 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
   HeapWord* mem = nullptr;
   ThreadLocalAllocBuffer& tlab = _thread->tlab();
 
+#ifndef SVM
   if (JvmtiExport::should_post_sampled_object_alloc()) {
     // When sampling we artificially set the TLAB end to the sample point.
     // When we hit that point it looks like the TLAB is full, but it's
@@ -274,6 +288,7 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
       return mem;
     }
   }
+#endif // !SVM
 
   // Retain tlab and allocate object in shared space if
   // the amount free in the tlab is too large to discard.
@@ -379,6 +394,9 @@ void MemAllocator::mem_clear(HeapWord* mem) const {
 
 oop MemAllocator::finish(HeapWord* mem) const {
   assert(mem != nullptr, "null object pointer");
+#ifdef SVM
+  oopDesc::initialize_obj_header(mem, _klass);
+#else
   // Need a release store to ensure array/class length, mark word, and
   // object zeroing are visible before setting the klass non-null, for
   // concurrent collectors.
@@ -388,6 +406,7 @@ oop MemAllocator::finish(HeapWord* mem) const {
     oopDesc::set_mark(mem, markWord::prototype());
     oopDesc::release_set_klass(mem, _klass);
   }
+#endif // SVM
   return cast_to_oop(mem);
 }
 
@@ -412,8 +431,12 @@ oop ObjArrayAllocator::initialize(HeapWord* mem) const {
 
 #ifndef PRODUCT
 void ObjArrayAllocator::mem_zap_start_padding(HeapWord* mem) const {
+#ifdef SVM
+  const size_t base_offset_in_bytes =  ArrayKlass::cast(_klass)->base_offset_in_bytes();
+#else
   const BasicType element_type = ArrayKlass::cast(_klass)->element_type();
   const size_t base_offset_in_bytes = arrayOopDesc::base_offset_in_bytes(element_type);
+#endif // SVM
   const size_t header_size_in_bytes = arrayOopDesc::header_size_in_bytes();
 
   const address base = reinterpret_cast<address>(mem) + base_offset_in_bytes;
@@ -427,8 +450,12 @@ void ObjArrayAllocator::mem_zap_start_padding(HeapWord* mem) const {
 
 void ObjArrayAllocator::mem_zap_end_padding(HeapWord* mem) const {
   const size_t length_in_bytes = static_cast<size_t>(_length) << ArrayKlass::cast(_klass)->log2_element_size();
+#ifdef SVM
+  const size_t base_offset_in_bytes =  ArrayKlass::cast(_klass)->base_offset_in_bytes();
+#else
   const BasicType element_type = ArrayKlass::cast(_klass)->element_type();
   const size_t base_offset_in_bytes = arrayOopDesc::base_offset_in_bytes(element_type);
+#endif // SVM
   const size_t size_in_bytes = _word_size * BytesPerWord;
 
   const address obj_end = reinterpret_cast<address>(mem) + size_in_bytes;
@@ -442,6 +469,7 @@ void ObjArrayAllocator::mem_zap_end_padding(HeapWord* mem) const {
 }
 #endif
 
+#ifndef SVM
 oop ClassAllocator::initialize(HeapWord* mem) const {
   // Set oop_size field before setting the _klass field because a
   // non-null _klass field indicates that the object is parsable by
@@ -451,3 +479,31 @@ oop ClassAllocator::initialize(HeapWord* mem) const {
   java_lang_Class::set_oop_size(mem, _word_size);
   return finish(mem);
 }
+#endif // !SVM
+
+#ifdef SVM
+oop StackChunkAllocator::initialize(HeapWord* mem) const {
+  assert(_length >= 0, "length should be non-negative");
+
+  // There is no need to zero the memory (the array content won't be accessed as long as IP is 0).
+  arrayOopDesc::set_length(mem, _length);
+  jdk_internal_vm_StackChunk::set_ip(mem, 0);
+  
+  return finish(mem);
+}
+
+oop PodAllocator::initialize(HeapWord* mem) const {
+  assert(_length >= 0, "length should be non-negative");
+
+  mem_clear(mem);
+  arrayOopDesc::set_length(mem, _length);
+
+  // Copy the reference map into the pod.
+  assert(IsolateThread::current()->has_status_vm(), "prevent the GC from moving the reference map byte[]");
+  typeArrayOop reference_map = IsolateThread::current()->get_pod_reference_map();
+  void* ref_map_start = ((InstancePodKlass*)_klass)->reference_map_end((oop)mem) - reference_map->length();
+  memcpy(ref_map_start, reference_map->base(), reference_map->length());
+
+  return finish(mem);
+}
+#endif // SVM

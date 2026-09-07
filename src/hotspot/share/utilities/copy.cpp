@@ -53,6 +53,7 @@ void Copy::conjoint_memory_atomic(const void* from, void* to, size_t size) {
   }
 }
 
+#ifndef SVM
 class CopySwap : AllStatic {
 public:
   /**
@@ -256,3 +257,4 @@ void Copy::fill_to_memory_atomic(void* to, size_t size, jubyte value) {
 #endif
   }
 }
+#endif // !SVM

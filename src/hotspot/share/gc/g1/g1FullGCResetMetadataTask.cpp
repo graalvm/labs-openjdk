@@ -93,10 +93,10 @@ void G1FullGCResetMetadataTask::G1ResetMetadataClosure::reset_skip_compacting(G1
 
   if (hr->is_humongous()) {
     oop obj = cast_to_oop(hr->humongous_start_region()->bottom());
-    assert(hr->humongous_start_region()->has_pinned_objects() ||
+    assert(hr->humongous_start_region()->has_pinned_objects() || SVM_ONLY(hr->is_image_heap() ||)
            _collector->mark_bitmap()->is_marked(obj), "must be live");
   } else {
-    assert(hr->has_pinned_objects() || _collector->live_words(region_index) > _collector->scope()->region_compaction_threshold(),
+    assert(hr->has_pinned_objects() SVM_ONLY(|| hr->is_image_heap()) || _collector->live_words(region_index) > _collector->scope()->region_compaction_threshold(),
            "should be quite full or pinned %u", region_index);
   }
 

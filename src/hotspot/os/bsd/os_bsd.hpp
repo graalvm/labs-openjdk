@@ -28,7 +28,6 @@
 #include "runtime/os.hpp"
 
 // Bsd_OS defines the interface to Bsd operating systems
-
 class os::Bsd {
   friend class os;
 
@@ -65,7 +64,9 @@ class os::Bsd {
   static intptr_t* ucontext_get_sp(const ucontext_t* uc);
   static intptr_t* ucontext_get_fp(const ucontext_t* uc);
 
+#ifndef SVM
   static bool get_frame_at_stack_banging_point(JavaThread* thread, ucontext_t* uc, frame* fr);
+#endif // !SVM
 
   // Real-time clock functions
   static void clock_init(void);
@@ -116,7 +117,8 @@ class os::Bsd {
   }
   static int get_node_by_cpu(int cpu_id);
 
+#ifndef SVM
   static void print_uptime_info(outputStream* st);
+#endif // !SVM
 };
-
 #endif // OS_BSD_OS_BSD_HPP

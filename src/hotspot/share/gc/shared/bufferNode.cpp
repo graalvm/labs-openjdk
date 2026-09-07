@@ -50,9 +50,11 @@ BufferNode::Allocator::Allocator(const char* name, size_t buffer_capacity) :
   _free_list(name, &_config)
 {}
 
+#ifndef SVM
 size_t BufferNode::Allocator::free_count() const {
   return _free_list.free_count();
 }
+#endif // !SVM
 
 BufferNode* BufferNode::Allocator::allocate() {
   auto internal_capacity = static_cast<InternalSizeType>(buffer_capacity());

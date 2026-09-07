@@ -253,6 +253,7 @@ public:
 // misuse so we duplicate the ResourceMark functionality via a shared implementation
 // class.
 
+#ifndef SVM
 class DeoptResourceMark: public CHeapObj<mtInternal> {
   const ResourceMarkImpl _impl;
 
@@ -263,5 +264,6 @@ public:
 
   void reset_to_mark() { _impl.reset_to_mark(); }
 };
+#endif // !SVM
 
 #endif // SHARE_MEMORY_RESOURCEAREA_HPP

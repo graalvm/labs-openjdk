@@ -30,6 +30,13 @@
 CollectorCounters::CollectorCounters(const char* name, int ordinal) {
 
   if (UsePerfData) {
+#ifdef SVM
+    G1CollectorPerfData *data = G1PerfData::get()->collector(ordinal);
+    _invocations = data->invocations();
+    _time = data->time();
+    _last_entry_time = data->last_entry_time();
+    _last_exit_time = data->last_exit_time();
+#else
     EXCEPTION_MARK;
     ResourceMark rm;
 
@@ -58,13 +65,17 @@ CollectorCounters::CollectorCounters(const char* name, int ordinal) {
     _last_exit_time = PerfDataManager::create_variable(SUN_GC, cname,
                                                        PerfData::U_Ticks,
                                                        CHECK);
+#endif // SVM
   }
 }
 
 CollectorCounters::~CollectorCounters() {
+#ifndef SVM
   FREE_C_HEAP_ARRAY(char, _name_space);
+#endif // !SVM
 }
 
+#ifndef SVM
 TraceCollectorStats::TraceCollectorStats(CollectorCounters* c) :
     PerfTraceTimedEvent(c->time_counter(), c->invocation_counter()),
     _c(c) {
@@ -73,6 +84,7 @@ TraceCollectorStats::TraceCollectorStats(CollectorCounters* c) :
      _c->last_entry_counter()->set_value(os::elapsed_counter());
   }
 }
+#endif // !SVM
 
 TraceCollectorStats::~TraceCollectorStats() {
   if (UsePerfData) {

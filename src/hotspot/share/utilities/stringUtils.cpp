@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#ifndef SVM
 int StringUtils::replace_no_expand(char* string, const char* from, const char* to) {
   int replace_count = 0;
   size_t from_len = strlen(from);
@@ -122,11 +123,13 @@ bool StringUtils::is_star_match(const char* star_pattern, const char* str) {
   }
   return true; // all parts of pattern matched
 }
+#endif // !SVM
 
 StringUtils::CommaSeparatedStringIterator::~CommaSeparatedStringIterator() {
   FREE_C_HEAP_ARRAY(char, _list);
 }
 
+#ifndef SVM
 ccstrlist StringUtils::CommaSeparatedStringIterator::canonicalize(ccstrlist option_value) {
   char* canonicalized_list = NEW_C_HEAP_ARRAY(char, strlen(option_value) + 1, mtCompiler);
   int i = 0;
@@ -142,3 +145,4 @@ ccstrlist StringUtils::CommaSeparatedStringIterator::canonicalize(ccstrlist opti
   canonicalized_list[i] = '\0';
   return canonicalized_list;
 }
+#endif // !SVM

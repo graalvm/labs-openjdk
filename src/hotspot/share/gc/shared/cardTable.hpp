@@ -90,6 +90,10 @@ public:
 
   void initialize(void* region0_start, void* region1_start);
 
+#ifdef SVM
+  size_t byte_map_size() const { return _byte_map_size; }
+#endif // !SVM
+
   // *** Barrier set functions.
 
   // Initialization utilities; covered_words is the size of the covered region

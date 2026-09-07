@@ -38,8 +38,8 @@ class OopStorageSet : public AllStatic {
   friend class OopStorageSetTest;
 
   // Must be updated when new OopStorages are introduced
-  static const uint strong_count = 4 JVMTI_ONLY(+ 1);
-  static const uint weak_count = 8 JVMTI_ONLY(+ 1) JFR_ONLY(+ 1);
+  static const uint strong_count = SVM_ONLY(1) NOT_SVM(4) JVMTI_ONLY(+ 1);
+  static const uint weak_count = SVM_ONLY(1) NOT_SVM(8) JVMTI_ONLY(+ 1) JFR_ONLY(+ 1);
 
   static const uint all_count = strong_count + weak_count;
   static const uint all_start = 0;
@@ -90,8 +90,10 @@ public:
   template <typename Closure>
   static void strong_oops_do(Closure* cl);
 
+#ifndef SVM
   // Debugging: print location info, if in storage.
   static bool print_containing(const void* addr, outputStream* st);
+#endif // !SVM
 };
 
 ENUMERATOR_VALUE_RANGE(OopStorageSet::StrongId,

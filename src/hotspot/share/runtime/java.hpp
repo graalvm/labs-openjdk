@@ -35,28 +35,35 @@ class Symbol;
 // Execute code before all handles are released and thread is killed; prologue to vm_exit
 extern void before_exit(JavaThread * thread, bool halt = false);
 
+#ifndef SVM
 // Forced VM exit (i.e, internal error or JVM_Exit)
 extern void vm_exit(int code);
 
 // Wrapper for ::exit()
 extern void vm_direct_exit(int code);
 extern void vm_direct_exit(int code, const char* message);
+#endif // !SVM
 
 // Shutdown the VM but do not exit the process
 extern void vm_shutdown();
 // Shutdown the VM and abort the process
 extern void vm_abort(bool dump_core=true);
 
+#ifndef SVM
 // Trigger any necessary notification of the VM being shutdown
 extern void notify_vm_shutdown();
+#endif // !SVM
 
 // VM exit if error occurs during initialization of VM
 extern void vm_exit_during_initialization();
+#ifndef SVM
 extern void vm_exit_during_initialization(Handle exception);
 extern void vm_exit_during_initialization(Symbol* exception_name, const char* message);
+#endif // !SVM
 extern void vm_exit_during_initialization(const char* error, const char* message = nullptr);
 extern void vm_shutdown_during_initialization(const char* error, const char* message = nullptr);
 
+#ifndef SVM
 extern void vm_exit_during_cds_dumping(const char* error, const char* message = nullptr);
 
 // This is defined in linkType.cpp due to linking restraints
@@ -167,5 +174,6 @@ class JDK_Version {
   }
 
 };
+#endif // !SVM
 
 #endif // SHARE_RUNTIME_JAVA_HPP

@@ -53,8 +53,10 @@ inline void OrderAccess::fence() {
   FULL_MEM_BARRIER;
 }
 
+#ifndef SVM
 inline void OrderAccess::cross_modify_fence_impl() {
   asm volatile("isb" : : : "memory");
 }
+#endif // !SVM
 
 #endif // OS_CPU_LINUX_AARCH64_ORDERACCESS_LINUX_AARCH64_HPP

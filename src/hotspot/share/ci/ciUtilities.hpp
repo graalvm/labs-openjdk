@@ -32,6 +32,7 @@
 // The following routines and definitions are used internally in the
 // compiler interface.
 
+#ifndef SVM
 #define CURRENT_ENV                         \
   ciEnv::current()
 
@@ -44,16 +45,21 @@
 
 #define ASSERT_IN_VM                        \
   assert(IS_IN_VM, "must be in vm state");
+#endif // !SVM
 
 inline const char* bool_to_str(bool b) {
   return ((b) ? "true" : "false");
 }
 
+#ifndef SVM
 const char* basictype_to_str(BasicType t);
+#endif // !SVM
 
 CardTable::CardValue* ci_card_table_address();
+#ifndef SVM
 template <typename T> T ci_card_table_address_as() {
   return reinterpret_cast<T>(ci_card_table_address());
 }
+#endif // !SVM
 
 #endif // SHARE_CI_CIUTILITIES_HPP

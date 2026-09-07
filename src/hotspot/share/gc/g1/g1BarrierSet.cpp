@@ -50,9 +50,12 @@ class G1BarrierSetC1;
 class G1BarrierSetC2;
 
 G1BarrierSet::G1BarrierSet(G1CardTable* card_table) :
-  CardTableBarrierSet(make_barrier_set_assembler<G1BarrierSetAssembler>(),
+  CardTableBarrierSet(
+#ifndef SVM
+                      make_barrier_set_assembler<G1BarrierSetAssembler>(),
                       make_barrier_set_c1<G1BarrierSetC1>(),
                       make_barrier_set_c2<G1BarrierSetC2>(),
+#endif // !SVM
                       card_table,
                       BarrierSet::FakeRtti(BarrierSet::G1BarrierSet)),
   _satb_mark_queue_buffer_allocator("SATB Buffer Allocator", G1SATBBufferSize),
@@ -164,6 +167,13 @@ void G1BarrierSet::on_thread_detach(Thread* thread) {
   {
     SATBMarkQueue& queue = G1ThreadLocalData::satb_mark_queue(thread);
     G1BarrierSet::satb_mark_queue_set().flush_queue(queue);
+#ifdef SVM
+    // Explicitly disable SATB read/write barriers when detaching. Unlike on HotSpot,
+    // a detaching thread continues executing Java code. Note that the detaching thread
+    // may only access image heap objects but those accesses could still trigger
+    // barrier execution.
+    queue.set_active(false);
+#endif // SVM
   }
   {
     G1DirtyCardQueue& queue = G1ThreadLocalData::dirty_card_queue(thread);

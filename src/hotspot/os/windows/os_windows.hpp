@@ -28,7 +28,6 @@
 #include "runtime/os.hpp"
 
 // Win32_OS defines the interface to windows operating systems
-
 class outputStream;
 class Thread;
 
@@ -43,7 +42,9 @@ class os::win32 {
   static physical_memory_size_type _physical_memory;
   static bool                      _is_windows_server;
   static bool                      _has_exit_bug;
+#ifndef SVM
   static bool                      _processor_group_warning_displayed;
+#endif // !SVM
   static bool                      _job_object_processor_group_warning_displayed;
 
   static int                       _major_version;
@@ -51,6 +52,7 @@ class os::win32 {
   static int                       _build_number;
   static int                       _build_minor;
 
+#ifndef SVM
   static void print_windows_version(outputStream* st);
   static void print_uptime_info(outputStream* st);
 
@@ -58,6 +60,7 @@ class os::win32 {
                                           char *buf, int buf_size, address& lastpc);
 
   static bool register_code_area(char *low, char *high);
+#endif // !SVM
 
  public:
   // Windows-specific interface:
@@ -65,8 +68,10 @@ class os::win32 {
   static void   setmode_streams();
   static bool   is_windows_11_or_greater();
   static bool   is_windows_server_2022_or_greater();
+#ifndef SVM
   static bool   request_lock_memory_privilege();
   static size_t large_page_init_decide_size();
+#endif // !SVM
   static int windows_major_version() {
     assert(_major_version > 0, "windows version not initialized.");
     return _major_version;
@@ -84,12 +89,14 @@ class os::win32 {
     return _build_minor;
   }
 
+#ifndef SVM
   static void set_processor_group_warning_displayed(bool displayed)  {
     _processor_group_warning_displayed = displayed;
   }
   static bool processor_group_warning_displayed() {
     return _processor_group_warning_displayed;
   }
+#endif // !SVM
   static void set_job_object_processor_group_warning_displayed(bool displayed)  {
     _job_object_processor_group_warning_displayed = displayed;
   }
@@ -106,8 +113,10 @@ class os::win32 {
   static bool free_memory(physical_memory_size_type& value);
   static physical_memory_size_type physical_memory() { return _physical_memory; }
 
+#ifndef SVM
   // load dll from Windows system directory or Windows directory
   static HINSTANCE load_Windows_dll(const char* name, char *ebuf, int ebuflen);
+#endif
 
  private:
 
@@ -118,12 +127,15 @@ class os::win32 {
  public:
   // Generic interface:
 
+#ifndef SVM
   // Tells whether this is a server version of Windows
   static bool is_windows_server() { return _is_windows_server; }
+#endif // !SVM
 
   // Tells whether there can be the race bug during process exit on this platform
   static bool has_exit_bug() { return _has_exit_bug; }
 
+#ifndef SVM
   // Read the headers for the executable that started the current process into
   // the structure passed in (see winnt.h).
   static void read_executable_headers(PIMAGE_NT_HEADERS);
@@ -131,6 +143,7 @@ class os::win32 {
   static bool get_frame_at_stack_banging_point(JavaThread* thread,
                           struct _EXCEPTION_POINTERS* exceptionInfo,
                           address pc, frame* fr);
+#endif // !SVM
 
   struct mapping_info_t {
     // Start of allocation (AllocationBase)
@@ -148,8 +161,9 @@ class os::win32 {
 
 public:
   // signal support
+#ifndef SVM
   static void* install_signal_handler(int sig, signal_handler_t handler);
   static void* user_handler();
+#endif // !SVM
 };
-
 #endif // OS_WINDOWS_OS_WINDOWS_HPP

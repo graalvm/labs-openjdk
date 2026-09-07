@@ -86,10 +86,12 @@ inline int log2i_ceil(T value) {
   return log2i_graceful(value - 1) + 1;
 }
 
+#ifndef SVM
 // Preconditions: value != 0, and the unsigned representation of value is a power of two
 inline int exact_log2(intptr_t value) {
   return log2i_exact((uintptr_t)value);
 }
+#endif // !SVM
 
 // Preconditions: value != 0, and the unsigned representation of value is a power of two
 inline int exact_log2_long(jlong value) {

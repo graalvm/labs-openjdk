@@ -39,6 +39,7 @@ TableRateStatistics::TableRateStatistics() :
 
 TableRateStatistics::~TableRateStatistics() { };
 
+#ifndef SVM
 void TableRateStatistics::add() {
 #if INCLUDE_JFR
   if (Jfr::is_recording()) {
@@ -127,9 +128,11 @@ TableStatistics::TableStatistics(TableRateStatistics& rate_stats,
   }
 #endif
 }
+#endif // !SVM
 
 TableStatistics::~TableStatistics() { }
 
+#ifndef SVM
 void TableStatistics::print(outputStream* st, const char *table_name) {
   st->print_cr("%s statistics:", table_name);
   st->print_cr("Number of buckets       : %9" PRIuPTR " = %9" PRIuPTR
@@ -150,4 +153,5 @@ void TableStatistics::print(outputStream* st, const char *table_name) {
   st->print_cr("Std. dev. of bucket size: %9.3f", _stddev_of_bucket_size);
   st->print_cr("Maximum bucket size     : %9" PRIuPTR, _maximum_bucket_size);
 }
+#endif // !SVM
 

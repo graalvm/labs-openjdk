@@ -40,6 +40,7 @@
 namespace AccessInternal {
 // These forward copying calls to Copy without exposing the Copy type in headers unnecessarily
 
+#ifndef SVM
   void arraycopy_arrayof_conjoint_oops(void* src, void* dst, size_t length) {
     Copy::arrayof_conjoint_oops(reinterpret_cast<HeapWord*>(src),
                                 reinterpret_cast<HeapWord*>(dst), length);
@@ -62,6 +63,7 @@ namespace AccessInternal {
     Copy::disjoint_words_atomic(reinterpret_cast<HeapWord*>(src),
                                 reinterpret_cast<HeapWord*>(dst), length);
   }
+#endif // !SVM
 
   template<> HIDDEN
   void arraycopy_conjoint<jboolean>(jboolean* src, jboolean* dst, size_t length) {
@@ -165,6 +167,7 @@ namespace AccessInternal {
 
 #ifdef ASSERT
   void check_access_thread_state() {
+#ifndef SVM
     if (VMError::is_error_reported() || DebuggingContext::is_enabled()) {
       return;
     }
@@ -178,6 +181,7 @@ namespace AccessInternal {
     JavaThreadState state = java_thread->thread_state();
     assert(state == _thread_in_vm || state == _thread_in_Java || state == _thread_new,
            "Wrong thread state for accesses: %d", (int)state);
+#endif // !SVM
   }
 #endif
 }

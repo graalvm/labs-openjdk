@@ -36,10 +36,12 @@ G1SATBMarkQueueSet::G1SATBMarkQueueSet(BufferNode::Allocator* allocator) :
   SATBMarkQueueSet(allocator)
 {}
 
+#ifndef SVM
 void G1SATBMarkQueueSet::handle_zero_index_for_thread(Thread* t) {
   G1SATBMarkQueueSet& qset = G1BarrierSet::satb_mark_queue_set();
   qset.handle_zero_index(qset.satb_queue_for_thread(t));
 }
+#endif // !SVM
 
 SATBMarkQueue& G1SATBMarkQueueSet::satb_queue_for_thread(Thread* const t) const {
   return G1ThreadLocalData::satb_mark_queue(t);
@@ -88,6 +90,12 @@ static inline bool requires_marking(const void* entry, G1CollectedHeap* g1h) {
   if (cm->obj_allocated_since_mark_start(cast_to_oop(entry))) {
     return false;
   }
+#ifdef SVM
+  else if (SVMImageHeap::is_in_image_heap((HeapWord*)entry)) {
+    // image heap regions are never marked.
+    return false;
+  }
+#endif // SVM
 
   assert(oopDesc::is_oop(cast_to_oop(entry), true /* ignore mark word */),
          "Invalid oop in SATB buffer: " PTR_FORMAT, p2i(entry));

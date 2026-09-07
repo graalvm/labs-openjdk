@@ -33,6 +33,7 @@
 #include "utilities/checkedCast.hpp"
 #include "utilities/growableArray.hpp"
 
+#ifndef SVM
 // Interface for generating the frame map for compiled code.  A frame map
 // describes for a specific pc whether each register and frame stack slot is:
 //   Oop         - A GC root for current frame
@@ -48,10 +49,12 @@ class RegisterMap;
 class OopClosure;
 class CodeBlob;
 class ImmutableOopMap;
+#endif // !SVM
 
 enum class derived_base : intptr_t {};
 enum class derived_pointer : intptr_t {};
 
+#ifndef SVM
 class OopMapValue: public StackObj {
   friend class VMStructs;
 private:
@@ -471,6 +474,7 @@ private:
   template <typename RegisterMapT>
   void iterate_oops_do(const frame *fr, const RegisterMapT *reg_map, const ImmutableOopMap* oopmap);
 };
+#endif // !SVM
 
 // Derived pointer support. This table keeps track of all derived points on a
 // stack.  It is cleared before each scavenge/GC.  During the traversal of all

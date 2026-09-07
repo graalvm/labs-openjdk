@@ -47,6 +47,8 @@ bool G1FullGCPrepareTask::G1CalculatePointersClosure::do_heap_region(G1HeapRegio
   assert(_collector->is_compaction_target(region_idx), "must be");
 
   assert(!hr->is_humongous(), "must be");
+  assert_svm_only(!hr->is_image_heap(), "image heap regions are not compacted");
+  assert_svm_only(!hr->has_pinned_objects(), "regions with pinned objects are not compacted");
 
   prepare_for_compaction(hr);
 

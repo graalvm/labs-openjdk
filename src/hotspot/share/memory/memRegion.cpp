@@ -41,6 +41,7 @@ MemRegion MemRegion::intersection(const MemRegion mr2) const {
   return res;
 }
 
+#ifndef SVM
 MemRegion MemRegion::_union(const MemRegion mr2) const {
   // If one region is empty, return the other
   if (is_empty()) return mr2;
@@ -100,6 +101,7 @@ MemRegion MemRegion::minus(const MemRegion mr2) const {
   ShouldNotReachHere();
   return MemRegion();
 }
+#endif // !SVM
 
 MemRegion* MemRegion::create_array(size_t length, MemTag mem_tag) {
   MemRegion* result = NEW_C_HEAP_ARRAY(MemRegion, length, mem_tag);

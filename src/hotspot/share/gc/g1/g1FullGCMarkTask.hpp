@@ -42,4 +42,16 @@ public:
   void work(uint worker_id);
 };
 
+#ifdef SVM
+// NOTE (chaeubl): similar to G1FullGCMarkTask
+class G1FullGCMarkCodeCacheTask : public G1FullGCTask {
+  NMethodMarkScope         _mark_scope;
+  TaskTerminator           _terminator;
+
+public:
+  G1FullGCMarkCodeCacheTask(G1FullCollector* collector);
+  void work(uint worker_id);
+};
+#endif // SVM
+
 #endif // SHARE_GC_G1_G1FULLGCMARKTASK_HPP

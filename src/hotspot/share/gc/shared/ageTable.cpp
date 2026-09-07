@@ -43,6 +43,12 @@ AgeTable::AgeTable(bool global) : _use_perf_data(UsePerfData && global) {
 
   if (_use_perf_data) {
 
+#ifdef SVM
+    G1AgeTablePerfData *data = G1PerfData::get()->age_table();
+    for(int age = 0; age < table_size; age++) {
+      _perf_sizes[age] = data->entry(age);
+    }
+#else
     ResourceMark rm;
     EXCEPTION_MARK;
 
@@ -61,6 +67,7 @@ AgeTable::AgeTable(bool global) : _use_perf_data(UsePerfData && global) {
     const char* cname = PerfDataManager::counter_name(agetable_ns, "size");
     PerfDataManager::create_constant(SUN_GC, cname, PerfData::U_None,
                                      table_size, CHECK);
+#endif // SVM
   }
 }
 
@@ -71,12 +78,14 @@ void AgeTable::clear() {
 }
 
 #ifndef PRODUCT
+#ifndef SVM
 bool AgeTable::is_clear() const {
   for (const size_t* p = sizes; p < sizes + table_size; ++p) {
     if (*p != 0) return false;
   }
   return true;
 }
+#endif // !SVM
 #endif // !PRODUCT
 
 void AgeTable::merge(const AgeTable* subTable) {

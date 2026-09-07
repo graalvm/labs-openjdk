@@ -47,6 +47,14 @@ G1BlockOffsetTable::G1BlockOffsetTable(MemRegion heap, G1RegionToSpaceMapper* st
                      p2i(bot_reserved.start()), bot_reserved.byte_size(), p2i(bot_reserved.end()));
 }
 
+#ifdef SVM
+G1BlockOffsetTable::G1BlockOffsetTable(MemRegion heap, const uint8_t* bot_entries) :
+  _reserved(heap),
+  _offset_base(const_cast<uint8_t*>(bot_entries) - (uintptr_t(_reserved.start()) >> CardTable::card_shift())) {
+  guarantee(bot_entries != nullptr, "prebuilt block offset table must be present");
+}
+#endif // SVM
+
 void G1BlockOffsetTable::set_offset_array(uint8_t* addr, uint8_t offset) {
   check_address(addr, "Block offset table address out of range");
   Atomic::store(addr, offset);
