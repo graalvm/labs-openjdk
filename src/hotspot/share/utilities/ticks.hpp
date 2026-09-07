@@ -30,6 +30,9 @@
 #include "utilities/macros.hpp"
 
 // Time sources
+
+namespace svm_gc {
+
 class ElapsedCounterSource {
  public:
   typedef jlong Type;
@@ -250,5 +253,8 @@ typedef TimeInterval<CompositeCounterRepresentation, CompositeElapsedCounterSour
 typedef TimeInstant<CounterRepresentation, ElapsedCounterSource> Ticks;
 typedef TimeInterval<CounterRepresentation, ElapsedCounterSource> Tickspan;
 #endif
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_TICKS_HPP

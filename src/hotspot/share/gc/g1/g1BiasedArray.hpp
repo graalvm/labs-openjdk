@@ -33,6 +33,9 @@
 // Implements the common base functionality for arrays that contain provisions
 // for accessing its elements using a biased index.
 // The element type is defined by the instantiating the template.
+
+namespace svm_gc {
+
 class G1BiasedMappedArrayBase : public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -182,5 +185,8 @@ public:
     clear();
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1BIASEDARRAY_HPP

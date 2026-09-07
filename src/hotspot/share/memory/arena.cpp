@@ -40,6 +40,9 @@
 // It is used very early in the vm initialization, in allocation
 // code and other areas.  For many calls, the current thread has not
 // been created so we cannot use Mutex.
+
+namespace svm_gc {
+
 static PlatformMutex* GlobalChunkPoolMutex = nullptr;
 
 void Arena::initialize_chunk_pool() {
@@ -412,3 +415,6 @@ bool Arena::contains( const void *ptr ) const {
   return false;                 // Not in any Chunk, so not in Arena
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

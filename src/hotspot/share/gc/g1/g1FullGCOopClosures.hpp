@@ -28,6 +28,9 @@
 #include "gc/shared/verifyOption.hpp"
 #include "memory/iterator.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 class G1FullCollector;
 class G1CMBitMap;
@@ -93,5 +96,8 @@ public:
   G1FollowStackClosure(G1FullGCMarker* marker) : _marker(marker) {}
   virtual void do_void();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCOOPCLOSURES_HPP

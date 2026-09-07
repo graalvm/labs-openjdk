@@ -190,6 +190,9 @@
  *   }
  * }
  */
+
+namespace svm_gc {
+
 class PerfData {
 };
 
@@ -405,5 +408,8 @@ class G1PerfData {
   G1AgeTablePerfData* age_table();
   G1CpuTimePerfData* cpu_time();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_PERFDATA_HPP

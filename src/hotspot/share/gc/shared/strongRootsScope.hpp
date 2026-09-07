@@ -27,6 +27,9 @@
 
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 class MarkScope : public StackObj {
  protected:
   MarkScope();
@@ -50,5 +53,8 @@ class StrongRootsScope : public MarkScope {
 
   uint n_threads() const { return _n_threads; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_STRONGROOTSSCOPE_HPP

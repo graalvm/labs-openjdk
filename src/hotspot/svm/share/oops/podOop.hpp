@@ -34,11 +34,17 @@
 
 // NOTE (chaeubl): see SVM class Pod (this file doesn't exist on HotSpot).
 
+
+namespace svm_gc {
+
 class podOopDesc : public arrayOopDesc {
 public:
   static inline podOop cast(oop obj);
 
   inline unsigned char* reference_map_end();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_PODOOP_HPP

@@ -29,6 +29,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class G1UncommitRegionTask : public G1ServiceTask {
   // Each execution of the uncommit task is limited to uncommit at most 128M.
   // This limit is small enough to ensure that the duration of each invocation
@@ -65,5 +68,8 @@ public:
   static void enqueue();
   virtual void execute();
 };
+
+
+} // namespace svm_gc
 
 #endif

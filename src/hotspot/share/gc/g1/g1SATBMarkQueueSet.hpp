@@ -28,6 +28,9 @@
 #include "gc/shared/bufferNode.hpp"
 #include "gc/shared/satbMarkQueue.hpp"
 
+
+namespace svm_gc {
+
 class Monitor;
 class Thread;
 
@@ -39,5 +42,8 @@ public:
   virtual SATBMarkQueue& satb_queue_for_thread(Thread* const t) const;
   virtual void filter(SATBMarkQueue& queue);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1SATBMARKQUEUESET_HPP

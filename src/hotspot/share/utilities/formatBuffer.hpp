@@ -31,6 +31,9 @@
 #include <stdarg.h>
 
 // Simple class to format the ctor arguments into a fixed-sized buffer.
+
+namespace svm_gc {
+
 class FormatBufferBase {
  protected:
   char* _buf;
@@ -116,5 +119,8 @@ void FormatBuffer<bufsz>::append(const char* format, ...) {
 
 // Used to format messages.
 typedef FormatBuffer<> err_msg;
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_FORMATBUFFER_HPP

@@ -65,6 +65,9 @@
 // GC cause.
 // The code relies on the fact that GCTraceTimeWrapper stores the string passed
 // initially as a reference only, so that we can modify it as needed.
+
+namespace svm_gc {
+
 class G1YoungGCTraceTime {
   G1YoungCollector* _collector;
 
@@ -1157,3 +1160,6 @@ void G1YoungCollector::collect() {
   }
   TASKQUEUE_STATS_ONLY(_g1h->task_queues()->print_and_reset_taskqueue_stats("Oop Queue");)
 }
+
+} // namespace svm_gc
+

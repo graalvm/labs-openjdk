@@ -32,6 +32,9 @@
 #include "gc/shared/weakProcessor.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 
 class G1FullGCAdjustTask : public G1FullGCTask {
@@ -44,5 +47,8 @@ public:
   G1FullGCAdjustTask(G1FullCollector* collector);
   void work(uint worker_id);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCADJUSTTASK_HPP

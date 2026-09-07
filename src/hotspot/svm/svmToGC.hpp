@@ -43,6 +43,9 @@
   #define EXPORT_FOR_SVM
 #endif
 
+
+namespace svm_gc {
+
 class InstanceStackChunkKlass;
 class InstancePodKlass;
 class nmethod;
@@ -160,5 +163,8 @@ extern "C" {
 
   EXPORT_FOR_SVM size_t svm_g1gc_get_used_memory_after_last_gc();
 }
+
+
+} // namespace svm_gc
 
 #endif // SVM_TO_GC_HPP

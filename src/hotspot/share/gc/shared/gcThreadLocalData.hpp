@@ -42,9 +42,21 @@
 
 #ifdef SVM
 #if INCLUDE_G1GC
+
+namespace svm_gc {
+
 typedef uint64_t GCThreadLocalData[8]; // 64 bytes
+
+} // namespace svm_gc
+
 #endif // INCLUDE_G1GC
 #else
+
+namespace svm_gc {
+
 typedef uint64_t GCThreadLocalData[43]; // 344 bytes
+
+} // namespace svm_gc
+
 #endif // SVM
 #endif // SHARE_GC_SHARED_GCTHREADLOCALDATA_HPP

@@ -31,6 +31,9 @@
 #define hrt_assert_is_valid(tag) \
   assert(is_valid((tag)), "invalid HR type: %u", (uint) (tag))
 
+
+namespace svm_gc {
+
 class G1HeapRegionType {
 friend class VMStructs;
 
@@ -186,5 +189,8 @@ public:
   static const G1HeapRegionType Old;
   static const G1HeapRegionType Humongous;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONTYPE_HPP

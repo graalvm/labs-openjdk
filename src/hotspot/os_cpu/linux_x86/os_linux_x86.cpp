@@ -95,6 +95,9 @@
 #endif // AMD64
 
 #ifndef SVM
+
+namespace svm_gc {
+
 address os::current_stack_pointer() {
   return (address)__builtin_frame_address(0);
 }
@@ -206,11 +209,17 @@ frame os::current_frame() {
     return os::get_sender_for_C_frame(&myframe);
   }
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 // Utility functions
 
 // From IA32 System Programming Guide
+
+namespace svm_gc {
+
 enum {
   trap_page_fault = 0xE
 };
@@ -719,3 +728,6 @@ int os::extra_bang_size_in_bytes() {
   return VM_Version::L1_line_size();
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

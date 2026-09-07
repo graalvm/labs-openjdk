@@ -42,6 +42,9 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 HeapWord* G1HeapRegionRemSet::_heap_base_address = nullptr;
 
 const char* G1HeapRegionRemSet::_state_strings[] =  {"Untracked", "Updating", "Complete"};
@@ -149,3 +152,6 @@ void G1HeapRegionRemSet::clean_code_roots(G1HeapRegion* hr) {
 size_t G1HeapRegionRemSet::code_roots_mem_size() {
   return _code_roots.mem_size();
 }
+
+} // namespace svm_gc
+

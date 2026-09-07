@@ -28,6 +28,9 @@
 #include "memory/allStatic.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 class GCWhen : AllStatic {
  public:
   enum Type {
@@ -44,5 +47,8 @@ class GCWhen : AllStatic {
     }
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCWHEN_HPP

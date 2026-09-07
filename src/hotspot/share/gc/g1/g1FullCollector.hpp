@@ -39,6 +39,9 @@
 #include "memory/allocation.hpp"
 #include "oops/oopsHierarchy.hpp"
 
+
+namespace svm_gc {
+
 class WorkerTask;
 class G1CMBitMap;
 class G1FullGCMarker;
@@ -171,5 +174,8 @@ private:
   void run_task(WorkerTask* task);
 };
 
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLCOLLECTOR_HPP

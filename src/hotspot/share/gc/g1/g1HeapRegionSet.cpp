@@ -27,6 +27,9 @@
 #include "gc/g1/g1HeapRegionSet.inline.hpp"
 #include "gc/g1/g1NUMA.hpp"
 
+
+namespace svm_gc {
+
 uint G1FreeRegionList::_unrealistically_long_length = 0;
 
 #ifndef PRODUCT
@@ -398,3 +401,6 @@ void G1FreeRegionList::NodeInfo::add(NodeInfo* info) {
     _length_of_node[i] += info->_length_of_node[i];
   }
 }
+
+} // namespace svm_gc
+

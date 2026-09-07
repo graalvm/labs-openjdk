@@ -29,6 +29,9 @@
 
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 inline G1RegionMarkStatsCache::G1RegionMarkStatsCacheEntry* G1RegionMarkStatsCache::find_for_add(uint region_idx) {
   uint const cache_idx = hash(region_idx);
 
@@ -56,5 +59,8 @@ inline void G1RegionMarkStatsCache::evict(uint idx) {
 
   cur->clear();
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1REGIONMARKSTATSCACHE_INLINE_HPP

@@ -43,6 +43,9 @@
 #include "runtime/prefetch.inline.hpp"
 #include "utilities/align.hpp"
 
+
+namespace svm_gc {
+
 template <class T>
 inline void G1ScanClosureBase::prefetch_and_push(T* p, const oop obj) {
   // We're not going to even bother checking whether the object is
@@ -302,5 +305,8 @@ template <class T> void G1RebuildRemSetClosure::do_oop_work(T* p) {
     }
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1OOPCLOSURES_INLINE_HPP

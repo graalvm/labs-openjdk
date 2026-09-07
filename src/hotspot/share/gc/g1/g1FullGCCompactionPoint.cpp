@@ -30,6 +30,9 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 G1FullGCCompactionPoint::G1FullGCCompactionPoint(G1FullCollector* collector, PreservedMarks* preserved_stack) :
     _collector(collector),
     _current_region(nullptr),
@@ -219,3 +222,6 @@ uint G1FullGCCompactionPoint::find_contiguous_before(G1HeapRegion* hr, uint num_
   // Return the index of the first region in the range of contiguous regions.
   return range_end - contiguous_region_count;
 }
+
+} // namespace svm_gc
+

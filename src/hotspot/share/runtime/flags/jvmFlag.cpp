@@ -35,6 +35,9 @@
 #include "utilities/stringUtils.hpp"
 #ifndef SVM
 
+
+namespace svm_gc {
+
 static bool is_product_build() {
 #ifdef PRODUCT
   return true;
@@ -43,7 +46,13 @@ static bool is_product_build() {
 #endif
 }
 
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 void JVMFlag::set_origin(JVMFlagOrigin new_origin) {
   int old_flags = _flags;
@@ -785,3 +794,6 @@ void JVMFlag::printError(bool verbose, const char* msg, ...) {
     va_end(listPointer);
   }
 }
+
+} // namespace svm_gc
+

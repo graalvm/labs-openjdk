@@ -27,6 +27,9 @@
 
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 
 // Record collection counters for later use when deciding whether a GC has
@@ -47,5 +50,8 @@ public:
   uint total_full_collections() const { return _total_full_collections; }
   uint old_marking_cycles_started() const { return _old_marking_cycles_started; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1GCCOUNTERS_HPP

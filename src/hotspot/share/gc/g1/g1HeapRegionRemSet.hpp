@@ -35,6 +35,9 @@
 #include "runtime/safepoint.hpp"
 #include "utilities/bitMap.hpp"
 
+
+namespace svm_gc {
+
 class G1CardSetMemoryManager;
 class G1CSetCandidateGroup;
 class outputStream;
@@ -225,5 +228,8 @@ public:
   static void test();
 #endif
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONREMSET_HPP

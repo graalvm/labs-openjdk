@@ -28,6 +28,9 @@
 #include "utilities/numberSeq.hpp"
 
 // Utility class containing various helper methods for prediction.
+
+namespace svm_gc {
+
 class G1Predictions {
 private:
   // Scale factor indicating to which degree stddev should be taking into account in predictions.
@@ -65,5 +68,8 @@ public:
     return MAX2(predict(seq), 0.0);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1PREDICTIONS_HPP

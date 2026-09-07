@@ -28,6 +28,9 @@
 #include "runtime/nonJavaThread.hpp"
 #include "runtime/safepoint.hpp"
 
+
+namespace svm_gc {
+
 uint GCId::_next_id = 0;
 GCIdPrinter GCId::_default_printer;
 GCIdPrinter* GCId::_printer = &_default_printer;
@@ -101,3 +104,6 @@ GCIdMark::GCIdMark(uint gc_id) : _previous_gc_id(currentNamedthread()->gc_id()) 
 GCIdMark::~GCIdMark() {
   currentNamedthread()->set_gc_id(_previous_gc_id);
 }
+
+} // namespace svm_gc
+

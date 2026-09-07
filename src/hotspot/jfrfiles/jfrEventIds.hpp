@@ -29,6 +29,9 @@
 #include "utilities/macros.hpp"
 #if INCLUDE_JFR
 
+
+namespace svm_gc {
+
 enum JfrEventId {
   JfrMetadataEvent = 0,
   JfrCheckpointEvent = 1,
@@ -209,5 +212,8 @@ static const JfrEventId FIRST_EVENT_ID = JfrDurationEvent;
 static const JfrEventId LAST_EVENT_ID = JfrMethodTimingEvent;
 static const int NUMBER_OF_EVENTS = 170;
 static const int NUMBER_OF_RESERVED_EVENTS = 2;
+
+} // namespace svm_gc
+
 #endif // INCLUDE_JFR
 #endif // JFRFILES_JFREVENTIDS_HPP

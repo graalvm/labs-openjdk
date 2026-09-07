@@ -33,6 +33,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/sizes.hpp"
 
+
+namespace svm_gc {
+
 class G1ThreadLocalData {
 private:
   SATBMarkQueue _satb_mark_queue;
@@ -102,5 +105,8 @@ public:
     return data(thread)->_pin_cache;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1THREADLOCALDATA_HPP

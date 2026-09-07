@@ -36,6 +36,9 @@
   _buckets[bucket_index] = (short)flag_enum;     \
 }
 
+
+namespace svm_gc {
+
 constexpr JVMFlagLookup::JVMFlagLookup() : _buckets(), _table(), _hashes() {
   for (int i = 0; i < NUM_BUCKETS; i++) {
     _buckets[i] = -1;
@@ -78,3 +81,6 @@ JVMFlag* JVMFlagLookup::find_impl(const char* name, size_t length) const {
 JVMFlag* JVMFlagLookup::find(const char* name, size_t length) {
   return _flag_lookup_table.find_impl(name, length);
 }
+
+} // namespace svm_gc
+

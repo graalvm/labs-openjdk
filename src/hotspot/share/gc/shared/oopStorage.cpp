@@ -48,6 +48,9 @@
 #include "utilities/population_count.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 OopStorage::AllocationListEntry::AllocationListEntry() : _prev(nullptr), _next(nullptr) {}
 
 OopStorage::AllocationListEntry::~AllocationListEntry() {
@@ -1235,3 +1238,6 @@ void OopStorage::print_on(outputStream* st) const {
 #endif // !SVM
 
 #endif // !PRODUCT
+
+} // namespace svm_gc
+

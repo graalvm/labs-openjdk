@@ -47,6 +47,9 @@
   assert(IS_IN_VM, "must be in vm state");
 #endif // !SVM
 
+
+namespace svm_gc {
+
 inline const char* bool_to_str(bool b) {
   return ((b) ? "true" : "false");
 }
@@ -61,5 +64,8 @@ template <typename T> T ci_card_table_address_as() {
   return reinterpret_cast<T>(ci_card_table_address());
 }
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CI_CIUTILITIES_HPP

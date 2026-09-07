@@ -28,6 +28,9 @@
 #include "memory/allStatic.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 class GCCause : public AllStatic {
  public:
   enum Cause {
@@ -90,5 +93,8 @@ class GCCause : public AllStatic {
   // Return a string describing the GCCause.
   static const char* to_string(GCCause::Cause cause);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCCAUSE_HPP

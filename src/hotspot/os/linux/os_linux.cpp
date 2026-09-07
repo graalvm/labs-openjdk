@@ -140,6 +140,9 @@
 #ifdef MUSL_LIBC
 // dlvsym is not a part of POSIX
 // and musl libc doesn't implement it.
+
+namespace svm_gc {
+
 static void *dlvsym(void *handle,
                     const char *symbol,
                     const char *version) {
@@ -147,19 +150,31 @@ static void *dlvsym(void *handle,
    return dlsym(handle, symbol);
 }
 
+
+} // namespace svm_gc
+
 #endif
 
 #ifndef SVM
+
+namespace svm_gc {
+
 enum CoredumpFilterBit {
   FILE_BACKED_PVT_BIT = 1 << 2,
   FILE_BACKED_SHARED_BIT = 1 << 3,
   LARGEPAGES_BIT = 1 << 6,
   DAX_SHARED_BIT = 1 << 8
 };
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 ////////////////////////////////////////////////////////////////////////////////
 // global variables
+
+namespace svm_gc {
+
 physical_memory_size_type os::Linux::_physical_memory = 0;
 
 #ifndef SVM
@@ -5690,3 +5705,6 @@ bool os::pd_dll_unload(void* libhandle, char* ebuf, int ebuflen) {
 } // end: os::pd_dll_unload()
 
 #endif // !SVM
+
+} // namespace svm_gc
+

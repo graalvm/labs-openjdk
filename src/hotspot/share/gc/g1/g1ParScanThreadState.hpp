@@ -40,6 +40,9 @@
 #include "oops/oop.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class G1CardTable;
 class G1CollectionSet;
 class G1EvacFailureRegions;
@@ -280,5 +283,8 @@ class G1ParScanThreadStateSet : public StackObj {
 
   const size_t* surviving_young_words() const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1PARSCANTHREADSTATE_HPP

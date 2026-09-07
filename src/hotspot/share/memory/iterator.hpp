@@ -30,8 +30,17 @@
 #include "oops/oopsHierarchy.hpp"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 class CodeBlob;
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+namespace svm_gc {
+
 class nmethod;
 class ReferenceDiscoverer;
 class DataLayout;
@@ -343,5 +352,8 @@ class OopIteratorClosureDispatch {
   template <typename OopClosureType> static void oop_oop_iterate(OopClosureType* cl, oop obj, Klass* klass, MemRegion mr);
   template <typename OopClosureType> static void oop_oop_iterate_backwards(OopClosureType* cl, oop obj, Klass* klass);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_ITERATOR_HPP

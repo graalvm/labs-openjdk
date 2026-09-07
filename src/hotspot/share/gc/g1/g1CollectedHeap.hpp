@@ -68,6 +68,9 @@
 // heap subsets that will yield large amounts of garbage.
 
 // Forward declarations
+
+namespace svm_gc {
+
 class G1Allocator;
 class G1BatchedTask;
 class G1CardTableEntryClosure;
@@ -1396,5 +1399,8 @@ public:
   G1JFRTracerMark(STWGCTimer* timer, GCTracer* tracer);
   ~G1JFRTracerMark();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COLLECTEDHEAP_HPP

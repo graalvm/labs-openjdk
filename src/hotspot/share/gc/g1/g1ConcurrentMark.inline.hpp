@@ -43,6 +43,9 @@
 #include "svmImageHeap.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 inline bool G1CMIsAliveClosure::do_object_b(oop obj) {
   // Check whether the passed in object is null. During discovery the referent
   // may be cleared between the initial check and being passed in here.
@@ -320,5 +323,8 @@ inline bool G1ConcurrentMark::do_yield_check() {
     return false;
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTMARK_INLINE_HPP

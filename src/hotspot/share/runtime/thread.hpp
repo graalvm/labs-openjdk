@@ -48,6 +48,9 @@
 #include "exports/sharedGCStructs.h"
 #endif // SVM
 
+
+namespace svm_gc {
+
 class CompilerThread;
 class HandleArea;
 class HandleMark;
@@ -736,5 +739,8 @@ inline Thread* Thread::current_or_null_safe() {
   }
   return nullptr;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_THREAD_HPP

@@ -29,10 +29,16 @@
 #include "oops/oop.hpp"
 #include "oops/oopsHierarchy.hpp"
 // NOTE (chaeubl): an empty HandleMark implementation as the HandleMark is sometimes used in code, even though we don't use any handles.
+
+namespace svm_gc {
+
 class HandleMark {
  public:
   HandleMark(Thread* thread) {}
   ~HandleMark() {}
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_HANDLES_HPP

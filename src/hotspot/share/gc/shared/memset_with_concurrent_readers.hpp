@@ -32,8 +32,14 @@
 
 // Fill a block of memory with value, like memset, but with the
 // understanding that there may be concurrent readers of that memory.
+
+namespace svm_gc {
+
 inline void memset_with_concurrent_readers(void* to, int value, size_t size) {
   ::memset(to, value, size);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MEMSET_WITH_CONCURRENT_READERS_HPP

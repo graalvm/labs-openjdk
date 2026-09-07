@@ -44,6 +44,9 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 inline bool G1FullGCMarker::mark_object(oop obj) {
   // Try to mark.
   if (SVM_ONLY(SVMImageHeap::is_image_heap_object(obj) ||) !_bitmap->par_mark(obj)) {
@@ -167,5 +170,8 @@ void G1FullGCMarker::follow_marking_stacks() {
     }
   } while (!is_empty());
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCMARKER_INLINE_HPP

@@ -33,6 +33,9 @@
 // for normal acquire release accesses. And all generalized
 // bound calls like release_store go through Atomic::load
 // and Atomic::store which do volatile memory accesses.
+
+namespace svm_gc {
+
 template<> inline void ScopedFence<X_ACQUIRE>::postfix()       { }
 template<> inline void ScopedFence<RELEASE_X>::prefix()        { }
 template<> inline void ScopedFence<RELEASE_X_FENCE>::prefix()  { }
@@ -109,4 +112,7 @@ DEFINE_INTRINSIC_CMPXCHG(InterlockedCompareExchange,   long)
 DEFINE_INTRINSIC_CMPXCHG(InterlockedCompareExchange64, __int64)
 
 #undef DEFINE_INTRINSIC_CMPXCHG
+
+} // namespace svm_gc
+
 #endif // OS_CPU_WINDOWS_X86_ATOMIC_WINDOWS_X86_HPP

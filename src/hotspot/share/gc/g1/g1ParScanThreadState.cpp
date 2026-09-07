@@ -56,6 +56,9 @@
 // Explicit NOINLINE to block ATTRIBUTE_FLATTENing.
 #define MAYBE_INLINE_EVACUATION NOT_DEBUG(inline) DEBUG_ONLY(NOINLINE)
 
+
+namespace svm_gc {
+
 G1ParScanThreadState::G1ParScanThreadState(G1CollectedHeap* g1h,
                                            G1RedirtyCardsQueueSet* rdcqs,
                                            uint worker_id,
@@ -751,3 +754,6 @@ void G1ParScanThreadStateSet::print_partial_array_task_stats() {
 }
 
 #endif // TASKQUEUE_STATS
+
+} // namespace svm_gc
+

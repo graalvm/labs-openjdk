@@ -39,6 +39,9 @@
 #include "memory/iterator.inline.hpp"
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 class G1AdjustLiveClosure : public StackObj {
   G1AdjustClosure* _adjust_closure;
 public:
@@ -131,3 +134,6 @@ void G1FullGCAdjustTask::work(uint worker_id) {
   G1CollectedHeap::heap()->heap_region_par_iterate_from_worker_offset(&blk, &_hrclaimer, worker_id);
   log_task("Adjust task", worker_id, start);
 }
+
+} // namespace svm_gc
+

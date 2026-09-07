@@ -24,6 +24,9 @@
 #include "logging/logDecorators.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 const LogLevelType AnyLevel = LogLevelType::NotMentioned;
 
 template <LogDecorators::Decorator d>
@@ -124,3 +127,6 @@ bool LogDecorators::has_disabled_default_decorators(const LogSelection& selectio
   return false;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

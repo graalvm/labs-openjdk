@@ -59,6 +59,9 @@
 // we need to scan objects to rebuild remembered sets until tars.
 // Regions might have been reclaimed while scrubbing them after having yielded for
 // a pause.
+
+namespace svm_gc {
+
 class G1RebuildRSAndScrubTask : public WorkerTask {
   G1ConcurrentMark* _cm;
   G1HeapRegionClaimer _hr_claimer;
@@ -314,3 +317,6 @@ void G1ConcurrentRebuildAndScrub::rebuild_and_scrub(G1ConcurrentMark* cm, bool s
   G1RebuildRSAndScrubTask task(cm, should_rebuild_remset, num_workers);
   workers->run_task(&task, num_workers);
 }
+
+} // namespace svm_gc
+

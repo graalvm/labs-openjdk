@@ -26,6 +26,9 @@
 #include "utilities/ostream.hpp"
 #include "utilities/reverse_bits.hpp"
 
+
+namespace svm_gc {
+
 inline jlong CompressedStream::decode_sign(jlong value) {
   return ((julong)value >> 1) ^ -(value & 1);
 }
@@ -33,3 +36,6 @@ inline jlong CompressedStream::decode_sign(jlong value) {
 jlong CompressedReadStream::read_signed_int() {
   return decode_sign(read_int());
 }
+
+} // namespace svm_gc
+

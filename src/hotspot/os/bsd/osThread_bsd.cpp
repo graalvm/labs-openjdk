@@ -27,6 +27,9 @@
 #include "runtime/osThread.hpp"
 
 #include <signal.h>
+
+namespace svm_gc {
+
 OSThread::OSThread()
   : _thread_id(
 #ifdef __APPLE__
@@ -72,3 +75,6 @@ void OSThread::set_unique_thread_id() {
 OSThread::~OSThread() {
   delete _startThread_lock;
 }
+
+} // namespace svm_gc
+

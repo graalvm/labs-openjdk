@@ -40,6 +40,9 @@
 #include "utilities/compilerWarnings.hpp"
 #include "utilities/numberSeq.hpp"
 
+
+namespace svm_gc {
+
 class ConcurrentGCTimer;
 class G1CollectedHeap;
 class G1ConcurrentMark;
@@ -1000,4 +1003,7 @@ public:
   virtual bool do_heap_region(G1HeapRegion* r);
   ~G1PrintRegionLivenessInfoClosure();
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_G1_G1CONCURRENTMARK_HPP

@@ -37,6 +37,9 @@
 #define ARENA_AMALLOC_ALIGNMENT BytesPerLong
 #define ARENA_ALIGN(x) (align_up((x), ARENA_AMALLOC_ALIGNMENT))
 
+
+namespace svm_gc {
+
 class ChunkPoolLocker : public StackObj {
  public:
   ChunkPoolLocker();
@@ -248,5 +251,8 @@ private:
 
 #define NEW_ARENA_OBJ(arena, type) \
   NEW_ARENA_ARRAY(arena, type, 1)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_ARENA_HPP

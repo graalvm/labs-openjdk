@@ -59,6 +59,9 @@
 // Having a fence does not have any significant impact on peformance, as this is an internal VM
 // mutex and is generally not in hot code paths.
 
+
+namespace svm_gc {
+
 class Mutex : public CHeapObj<mtSynchronizer> {
 
   friend class VMStructs;
@@ -290,5 +293,8 @@ class RecursiveMutex : public CHeapObj<mtThread> {
   bool holds_lock(Thread* current) { return _owner == current; }
 };
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_MUTEX_HPP

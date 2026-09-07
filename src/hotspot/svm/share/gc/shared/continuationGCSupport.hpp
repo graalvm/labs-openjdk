@@ -28,6 +28,9 @@
 #include "memory/allStatic.hpp"
 #include "oops/oopsHierarchy.hpp"
 
+
+namespace svm_gc {
+
 class ContinuationGCSupport : public AllStatic {
 public:
   // Relativize and transform to use a bitmap for future oop iteration for the
@@ -48,5 +51,8 @@ public:
     // before execution can continue in the continuation.
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_CONTINUATIONGCSUPPORT_HPP

@@ -34,6 +34,9 @@
 #include "svmGlobalData.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 class outputStream;
 class ReservedHeapSpace;
 
@@ -75,5 +78,8 @@ public:
   template<typename T>
   static inline narrowOop narrow_oop_cast(T i);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_COMPRESSEDOOPS_HPP

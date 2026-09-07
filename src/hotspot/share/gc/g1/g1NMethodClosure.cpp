@@ -33,6 +33,9 @@
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
 
+
+namespace svm_gc {
+
 template <typename T>
 void G1NMethodClosure::HeapRegionGatheringOopClosure::do_oop_work(T* p) {
   _work->do_oop(p);
@@ -141,3 +144,6 @@ void G1NMethodClosure::do_nmethod(nmethod* nm) {
     nm->oops_do_process_weak(&cl);
   }
 }
+
+} // namespace svm_gc
+

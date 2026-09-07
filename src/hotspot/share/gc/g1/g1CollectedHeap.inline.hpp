@@ -45,6 +45,9 @@
 #include "runtime/threadSMR.inline.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+namespace svm_gc {
+
 inline bool G1STWIsAliveClosure::do_object_b(oop p) {
   // An object is reachable if it is outside the collection set,
   // or is inside and copied.
@@ -360,5 +363,8 @@ inline bool G1CollectedHeap::is_collection_set_candidate(const G1HeapRegion* r) 
   const G1CollectionSetCandidates* candidates = collection_set()->candidates();
   return candidates->contains(r);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COLLECTEDHEAP_INLINE_HPP

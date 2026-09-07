@@ -39,6 +39,9 @@
 #include "utilities/enumIterator.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 constexpr const char* G1GCPhaseTimes::GCMergeRSWorkItemsStrings[];
 
 G1GCPhaseTimes::G1GCPhaseTimes(STWGCTimer* gc_timer, uint max_gc_threads) :
@@ -656,3 +659,6 @@ G1EvacPhaseTimesTracker::~G1EvacPhaseTimesTracker() {
     _phase_times->record_or_add_time_secs(G1GCPhaseTimes::ObjCopy, _worker_id, _trim_time.seconds());
   }
 }
+
+} // namespace svm_gc
+

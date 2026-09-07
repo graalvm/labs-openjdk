@@ -47,6 +47,9 @@
  * The assert message contains both the index (zero based) as well as the name of the field.
  */
 
+
+namespace svm_gc {
+
 struct JfrStructVirtualSpace
 {
  private:
@@ -14450,7 +14453,13 @@ class JfrNonReentrant : public EventType {
 }; 
 
 
+
+} // namespace svm_gc
+
 #else // !INCLUDE_JFR
+
+
+namespace svm_gc {
 
 template <typename T>
 class JfrEvent {
@@ -19704,6 +19713,9 @@ class JfrNonReentrant : public EventType {
   {}
 }; 
 
+
+
+} // namespace svm_gc
 
 #endif // INCLUDE_JFR
 #endif // JFRFILES_JFREVENTCLASSES_HPP

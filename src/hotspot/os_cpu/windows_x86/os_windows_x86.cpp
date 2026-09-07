@@ -61,6 +61,9 @@
 #define REG_BCP R13
 #ifndef SVM
 
+
+namespace svm_gc {
+
 JNIEXPORT
 extern LONG WINAPI topLevelExceptionFilter(_EXCEPTION_POINTERS* );
 
@@ -474,7 +477,13 @@ void os::print_register_info(outputStream *st, const void *context, int& continu
   }
 }
 
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 extern "C" int SpinPause () {
    return 0 ;
@@ -517,3 +526,6 @@ int os::extra_bang_size_in_bytes() {
   return VM_Version::L1_line_size();
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

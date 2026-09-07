@@ -31,6 +31,9 @@
 #include "memory/allocation.inline.hpp"
 #include "memory/iterator.hpp"
 
+
+namespace svm_gc {
+
 template <typename T>
 inline void G1OopStarChunkedList::push(ChunkedList<T*, mtGC>** field, T* p) {
   ChunkedList<T*, mtGC>* list = *field;
@@ -84,5 +87,8 @@ size_t G1OopStarChunkedList::chunks_do(ChunkedList<T*, mtGC>* head, OopClosure* 
   }
   return result;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1OOPSTARCHUNKEDLIST_INLINE_HPP

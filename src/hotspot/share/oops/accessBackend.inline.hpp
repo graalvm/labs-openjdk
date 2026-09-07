@@ -36,6 +36,9 @@
 
 #include <type_traits>
 
+
+namespace svm_gc {
+
 template <DecoratorSet decorators>
 template <DecoratorSet idecorators, typename T>
 inline typename EnableIf<
@@ -330,5 +333,8 @@ inline void RawAccessBarrier<decorators>::clone(oop src, oop dst, size_t size) {
   // Clear the header
   dst->init_mark();
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ACCESSBACKEND_INLINE_HPP

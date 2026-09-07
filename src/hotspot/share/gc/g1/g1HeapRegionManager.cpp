@@ -39,6 +39,9 @@
 #include "runtime/orderAccess.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+namespace svm_gc {
+
 class G1MasterFreeRegionListChecker : public G1HeapRegionSetChecker {
 public:
   void check_mt_safety() {
@@ -862,3 +865,6 @@ void G1HeapRegionManager::rebuild_free_list(WorkerThreads* workers) {
   }
   G1CollectedHeap::heap()->phase_times()->record_serial_rebuild_freelist_time_ms((Ticks::now() - serial_time).seconds() * 1000.0);
 }
+
+} // namespace svm_gc
+

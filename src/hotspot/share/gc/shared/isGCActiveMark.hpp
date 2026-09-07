@@ -30,10 +30,16 @@
 // This class provides a method for block structured setting of the
 // _is_stw_gc_active state without requiring accessors in CollectedHeap
 
+
+namespace svm_gc {
+
 class IsSTWGCActiveMark : public StackObj {
  public:
   IsSTWGCActiveMark();
   ~IsSTWGCActiveMark();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_ISGCACTIVEMARK_HPP

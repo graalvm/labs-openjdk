@@ -31,6 +31,9 @@
 
 // A generic mark bitmap for concurrent marking.  This is essentially a wrapper
 // around the BitMap class that is based on HeapWords, with one bit per (1 << _shifter) HeapWords.
+
+namespace svm_gc {
+
 class MarkBitMap {
 protected:
   MemRegion _covered;    // The heap area covered by this bitmap.
@@ -99,5 +102,8 @@ public:
   void clear_range(MemRegion mr)       { do_clear(mr, false);      }
   void clear_range_large(MemRegion mr) { do_clear(mr, true);       }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MARKBITMAP_HPP

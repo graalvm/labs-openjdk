@@ -40,6 +40,9 @@
 #include "runtime/globals_extension.hpp"
 #include "runtime/java.hpp"
 
+
+namespace svm_gc {
+
 static size_t calculate_heap_alignment(size_t space_alignment) {
   size_t card_table_alignment = CardTable::ct_max_alignment_constraint();
   size_t page_size = NOT_SVM(UseLargePages ? os::large_page_size() :) os::vm_page_size();
@@ -262,3 +265,6 @@ CollectedHeap* G1Arguments::create_heap() {
 size_t G1Arguments::heap_reserved_size_bytes() {
   return MaxHeapSize;
 }
+
+} // namespace svm_gc
+

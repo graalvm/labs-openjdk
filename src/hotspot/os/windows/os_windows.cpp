@@ -114,6 +114,9 @@
 #define IMAGE_FILE_PTR_TO_SIGNATURE 0x3c
 #define IMAGE_FILE_SIGNATURE_LENGTH 4
 
+
+namespace svm_gc {
+
 static HANDLE main_process;
 static HANDLE main_thread;
 static int    main_thread_id;
@@ -6394,3 +6397,6 @@ const void* os::get_saved_assert_context(const void** sigInfo) {
   return nullptr;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

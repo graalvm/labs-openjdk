@@ -29,6 +29,9 @@
 #include "utilities/globalDefinitions.hpp"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 typedef enum {
   NoDetectedVirtualization,
   XenHVM,
@@ -41,7 +44,13 @@ typedef enum {
   PowerFullPartitionMode, // on Linux ppc64(le)
   PowerKVM
 } VirtualizationType;
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 class outputStream;
 enum class vmIntrinsicID;
@@ -237,5 +246,8 @@ class Abstract_VM_Version: AllStatic {
   static const char* cpu_description(void);
 #endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_ABSTRACT_VM_VERSION_HPP

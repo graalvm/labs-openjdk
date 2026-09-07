@@ -24,6 +24,9 @@
 
 #include "gc/g1/g1OopStarChunkedList.inline.hpp"
 
+
+namespace svm_gc {
+
 G1OopStarChunkedList::~G1OopStarChunkedList() {
   delete_list(_roots);
   delete_list(_croots);
@@ -39,3 +42,6 @@ size_t G1OopStarChunkedList::oops_do(OopClosure* obj_cl, OopClosure* root_cl) {
   result += chunks_do(_coops, obj_cl);
   return result;
 }
+
+} // namespace svm_gc
+

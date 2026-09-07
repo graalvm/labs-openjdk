@@ -29,6 +29,9 @@
 
 #include "gc/g1/g1NUMA.hpp"
 
+
+namespace svm_gc {
+
 inline void G1HeapRegionSetBase::add(G1HeapRegion* hr) {
   check_mt_safety();
   assert_heap_region_set(hr->containing_set() == nullptr, "should not already have a containing set");
@@ -270,5 +273,8 @@ inline uint G1FreeRegionList::length(uint node_index) const {
     return 0;
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONSET_INLINE_HPP

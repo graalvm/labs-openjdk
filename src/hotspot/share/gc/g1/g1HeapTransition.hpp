@@ -28,6 +28,9 @@
 #include "gc/shared/plab.hpp"
 #include "memory/metaspaceStats.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 
 class G1HeapTransition {
@@ -60,5 +63,8 @@ public:
 
   void print();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPTRANSITION_HPP

@@ -77,6 +77,9 @@
 #include <limits>
 
 #ifndef SVM
+
+namespace svm_gc {
+
 static const char _default_java_launcher[] = "generic";
 
 #define DEFAULT_JAVA_LAUNCHER _default_java_launcher
@@ -226,11 +229,17 @@ SystemProperty::SystemProperty(const char* key, const char* value, bool writeabl
   _internal = internal;
   _writeable = writeable;
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 // Check if head of 'option' matches 'name', and sets 'tail' to the remaining
 // part of the option string.
 #ifdef SVM
+
+namespace svm_gc {
+
 static bool match_option(const char* arg, const char* name,
                          const char** tail) {
   size_t name_length = strlen(name);
@@ -256,9 +265,15 @@ static bool match_option(const char* arg, const char* name,
   }
   return false;
 }
+
+} // namespace svm_gc
+
 #endif // SVM
 
 #ifndef SVM
+
+namespace svm_gc {
+
 static bool match_option(const JavaVMOption *option, const char* name,
                          const char** tail) {
   size_t len = strlen(name);
@@ -800,7 +815,13 @@ void Arguments::describe_range_error(ArgsRange errcode) {
     ShouldNotReachHere();
   }
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 static bool set_bool_flag(JVMFlag* flag, bool value, JVMFlagOrigin origin) {
   if (JVMFlagAccess::set_bool(flag, &value, origin) == JVMFlag::SUCCESS) {
@@ -4422,3 +4443,6 @@ bool Arguments::copy_expand_pid(const char* src, size_t srclen,
   return (p == src_end); // return false if not all of the source was copied
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

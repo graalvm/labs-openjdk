@@ -35,6 +35,9 @@
 // OS X doesn't support unnamed POSIX semaphores, so the implementation in os_posix.cpp can't be used.
 # include "memory/allocation.hpp"
 # include <mach/semaphore.h>
+
+namespace svm_gc {
+
 class OSXSemaphore : public CHeapObj<mtInternal>{
   semaphore_t _semaphore;
 
@@ -55,6 +58,9 @@ class OSXSemaphore : public CHeapObj<mtInternal>{
 };
 
 typedef OSXSemaphore SemaphoreImpl;
+
+} // namespace svm_gc
+
 #endif // __APPLE__
 
 #endif // OS_BSD_SEMAPHORE_BSD_HPP

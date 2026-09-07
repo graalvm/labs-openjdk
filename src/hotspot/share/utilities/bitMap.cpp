@@ -30,6 +30,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/population_count.hpp"
 
+
+namespace svm_gc {
+
 using bm_word_t = BitMap::bm_word_t;
 using idx_t = BitMap::idx_t;
 
@@ -740,3 +743,6 @@ void BitMap::print_on(outputStream* st) const {
 template class GrowableBitMap<ArenaBitMap>;
 template class GrowableBitMap<ResourceBitMap>;
 template class GrowableBitMap<CHeapBitMap>;
+
+} // namespace svm_gc
+

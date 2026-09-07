@@ -47,8 +47,17 @@
 // infrastructure common to all heaps.
 
 #ifndef SVM
+
+namespace svm_gc {
+
 class GCHeapLog;
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+namespace svm_gc {
+
 class GCHeapSummary;
 class GCMemoryManager;
 #ifndef SVM
@@ -557,5 +566,8 @@ class GCCauseSetter : StackObj {
     _heap->set_gc_cause(_previous_cause);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_COLLECTEDHEAP_HPP

@@ -46,6 +46,9 @@
 #include "gc/g1/c2/g1BarrierSetC2.hpp"
 #endif
 
+
+namespace svm_gc {
+
 class G1BarrierSetC1;
 class G1BarrierSetC2;
 
@@ -186,3 +189,6 @@ void G1BarrierSet::on_thread_detach(Thread* thread) {
     cache.flush();
   }
 }
+
+} // namespace svm_gc
+

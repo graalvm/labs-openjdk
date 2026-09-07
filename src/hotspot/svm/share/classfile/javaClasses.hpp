@@ -34,6 +34,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/utf8.hpp"
 #include "utilities/vmEnums.hpp"
+
+namespace svm_gc {
+
 class java_lang_String: AllStatic {
  public:
 
@@ -117,5 +120,8 @@ class java_lang_ref_SoftReference: public java_lang_ref_Reference {
   static jlong clock();
   static void set_clock(jlong value);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CLASSFILE_JAVACLASSES_HPP

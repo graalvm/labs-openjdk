@@ -26,8 +26,14 @@
 #include "memory/memRegion.hpp"
 #include "runtime/globals_extension.hpp"
 
+
+namespace svm_gc {
+
 void FullGCForwarding::initialize_flags(size_t max_heap_size) {
 }
 
 void FullGCForwarding::initialize(MemRegion heap) {
 }
+
+} // namespace svm_gc
+

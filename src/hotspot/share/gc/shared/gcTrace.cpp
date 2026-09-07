@@ -36,6 +36,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 bool GCTracer::should_report_cpu_time_event() const {
   return should_send_cpu_time_event();
 }
@@ -193,3 +196,6 @@ void ParallelOldTracer::report_dense_prefix(void* dense_prefix) {
 void OldGCTracer::report_concurrent_mode_failure() {
   send_concurrent_mode_failure_event();
 }
+
+} // namespace svm_gc
+

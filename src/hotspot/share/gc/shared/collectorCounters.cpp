@@ -27,6 +27,9 @@
 #include "memory/resourceArea.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 CollectorCounters::CollectorCounters(const char* name, int ordinal) {
 
   if (UsePerfData) {
@@ -91,3 +94,6 @@ TraceCollectorStats::~TraceCollectorStats() {
     _c->last_exit_counter()->set_value(os::elapsed_counter());
   }
 }
+
+} // namespace svm_gc
+

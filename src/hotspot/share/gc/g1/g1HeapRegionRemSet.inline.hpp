@@ -33,6 +33,9 @@
 #include "runtime/atomic.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+namespace svm_gc {
+
 void G1HeapRegionRemSet::set_state_untracked() {
   guarantee(SafepointSynchronize::is_at_safepoint() || !is_tracked(),
             "Should only set to Untracked during safepoint but is %s.", get_state_str());
@@ -151,5 +154,8 @@ bool G1HeapRegionRemSet::contains_reference(OopOrNarrowOopStar from) {
 void G1HeapRegionRemSet::print_info(outputStream* st, OopOrNarrowOopStar from) {
   card_set()->print_info(st, to_card(from));
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_VM_GC_G1_G1HEAPREGIONREMSET_INLINE_HPP

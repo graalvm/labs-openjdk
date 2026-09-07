@@ -28,6 +28,9 @@
 #include "memory/allocation.hpp"
 #include "memory/iterator.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 class G1ParScanThreadState;
 
@@ -55,5 +58,8 @@ public:
                                                         G1ParScanThreadState* pss,
                                                         bool process_only_dirty_klasses);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ROOTCLOSURES_HPP

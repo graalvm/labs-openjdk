@@ -32,6 +32,9 @@
 #include "utilities/globalCounter.inline.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 inline void* G1CardSetAllocator::allocate() {
   void* slot = _free_slots_list.allocate();
   assert(slot != nullptr, "must be");
@@ -50,5 +53,8 @@ inline uint8_t* G1CardSetMemoryManager::allocate_node() {
 inline void G1CardSetMemoryManager::free_node(void* value) {
   free(0, value);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CARDSETMEMORY_INLINE_HPP

@@ -74,6 +74,9 @@
 //   closure - The closure to call
 //   p       - The oop (or narrowOop) field to pass to the closure
 
+
+namespace svm_gc {
+
 template <typename T, typename Receiver, typename Base, typename OopClosureType>
 static typename EnableIf<std::is_same<Receiver, Base>::value, void>::type
 call_do_oop(void (Receiver::*)(T*), void (Base::*)(T*), OopClosureType* closure, T* p) {
@@ -176,6 +179,9 @@ inline void Devirtualizer::do_derived_oop(DerivedOopClosureType* closure, derive
   call_do_derived_oop(&DerivedOopClosureType::do_derived_oop, &DerivedOopClosure::do_derived_oop, closure, base, derived);
 }
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_DEVIRTUALIZER_INLINE_HPP
 

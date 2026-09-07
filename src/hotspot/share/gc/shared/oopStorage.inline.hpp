@@ -39,6 +39,9 @@
 
 // Array of all active blocks.  Refcounted for lock-free reclaim of
 // old array when a new array is allocated for expansion.
+
+namespace svm_gc {
+
 class OopStorage::ActiveArray {
   friend class OopStorage::TestAccess;
 
@@ -413,5 +416,8 @@ template<typename IsAliveClosure, typename Closure>
 inline void OopStorage::weak_oops_do(IsAliveClosure* is_alive, Closure* cl) {
   iterate_safepoint(if_alive_fn(is_alive, oop_fn(cl)));
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGE_INLINE_HPP

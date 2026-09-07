@@ -176,6 +176,12 @@
 
 // end of CDS_FLAGS
 
+
+namespace svm_gc {
+
 DECLARE_FLAGS(CDS_FLAGS)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CDS_CDS_GLOBALS_HPP

@@ -29,6 +29,9 @@
 #include "runtime/os.hpp"
 #include "runtime/timer.hpp"
 
+
+namespace svm_gc {
+
 G1SentinelTask::G1SentinelTask() : G1ServiceTask("Sentinel Task") {
   set_time(max_jlong);
   set_next(this);
@@ -255,3 +258,6 @@ void G1ServiceTaskQueue::verify_task_queue() {
   }
 }
 #endif
+
+} // namespace svm_gc
+

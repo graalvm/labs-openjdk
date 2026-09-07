@@ -29,6 +29,9 @@
 #include "gc/g1/g1RemSetTrackingPolicy.hpp"
 #include "runtime/safepoint.hpp"
 
+
+namespace svm_gc {
+
 void G1RemSetTrackingPolicy::update_at_allocate(G1HeapRegion* r) {
   assert_svm_only(!r->is_image_heap(), "must not be called for image heap regions");
   assert(r->is_young() || r->is_humongous() || r->is_old(),
@@ -150,3 +153,6 @@ void G1RemSetTrackingPolicy::update_after_rebuild(G1HeapRegion* r) {
                                     remset_bytes);
   }
 }
+
+} // namespace svm_gc
+

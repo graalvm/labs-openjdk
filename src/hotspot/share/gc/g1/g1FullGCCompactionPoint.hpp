@@ -30,6 +30,9 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/pair.hpp"
 
+
+namespace svm_gc {
+
 class G1FullCollector;
 class G1HeapRegion;
 class PreservedMarks;
@@ -76,5 +79,8 @@ public:
     _preserved_stack = preserved_stack;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCCOMPACTIONPOINT_HPP

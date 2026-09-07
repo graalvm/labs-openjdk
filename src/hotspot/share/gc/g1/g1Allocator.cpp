@@ -37,6 +37,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "utilities/align.hpp"
 
+
+namespace svm_gc {
+
 G1Allocator::G1Allocator(G1CollectedHeap* heap) :
   _g1h(heap),
   _numa(heap->numa()),
@@ -488,3 +491,6 @@ size_t G1PLABAllocator::undo_waste() const {
   }
   return result;
 }
+
+} // namespace svm_gc
+

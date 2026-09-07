@@ -42,6 +42,9 @@
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 inline HeapWord* G1HeapRegion::block_start(const void* addr) const {
   return block_start(addr, parsable_bottom_acquire());
 }
@@ -533,5 +536,8 @@ inline void G1HeapRegion::install_cset_group(G1CSetCandidateGroup* cset_group) {
 inline void G1HeapRegion::uninstall_cset_group() {
   _rem_set->uninstall_cset_group();
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGION_INLINE_HPP

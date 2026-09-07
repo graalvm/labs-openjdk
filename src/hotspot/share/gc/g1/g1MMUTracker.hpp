@@ -29,6 +29,9 @@
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 class G1MMUTrackerElem {
 private:
   double _start_time;
@@ -120,5 +123,8 @@ public:
     return when_sec(current_time, max_gc_time());
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1MMUTRACKER_HPP

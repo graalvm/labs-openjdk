@@ -32,6 +32,9 @@
 // A HSpaceCounter is a holder class for performance counters
 // that track a collections (logical spaces) in a heap;
 
+
+namespace svm_gc {
+
 class HSpaceCounters: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -69,4 +72,7 @@ class HSpaceCounters: public CHeapObj<mtGC> {
   const char* name_space() const        { return _name_space; }
 #endif // !SVM
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_SHARED_HSPACECOUNTERS_HPP

@@ -44,6 +44,9 @@
 //     ...
 //   }
 //
+
+namespace svm_gc {
+
 class JavaThreadIteratorWithHandle : public StackObj {
   uint _index;
   IsolateThread *_next;
@@ -66,5 +69,8 @@ class JavaThreadIteratorWithHandle : public StackObj {
       _next = IsolateThread::get_first_thread();
     }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_THREADSMR_HPP

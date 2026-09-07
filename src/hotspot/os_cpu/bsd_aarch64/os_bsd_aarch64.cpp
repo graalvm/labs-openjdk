@@ -100,6 +100,9 @@
 #define REG_BCP context_x[22]
 
 #ifndef SVM
+
+namespace svm_gc {
+
 address os::current_stack_pointer() {
 #if defined(__clang__) || defined(__llvm__)
   void *sp;
@@ -348,9 +351,15 @@ void os::Bsd::init_thread_fpu_state(void) {
 size_t os::_compiler_thread_min_stack_allowed = 72 * K;
 size_t os::_java_thread_min_stack_allowed = 72 * K;
 size_t os::_vm_internal_thread_min_stack_allowed = 72 * K;
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 // return default stack size for thr_type
+
+namespace svm_gc {
+
 size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
   // default stack size (compiler thread needs larger stack)
   size_t s = (thr_type == os::compiler_thread ? 4 * M : 1 * M);
@@ -618,3 +627,6 @@ extern "C" {
     memmove(to, from, count * 8);
   }
 };
+
+} // namespace svm_gc
+

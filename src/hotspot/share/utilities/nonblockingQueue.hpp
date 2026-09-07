@@ -58,6 +58,9 @@
 // \tparam next_ptr is a function pointer.  Applying this function to
 // an object of type T must return a pointer to the list entry member
 // of the object associated with the NonblockingQueue type.
+
+namespace svm_gc {
+
 template<typename T, T* volatile* (*next_ptr)(T&)>
 class NonblockingQueue {
   T* volatile _head;
@@ -132,5 +135,8 @@ public:
   // Test whether entry is an end marker for this queue.
   inline bool is_end(const T* entry) const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_NONBLOCKINGQUEUE_HPP

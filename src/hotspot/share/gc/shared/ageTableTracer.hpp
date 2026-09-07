@@ -28,10 +28,16 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class AgeTableTracer : AllStatic {
   public:
     static void send_tenuring_distribution_event(uint age, size_t size);
     static bool is_tenuring_distribution_event_enabled();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_AGETABLETRACER_HPP

@@ -30,6 +30,9 @@
 #include "memory/memRegion.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 void G1CMObjArrayProcessor::push_array_slice(HeapWord* what) {
   _task->push(G1TaskQueueEntry::from_slice(what));
 }
@@ -78,3 +81,6 @@ size_t G1CMObjArrayProcessor::process_slice(HeapWord* slice) {
 
   return process_array_slice(objArray, slice, remaining);
 }
+
+} // namespace svm_gc
+

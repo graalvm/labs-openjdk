@@ -26,6 +26,9 @@
 #include "runtime/osThreadBase.hpp"
 
 // Printing
+
+namespace svm_gc {
+
 void OSThreadBase::print_on(outputStream *st) const {
   st->print("nid=%zu ", thread_id_for_printing());
   switch (_state) {
@@ -45,3 +48,6 @@ void OSThreadBase::print_on(outputStream *st) const {
 #ifndef SVM
 void OSThreadBase::print() const { print_on(tty); }
 #endif // !SVM
+
+} // namespace svm_gc
+

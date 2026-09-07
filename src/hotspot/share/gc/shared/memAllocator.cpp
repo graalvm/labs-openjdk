@@ -42,6 +42,9 @@
 #include "utilities/copy.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class MemAllocator::Allocation: StackObj {
   friend class MemAllocator;
 
@@ -507,3 +510,6 @@ oop PodAllocator::initialize(HeapWord* mem) const {
   return finish(mem);
 }
 #endif // SVM
+
+} // namespace svm_gc
+

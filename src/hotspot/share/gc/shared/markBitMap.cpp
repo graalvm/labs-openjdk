@@ -28,6 +28,9 @@
 #include "svmImageHeap.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 void MarkBitMap::print_on(outputStream* st, const char* prefix) const {
   _bm.print_range_on(st, prefix);
 }
@@ -79,3 +82,6 @@ void MarkBitMap::check_mark(HeapWord* addr) {
   assert_svm_only(!SVMImageHeap::is_in_image_heap(addr), "image heap regions are never marked");
 }
 #endif
+
+} // namespace svm_gc
+

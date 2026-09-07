@@ -32,6 +32,9 @@
 #include "utilities/formatBuffer.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 size_t HeapAlignment = 0;
 size_t SpaceAlignment = 0;
 
@@ -190,3 +193,6 @@ void GCArguments::initialize_heap_flags_and_sizes() {
 size_t GCArguments::heap_virtual_to_physical_ratio() {
   return 1;
 }
+
+} // namespace svm_gc
+

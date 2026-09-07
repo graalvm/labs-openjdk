@@ -30,6 +30,9 @@
 
 // G1RedirtyCardsLocalQueueSet
 
+
+namespace svm_gc {
+
 G1RedirtyCardsLocalQueueSet::G1RedirtyCardsLocalQueueSet(G1RedirtyCardsQueueSet* shared_qset) :
   PtrQueueSet(shared_qset->allocator()),
   _shared_qset(shared_qset),
@@ -148,3 +151,6 @@ void G1RedirtyCardsQueueSet::add_bufferlist(const BufferNodeList& buffers) {
     update_tail(buffers._tail);
   }
 }
+
+} // namespace svm_gc
+

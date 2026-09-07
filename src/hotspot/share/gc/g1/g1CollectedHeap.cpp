@@ -122,6 +122,9 @@
 #include "runtime/threads.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 size_t G1CollectedHeap::_humongous_object_threshold_in_words = 0;
 
 // INVARIANTS/NOTES
@@ -3446,3 +3449,6 @@ void G1CollectedHeap::prepare_group_cardsets_for_scan() {
 
   collection_set()->prepare_groups_for_scan();
 }
+
+} // namespace svm_gc
+

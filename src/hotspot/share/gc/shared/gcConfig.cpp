@@ -47,6 +47,9 @@
 #endif
 
 #ifndef SVM
+
+namespace svm_gc {
+
 struct IncludedGC {
   bool&               _flag;
   CollectedHeap::Name _name;
@@ -56,7 +59,13 @@ struct IncludedGC {
   IncludedGC(bool& flag, CollectedHeap::Name name, GCArguments& arguments, const char* hs_err_name) :
       _flag(flag), _name(name), _arguments(arguments), _hs_err_name(hs_err_name) {}
 };
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
    EPSILONGC_ONLY(static EpsilonArguments    epsilonArguments;)
         G1GC_ONLY(static G1Arguments         g1Arguments;)
@@ -260,3 +269,6 @@ GCArguments* GCConfig::arguments() {
   assert(_arguments != nullptr, "Not initialized");
   return _arguments;
 }
+
+} // namespace svm_gc
+

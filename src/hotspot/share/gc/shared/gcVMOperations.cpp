@@ -48,6 +48,9 @@
 #include "gc/g1/g1Policy.hpp"
 #endif // INCLUDE_G1GC
 
+
+namespace svm_gc {
+
 bool VM_GC_Sync_Operation::doit_prologue() {
   Heap_lock->lock();
   return true;
@@ -281,3 +284,6 @@ VM_CollectForAllocation::VM_CollectForAllocation(size_t word_size, uint gc_count
   }
 #endif // !SVM
 }
+
+} // namespace svm_gc
+

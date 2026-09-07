@@ -35,6 +35,9 @@
 
 // Power of two convenience library.
 
+
+namespace svm_gc {
+
 template <typename T, ENABLE_IF(std::is_integral<T>::value)>
 constexpr T max_power_of_2() {
   T max_val = std::numeric_limits<T>::max();
@@ -138,5 +141,8 @@ inline T submultiple_power_of_2(T value) {
   assert(value > 0, "Invalid value");
   return value & -value;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_POWEROFTWO_HPP

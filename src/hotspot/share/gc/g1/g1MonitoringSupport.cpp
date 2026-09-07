@@ -31,6 +31,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "services/memoryPool.hpp"
 
+
+namespace svm_gc {
+
 class G1GenerationCounters : public GenerationCounters {
 protected:
   G1MonitoringSupport* _monitoring_support;
@@ -408,3 +411,6 @@ G1ConcGCMonitoringScope::G1ConcGCMonitoringScope(G1MonitoringSupport* monitoring
                     NOT_SVM(&monitoring_support->_conc_gc_memory_manager COMMA)
                     "end of concurrent GC pause") {
 }
+
+} // namespace svm_gc
+

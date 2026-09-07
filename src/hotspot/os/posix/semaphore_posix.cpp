@@ -30,6 +30,9 @@
 #include "semaphore_posix.hpp"
 #include <semaphore.h>
 
+
+namespace svm_gc {
+
 PosixSemaphore::PosixSemaphore(uint value) {
   int ret = sem_init(&_semaphore, 0, value);
 
@@ -94,5 +97,8 @@ bool PosixSemaphore::timedwait(struct timespec ts) {
   }
 }
 #endif // !SVM
+
+} // namespace svm_gc
+
 #endif // __APPLE__
 

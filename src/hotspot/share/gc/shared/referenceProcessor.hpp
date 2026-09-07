@@ -32,6 +32,9 @@
 #include "memory/referenceType.hpp"
 #include "oops/instanceRefKlass.hpp"
 
+
+namespace svm_gc {
+
 class GCTimer;
 class ReferencePolicy;
 class ReferenceProcessorPhaseTimes;
@@ -592,5 +595,8 @@ public:
                           size_t ref_count);
   ~RefProcMTDegreeAdjuster();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_REFERENCEPROCESSOR_HPP

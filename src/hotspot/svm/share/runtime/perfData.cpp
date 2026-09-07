@@ -39,6 +39,9 @@
 #include "utilities/globalCounter.inline.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 oop load_oop(void* base, ptrdiff_t offset) {
   return RawAccess<>::oop_load_at((oop)base, offset);
 }
@@ -235,3 +238,6 @@ G1AgeTablePerfData* G1PerfData::age_table() {
 G1CpuTimePerfData* G1PerfData::cpu_time() {
   return (G1CpuTimePerfData*) load_oop(this, SVMGlobalData::_offsets._perf_data._cpu_time);
 }
+
+} // namespace svm_gc
+

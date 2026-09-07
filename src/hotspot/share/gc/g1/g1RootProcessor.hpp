@@ -30,6 +30,9 @@
 #include "memory/allocation.hpp"
 #include "runtime/mutex.hpp"
 
+
+namespace svm_gc {
+
 class CLDClosure;
 class G1CollectedHeap;
 class G1EvacuationRootClosures;
@@ -108,5 +111,8 @@ public:
   // Number of worker threads used by the root processor.
   uint n_workers() const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ROOTPROCESSOR_HPP

@@ -40,6 +40,9 @@
 // support is provided. Allocation by the interpreter and compiled code is done inline
 // and bails out to Scavenge::invoke_and_allocate.
 
+
+namespace svm_gc {
+
 class CollectedHeap;
 #ifndef SVM
 class DeferredObjAllocEvent;
@@ -431,5 +434,8 @@ public:
   static int base_vtable_size()               { return _base_vtable_size; }
 #endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_UNIVERSE_HPP

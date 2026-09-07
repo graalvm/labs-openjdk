@@ -50,8 +50,14 @@
   f(size_t, G1UpdateBufferSizeConstraintFunc)         \
   /* */
 
+
+namespace svm_gc {
+
 G1_GC_CONSTRAINTS(DECLARE_CONSTRAINT)
 
 size_t MaxSizeForHeapAlignmentG1();
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_JVMFLAGCONSTRAINTSG1_HPP

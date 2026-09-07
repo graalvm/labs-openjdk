@@ -47,6 +47,9 @@
 #include "oops/arrayKlass.inline.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 stackChunkOop InstanceStackChunkKlass::allocate(int length) {
   if (length < 0 || length > max_length()) {
     return nullptr;
@@ -66,3 +69,6 @@ void InstanceStackChunkKlass::oop_oop_iterate_stack_slow(stackChunkOop chunk, Oo
 void InstanceStackChunkKlass::oop_oop_iterate_stack_slow(stackChunkOop chunk, OopClosure* closure) {
   chunk->iterate_stack(closure);
 }
+
+} // namespace svm_gc
+

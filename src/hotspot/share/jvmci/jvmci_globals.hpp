@@ -28,6 +28,9 @@
 #include "runtime/globals_shared.hpp"
 #include "utilities/vmEnums.hpp"
 
+
+namespace svm_gc {
+
 class fileStream;
 
 #define LIBJVMCI_ERR_FILE "hs_err_pid%p_libjvmci.log"
@@ -231,4 +234,7 @@ class JVMCIGlobals {
   static fileStream* get_jni_config_file() { return _jni_config_file; }
 };
 #endif // SHARE_JVMCI_JVMCI_GLOBALS_HPP
+
+} // namespace svm_gc
+
 #endif // !SVM

@@ -27,6 +27,9 @@
 #include "runtime/atomic.hpp"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 const char* CPUTimeGroups::to_string(CPUTimeType val) {
   switch (val) {
     case CPUTimeType::gc_total:
@@ -48,7 +51,13 @@ const char* CPUTimeGroups::to_string(CPUTimeType val) {
       return "";
   };
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 bool CPUTimeGroups::is_gc_counter(CPUTimeType val) {
   switch (val) {
@@ -148,3 +157,6 @@ void ThreadTotalCPUTimeClosure::do_thread(Thread* thread) {
   // must ensure the thread exists and has not terminated.
   _total += os::thread_cpu_time(thread);
 }
+
+} // namespace svm_gc
+

@@ -52,6 +52,9 @@
 #include "utilities/ticks.hpp"
 #endif
 
+
+namespace svm_gc {
+
 class OopClosure;
 
 class JavaThread: public Thread {
@@ -114,5 +117,8 @@ protected:
  virtual void pre_run();
  virtual void post_run();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_JAVATHREAD_HPP

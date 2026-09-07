@@ -45,6 +45,9 @@
 
 // Virtual functions are disallowed because SVM DynamicHub objects are modeled as oops and therefore they don't have a vtable.
 // Keep in sync with constants in DynamicHubTypeCheckUtil.
+
+namespace svm_gc {
+
 constexpr int DynamicHubHashingInterfaceMask = 0xffff;
 constexpr int DynamicHubHashingShiftOffset = 24;
 
@@ -144,5 +147,8 @@ class Klass {
 
   const char* internal_name() const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_KLASS_HPP

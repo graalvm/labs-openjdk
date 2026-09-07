@@ -40,6 +40,9 @@
 #include <limits>
 #include <type_traits>
 
+
+namespace svm_gc {
+
 class oopDesc;
 
 // Defaults for macros that might be defined per compiler.
@@ -607,6 +610,9 @@ extern uint64_t OopEncodingHeapMax;
 
 // Machine dependent stuff
 
+
+} // namespace svm_gc
+
 #include CPU_HEADER(globalDefinitions)
 
 // The maximum size of the code cache.  Can be overridden by targets.
@@ -624,11 +630,23 @@ extern uint64_t OopEncodingHeapMax;
 // by Luc Maranget, Susmit Sarkar and Peter Sewell, INRIA/Cambridge)
 #ifdef CPU_MULTI_COPY_ATOMIC
 // Not needed.
+
+namespace svm_gc {
+
 const bool support_IRIW_for_not_multiple_copy_atomic_cpu = false;
+
+} // namespace svm_gc
+
 #else
 // From all non-multi-copy-atomic architectures, only PPC64 supports IRIW at the moment.
 // Final decision is subject to JEP 188: Java Memory Model Update.
+
+namespace svm_gc {
+
 const bool support_IRIW_for_not_multiple_copy_atomic_cpu = PPC64_ONLY(true) NOT_PPC64(false);
+
+} // namespace svm_gc
+
 #endif
 
 // The expected size in bytes of a cache line.
@@ -649,6 +667,9 @@ const bool support_IRIW_for_not_multiple_copy_atomic_cpu = PPC64_ONLY(true) NOT_
 // All fabs() callers should call this function instead, which will implicitly
 // convert the operand to double, avoiding a dependency on __fabsf which
 // doesn't exist in early versions of Solaris 8.
+
+namespace svm_gc {
+
 inline double fabsd(double value) {
   return fabs(value);
 }
@@ -1079,8 +1100,8 @@ const intptr_t badDispHeaderOSR   = 0xDEAD05A0;             // value to fill unu
 
 // (These must be implemented as #defines because C++ compilers are
 // not obligated to inline non-integral constants!)
-#define       badAddress        ((address)::badAddressVal)
-#define       badHeapWord       (::badHeapWordVal)
+#define       badAddress        ((address)svm_gc::badAddressVal)
+#define       badHeapWord       (svm_gc::badHeapWordVal)
 
 // Default TaskQueue size is 16K (32-bit) or 128K (64-bit)
 const uint TASKQUEUE_SIZE = (NOT_LP64(1<<14) LP64_ONLY(1<<17));
@@ -1389,5 +1410,8 @@ std::add_rvalue_reference_t<T> declval() noexcept;
 // handled.
 bool IEEE_subnormal_handling_OK();
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_GLOBALDEFINITIONS_HPP

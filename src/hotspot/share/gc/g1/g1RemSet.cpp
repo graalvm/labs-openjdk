@@ -86,6 +86,9 @@
 // Within these chunks, a worker scans the card table on "blocks" of cards, i.e.
 // contiguous ranges of dirty cards to be scanned. These blocks are converted to actual
 // memory ranges and then passed on to actual scanning.
+
+namespace svm_gc {
+
 class G1RemSetScanState : public CHeapObj<mtGC> {
   class G1DirtyRegions;
 
@@ -1690,3 +1693,6 @@ void G1RemSet::print_summary_info() {
     current.print_on(&ls, true /* show_thread_times*/);
   }
 }
+
+} // namespace svm_gc
+

@@ -29,6 +29,9 @@
 #include "memory/memRegion.hpp"
 #include "utilities/concurrentHashTable.hpp"
 
+
+namespace svm_gc {
+
 class G1CardSetAllocOptions;
 class G1CardSetHashTable;
 class G1CardSetHashTableValue;
@@ -417,5 +420,8 @@ public:
 
   G1CardSetHashTableValue(uint region_idx, ContainerPtr container) : _region_idx(region_idx), _num_occupied(0), _container(container) { }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CARDSET_HPP
