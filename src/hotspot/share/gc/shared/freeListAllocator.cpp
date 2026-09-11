@@ -26,8 +26,19 @@
 #include "logging/log.hpp"
 #include "utilities/globalCounter.inline.hpp"
 
+#ifndef SVM
+
+namespace svm_gc {
+
 FreeListAllocator::NodeList::NodeList() :
   _head(nullptr), _tail(nullptr), _entry_count(0) {}
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+
+namespace svm_gc {
 
 FreeListAllocator::NodeList::NodeList(FreeNode* head, FreeNode* tail, size_t entry_count) :
   _head(head), _tail(tail), _entry_count(entry_count)
@@ -59,9 +70,11 @@ typename FreeListAllocator::NodeList FreeListAllocator::PendingList::take_all() 
   return result;
 }
 
+#ifndef SVM
 size_t FreeListAllocator::PendingList::count() const {
   return  Atomic::load(&_count);
 }
+#endif // !SVM
 
 FreeListAllocator::FreeListAllocator(const char* name, FreeListConfig* config) :
   _config(config),
@@ -103,10 +116,12 @@ size_t FreeListAllocator::free_count() const {
   return Atomic::load(&_free_count);
 }
 
+#ifndef SVM
 size_t FreeListAllocator::pending_count() const {
   uint index = Atomic::load(&_active_pending_list);
   return _pending_lists[index].count();
 }
+#endif // !SVM
 
 // To solve the ABA problem, popping a node from the _free_list is performed within
 // a GlobalCounter critical section, and pushing nodes onto the _free_list is done
@@ -194,3 +209,6 @@ bool FreeListAllocator::try_transfer_pending() {
   Atomic::release_store(&_transfer_lock, false);
   return true;
 }
+
+} // namespace svm_gc
+

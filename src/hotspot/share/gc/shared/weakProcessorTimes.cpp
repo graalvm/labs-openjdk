@@ -33,6 +33,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 const double uninitialized_time = -1.0;
 
 #ifdef ASSERT
@@ -104,12 +107,14 @@ WorkerDataArray<double>* WeakProcessorTimes::worker_data(OopStorageSet::WeakId i
   return _worker_data[index];
 }
 
+#ifndef SVM
 double WeakProcessorTimes::worker_time_sec(uint worker_id,
                                            OopStorageSet::WeakId id) const {
   assert(worker_id < active_workers(),
          "invalid worker id %u for %u", worker_id, active_workers());
   return worker_data(id)->get(worker_id);
 }
+#endif // !SVM
 
 void WeakProcessorTimes::record_worker_time_sec(uint worker_id,
                                                 OopStorageSet::WeakId id,
@@ -215,3 +220,6 @@ void WeakProcessorTimes::log_total(uint indent) const {
                         "Weak Processing",
                         total_time_sec() * MILLIUNITS);
 }
+
+} // namespace svm_gc
+

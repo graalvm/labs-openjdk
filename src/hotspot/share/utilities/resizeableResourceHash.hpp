@@ -27,6 +27,9 @@
 
 #include "utilities/resourceHash.hpp"
 
+
+namespace svm_gc {
+
 template<
     typename K, typename V,
     AnyObj::allocation_type ALLOC_TYPE,
@@ -179,5 +182,8 @@ public:
   }
 #endif // ASSERT
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_RESIZEABLERESOURCEHASH_HPP

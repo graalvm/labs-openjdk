@@ -34,6 +34,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 static void sanity_check_size_and_alignment(size_t size, size_t alignment) {
   assert(size > 0, "Precondition");
 
@@ -55,6 +58,7 @@ static void sanity_check_arguments(size_t size, size_t alignment, size_t page_si
   sanity_check_page_size(page_size);
 }
 
+#ifndef SVM
 static bool large_pages_requested() {
   return UseLargePages &&
          (!FLAG_IS_DEFAULT(UseLargePages) || !FLAG_IS_DEFAULT(LargePageSizeInBytes));
@@ -77,6 +81,7 @@ static bool use_explicit_large_pages(size_t page_size) {
   return !os::can_commit_large_page_memory() &&
          page_size != os::vm_page_size();
 }
+#endif // !SVM
 
 static char* reserve_memory_inner(char* requested_address,
                                   size_t size,
@@ -126,6 +131,7 @@ ReservedSpace MemoryReserver::reserve_memory(char* requested_address,
   return {};
 }
 
+#ifndef SVM
 ReservedSpace MemoryReserver::reserve_memory_special(char* requested_address,
                                                      size_t size,
                                                      size_t alignment,
@@ -149,6 +155,7 @@ ReservedSpace MemoryReserver::reserve_memory_special(char* requested_address,
   // Failed
   return {};
 }
+#endif // SVM
 
 ReservedSpace MemoryReserver::reserve(char* requested_address,
                                       size_t size,
@@ -171,6 +178,7 @@ ReservedSpace MemoryReserver::reserve(char* requested_address,
   // This case is contained within the HeapReserver
 
   // == Case 2 ==
+#ifndef SVM
   if (use_explicit_large_pages(page_size)) {
     // System can't commit large pages i.e. use transparent huge pages and
     // the caller requested large pages. To satisfy this request we use
@@ -190,8 +198,10 @@ ReservedSpace MemoryReserver::reserve(char* requested_address,
     // Now fall back to normal reservation.
     assert(page_size == os::vm_page_size(), "inv");
   }
+#endif // !SVM
 
   // == Case 3 ==
+  assert_svm_only(page_size == os::vm_page_size(), "inv");
   return reserve_memory(requested_address, size, alignment, page_size, executable, mem_tag);
 }
 
@@ -220,6 +230,7 @@ ReservedSpace MemoryReserver::reserve(size_t size,
                  mem_tag);
 }
 
+#ifndef SVM
 ReservedSpace MemoryReserver::reserve(size_t size,
                                       MemTag mem_tag) {
   // Want to use large pages where possible. If the size is
@@ -688,3 +699,7 @@ ReservedHeapSpace HeapReserver::reserve(size_t size, size_t alignment, size_t pa
 
   return instance.reserve_heap(size, alignment, page_size);
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

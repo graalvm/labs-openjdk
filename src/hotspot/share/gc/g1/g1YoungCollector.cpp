@@ -65,6 +65,9 @@
 // GC cause.
 // The code relies on the fact that GCTraceTimeWrapper stores the string passed
 // initially as a reference only, so that we can modify it as needed.
+
+namespace svm_gc {
+
 class G1YoungGCTraceTime {
   G1YoungCollector* _collector;
 
@@ -302,6 +305,12 @@ class G1PrepareEvacuationTask : public WorkerTask {
 
     bool humongous_region_is_candidate(G1HeapRegion* region) const {
       assert(region->is_starts_humongous(), "Must start a humongous object");
+
+#ifdef SVM
+      if (region->is_image_heap()) {
+        return false;
+      }
+#endif // SVM
 
       oop obj = cast_to_oop(region->bottom());
 
@@ -1151,3 +1160,6 @@ void G1YoungCollector::collect() {
   }
   TASKQUEUE_STATS_ONLY(_g1h->task_queues()->print_and_reset_taskqueue_stats("Oop Queue");)
 }
+
+} // namespace svm_gc
+

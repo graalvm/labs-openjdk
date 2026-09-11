@@ -25,6 +25,9 @@
 #include "gc/g1/g1BiasedArray.hpp"
 #include "memory/padded.inline.hpp"
 
+
+namespace svm_gc {
+
 G1BiasedMappedArrayBase::G1BiasedMappedArrayBase() :
   _alloc_base(nullptr),
   _base(nullptr),
@@ -57,3 +60,6 @@ void G1BiasedMappedArrayBase::verify_biased_index(idx_t biased_index) const {
             biased_index, bias(), length());
 }
 #endif
+
+} // namespace svm_gc
+

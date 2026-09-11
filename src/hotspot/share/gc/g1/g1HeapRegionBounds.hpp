@@ -28,6 +28,9 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class G1HeapRegionBounds : public AllStatic {
 private:
   // Minimum region size; we won't go lower than that.
@@ -54,5 +57,8 @@ public:
   static inline size_t max_size();
   static inline size_t target_number();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONBOUNDS_HPP

@@ -36,6 +36,8 @@
 # include "memory/allocation.hpp"
 # include <mach/semaphore.h>
 
+namespace svm_gc {
+
 class OSXSemaphore : public CHeapObj<mtInternal>{
   semaphore_t _semaphore;
 
@@ -56,6 +58,8 @@ class OSXSemaphore : public CHeapObj<mtInternal>{
 };
 
 typedef OSXSemaphore SemaphoreImpl;
+
+} // namespace svm_gc
 
 #endif // __APPLE__
 

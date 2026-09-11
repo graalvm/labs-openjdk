@@ -101,6 +101,10 @@
 #include "jvmci/jvmci.hpp"
 #endif
 
+#ifndef SVM
+
+namespace svm_gc {
+
 GrowableArray<Method*>* collected_profiled_methods;
 
 static int compare_methods(Method** a, Method** b) {
@@ -372,15 +376,26 @@ void print_statistics() {
   }
 }
 
+} // namespace svm_gc
+
+#endif // !SVM
+
 // Note: before_exit() can be executed only once, if more than one threads
 //       are trying to shutdown the VM at the same time, only one thread
 //       can run before_exit() and all other threads must wait.
+
+namespace svm_gc {
+
 void before_exit(JavaThread* thread, bool halt) {
   #define BEFORE_EXIT_NOT_RUN 0
   #define BEFORE_EXIT_RUNNING 1
   #define BEFORE_EXIT_DONE    2
   static jint volatile _before_exit_status = BEFORE_EXIT_NOT_RUN;
 
+#ifdef SVM
+  assert(_before_exit_status == BEFORE_EXIT_NOT_RUN, "before_exit must only be executed once");
+  _before_exit_status = BEFORE_EXIT_RUNNING;
+#else
   Events::log(thread, "Before exit entered");
 
   // Note: don't use a Mutex to guard the entire before_exit(), as
@@ -406,6 +421,7 @@ void before_exit(JavaThread* thread, bool halt) {
       }
     }
   }
+#endif // SVM
 
   // At this point only one thread is executing this logic. Any other threads
   // attempting to invoke before_exit() will wait above and return early once
@@ -438,6 +454,7 @@ void before_exit(JavaThread* thread, bool halt) {
 
   // Actual shutdown logic begins here.
 
+#ifndef SVM
 #if INCLUDE_JVMCI
   if (EnableJVMCI) {
     JVMCI::shutdown(thread);
@@ -464,16 +481,20 @@ void before_exit(JavaThread* thread, bool halt) {
   }
 
   JFR_ONLY(Jfr::on_vm_shutdown(false, halt);)
+#endif // !SVM
 
   // Stop the WatcherThread. We do this before disenrolling various
   // PeriodicTasks to reduce the likelihood of races.
   WatcherThread::stop();
 
+#ifndef SVM
   NativeHeapTrimmer::cleanup();
+#endif // !SVM
 
   // Stop concurrent GC threads
   Universe::heap()->stop();
 
+#ifndef SVM
   // Print GC/heap related information.
   Log(gc, exit) log;
   if (log.is_info()) {
@@ -513,10 +534,14 @@ void before_exit(JavaThread* thread, bool halt) {
   os::terminate_signal_thread();
 
   print_statistics();
+#endif // !SVM
   Universe::heap()->print_tracing_info();
 
+#ifndef SVM
   { MutexLocker ml(BeforeExit_lock);
+#endif // !SVM
     _before_exit_status = BEFORE_EXIT_DONE;
+#ifndef SVM
     BeforeExit_lock->notify_all();
   }
 
@@ -527,12 +552,14 @@ void before_exit(JavaThread* thread, bool halt) {
       guarantee(fail_cnt == 0, "unexpected StringTable verification failures");
     }
   }
+#endif // !SVM
 
   #undef BEFORE_EXIT_NOT_RUN
   #undef BEFORE_EXIT_RUNNING
   #undef BEFORE_EXIT_DONE
 }
 
+#ifndef SVM
 void vm_exit(int code) {
   Thread* thread =
       ThreadLocalStorage::is_initialized() ? Thread::current_or_null() : nullptr;
@@ -609,17 +636,22 @@ static void vm_perform_shutdown_actions() {
   }
   notify_vm_shutdown();
 }
+#endif // !SVM
 
 void vm_shutdown()
 {
+#ifndef SVM
   vm_perform_shutdown_actions();
   os::wait_for_keypress_at_exit();
+#endif // !SVM
   os::shutdown();
 }
 
 void vm_abort(bool dump_core) {
+#ifndef SVM
   vm_perform_shutdown_actions();
   os::wait_for_keypress_at_exit();
+#endif // !SVM
 
   // Flush stdout and stderr before abort.
   fflush(stdout);
@@ -629,6 +661,7 @@ void vm_abort(bool dump_core) {
   ShouldNotReachHere();
 }
 
+#ifndef SVM
 static void vm_notify_during_cds_dumping(const char* error, const char* message) {
   if (error != nullptr) {
     tty->print_cr("Error occurred during CDS dumping");
@@ -648,6 +681,7 @@ void vm_exit_during_cds_dumping(const char* error, const char* message) {
   // Failure during CDS dumping, we don't want to dump core
   vm_abort(false);
 }
+#endif // !SVM
 
 static void vm_notify_during_shutdown(const char* error, const char* message) {
   if (error != nullptr) {
@@ -672,6 +706,7 @@ void vm_exit_during_initialization() {
   vm_abort(false);
 }
 
+#ifndef SVM
 void vm_exit_during_initialization(Handle exception) {
   tty->print_cr("Error occurred during initialization of VM");
   // If there are exceptions on this thread it must be cleared
@@ -696,6 +731,7 @@ void vm_exit_during_initialization(Symbol* ex, const char* message) {
   // Failure during initialization, we don't want to dump core
   vm_abort(false);
 }
+#endif // !SVM
 
 void vm_exit_during_initialization(const char* error, const char* message) {
   vm_notify_during_shutdown(error, message);
@@ -709,6 +745,7 @@ void vm_shutdown_during_initialization(const char* error, const char* message) {
   vm_shutdown();
 }
 
+#ifndef SVM
 JDK_Version JDK_Version::_current;
 const char* JDK_Version::_java_version;
 const char* JDK_Version::_runtime_name;
@@ -775,3 +812,7 @@ void JDK_Version::to_string(char* buffer, size_t buflen) const {
     }
   }
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

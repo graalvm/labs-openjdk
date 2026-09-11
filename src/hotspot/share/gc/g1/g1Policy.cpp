@@ -50,6 +50,9 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/pair.hpp"
 
+
+namespace svm_gc {
+
 G1Policy::G1Policy(STWGCTimer* gc_timer) :
   _predictor((100 - G1ConfidencePercent) / 100.0),
   _analytics(new G1Analytics(&_predictor)),
@@ -1086,11 +1089,13 @@ double G1Policy::predict_base_time_ms(size_t pending_cards,
   return total_time;
 }
 
+#ifndef SVM
 double G1Policy::predict_base_time_ms(size_t pending_cards) const {
   bool for_young_only_phase = collector_state()->in_young_only_phase();
   size_t card_rs_length = _analytics->predict_card_rs_length(for_young_only_phase);
   return predict_base_time_ms(pending_cards, card_rs_length);
 }
+#endif // !SVM
 
 double G1Policy::predict_base_time_ms(size_t pending_cards, size_t card_rs_length) const {
   bool for_young_only_phase = collector_state()->in_young_only_phase();
@@ -1484,3 +1489,6 @@ void G1Policy::transfer_survivors_to_cset(const G1SurvivorRegions* survivors) {
   // the survivor regions from this evacuation pause as 'young'
   // at the start of the next.
 }
+
+} // namespace svm_gc
+

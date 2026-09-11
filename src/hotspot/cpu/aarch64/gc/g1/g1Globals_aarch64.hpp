@@ -24,6 +24,12 @@
 #ifndef CPU_AARCH64_GC_G1_G1GLOBALS_AARCH64_HPP
 #define CPU_AARCH64_GC_G1_G1GLOBALS_AARCH64_HPP
 
+
+namespace svm_gc {
+
 const size_t G1MergeHeapRootsPrefetchCacheSize = 16;
+
+
+} // namespace svm_gc
 
 #endif // CPU_AARCH64_GC_G1_G1GLOBALS_AARCH64_HPP

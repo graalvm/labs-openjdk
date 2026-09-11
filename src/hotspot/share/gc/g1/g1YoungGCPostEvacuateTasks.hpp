@@ -27,6 +27,9 @@
 
 #include "gc/g1/g1BatchedTask.hpp"
 
+
+namespace svm_gc {
+
 class FreeCSetStats;
 
 class G1CollectedHeap;
@@ -76,5 +79,8 @@ public:
                                           G1EvacInfo* evacuation_info,
                                           G1EvacFailureRegions* evac_failure_regions);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1YOUNGGCPOSTEVACUATETASKS_HPP

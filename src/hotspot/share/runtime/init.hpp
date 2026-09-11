@@ -35,6 +35,9 @@
 // use "Foo* foo;", create a function init_foo() in foo.c, and add a call
 // to init_foo in init.cpp.
 
+
+namespace svm_gc {
+
 jint init_globals();     // call constructors at startup (main Java thread)
 jint init_globals2();    // construction of early Java objects (main Java thread)
 void vm_init_globals();  // call constructors at startup (VM thread)
@@ -43,5 +46,8 @@ void exit_globals();     // call destructors before exit
 bool is_init_completed();     // returns true when bootstrapping has completed
 void wait_init_completed();   // wait until set_init_completed() has been called
 void set_init_completed();    // set basic init to completed
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_INIT_HPP

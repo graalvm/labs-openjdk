@@ -42,6 +42,9 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 HeapWord* G1HeapRegionRemSet::_heap_base_address = nullptr;
 
 const char* G1HeapRegionRemSet::_state_strings[] =  {"Untracked", "Updating", "Complete"};
@@ -113,6 +116,13 @@ void G1HeapRegionRemSet::print_static_mem_size(outputStream* out) {
 
 void G1HeapRegionRemSet::add_code_root(nmethod* nm) {
   assert(nm != nullptr, "sanity");
+#ifdef SVM
+  // There is no need to keep track of the strong code roots for image heap regions as all objects are alive anyways.
+  if (_hr->is_image_heap()) {
+    return;
+  }
+#endif // SVM
+
   _code_roots.add(nm);
 }
 
@@ -125,9 +135,11 @@ void G1HeapRegionRemSet::remove_code_root(nmethod* nm) {
   guarantee(!_code_roots.contains(nm), "duplicate entry found");
 }
 
+#ifndef SVM
 void G1HeapRegionRemSet::bulk_remove_code_roots() {
   _code_roots.bulk_remove();
 }
+#endif // !SVM
 
 void G1HeapRegionRemSet::code_roots_do(NMethodClosure* blk) const {
   _code_roots.nmethods_do(blk);
@@ -140,3 +152,6 @@ void G1HeapRegionRemSet::clean_code_roots(G1HeapRegion* hr) {
 size_t G1HeapRegionRemSet::code_roots_mem_size() {
   return _code_roots.mem_size();
 }
+
+} // namespace svm_gc
+

@@ -35,9 +35,19 @@
 #define MATERIALIZE_PD_DEVELOPER_FLAG(type, name, ...)        type name = pd_##name;
 #endif // PRODUCT
 
-ALL_FLAGS(MATERIALIZE_DEVELOPER_FLAG,
-          MATERIALIZE_PD_DEVELOPER_FLAG,
+
+namespace svm_gc {
+
+ALL_FLAGS(MATERIALIZE_PRODUCT_FLAG,
+          MATERIALIZE_PD_PRODUCT_FLAG,
           MATERIALIZE_PRODUCT_FLAG,
           MATERIALIZE_PD_PRODUCT_FLAG,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
           IGNORE_RANGE,
           IGNORE_CONSTRAINT)
+
+} // namespace svm_gc
+

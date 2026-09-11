@@ -27,6 +27,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "logging/logSelection.hpp"
 
+
+namespace svm_gc {
+
 class outputStream;
 
 // The list of available decorators:
@@ -49,7 +52,7 @@ class outputStream;
   DECORATOR(uptimemillis, um)   \
   DECORATOR(timenanos,    tn)   \
   DECORATOR(uptimenanos,  un)   \
-  DECORATOR(hostname,     hn)   \
+  NOT_SVM(DECORATOR(hostname,     hn))   \
   DECORATOR(pid,          p)    \
   DECORATOR(tid,          ti)   \
   DECORATOR(level,        l)    \
@@ -90,7 +93,9 @@ class LogDecorators {
       return DefaultUndecoratedSelection(Level, T0, T1, T2, T3, T4);
     }
 
+#ifndef SVM
     const LogSelection& selection() const { return _selection; }
+#endif // !SVM
   };
 
  private:
@@ -155,5 +160,8 @@ class LogDecorators {
 
   bool parse(const char* decorator_args, outputStream* errstream = nullptr);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGDECORATORS_HPP

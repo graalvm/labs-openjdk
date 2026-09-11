@@ -77,17 +77,28 @@
 
 // Support for showing register content on asserts/guarantees.
 #ifdef CAN_SHOW_REGISTERS_ON_ASSERT
+
+namespace svm_gc {
+
 static char g_dummy;
 char* g_assert_poison = &g_dummy;
 const char* g_assert_poison_read_only = &g_dummy;
 static intx g_asserting_thread = 0;
+
+} // namespace svm_gc
+
 #endif // CAN_SHOW_REGISTERS_ON_ASSERT
+
+
+namespace svm_gc {
 
 int DebuggingContext::_enabled = 0; // Initially disabled.
 
+#ifndef SVM
 DebuggingContext::DebuggingContext() {
   _enabled += 1;                // Increase nesting count.
 }
+#endif // !SVM
 
 DebuggingContext::~DebuggingContext() {
   if (is_enabled()) {
@@ -140,7 +151,11 @@ ATTRIBUTE_PRINTF(1, 2)
 void warning(const char* format, ...) {
   if (PrintWarnings) {
     FILE* const err = defaultStream::error_stream();
+#ifdef SVM
+    jio_fprintf(err, "warning: ");
+#else
     jio_fprintf(err, "%s warning: ", VM_Version::vm_name());
+#endif // SVM
     va_list ap;
     va_start(ap, format);
     vfprintf(err, format, ap);
@@ -246,9 +261,11 @@ void report_vm_out_of_memory(const char* file, int line, size_t size,
   guarantee(false, "report_and_die() should not return here");
 }
 
+#ifndef SVM
 void report_should_not_call(const char* file, int line) {
   report_vm_error(file, line, "ShouldNotCall()");
 }
+#endif // !SVM
 
 void report_should_not_reach_here(const char* file, int line) {
   report_vm_error(file, line, "ShouldNotReachHere()");
@@ -258,6 +275,7 @@ void report_unimplemented(const char* file, int line) {
   report_vm_error(file, line, "Unimplemented()");
 }
 
+#ifndef SVM
 void report_untested(const char* file, int line, const char* message) {
 #ifndef PRODUCT
   warning("Untested: %s in %s: %d\n", message, file, line);
@@ -286,7 +304,7 @@ void report_java_out_of_memory(const char* message) {
 
     if (CrashOnOutOfMemoryError) {
       tty->print_cr("Aborting due to java.lang.OutOfMemoryError: %s", message);
-      report_fatal(OOM_JAVA_HEAP_FATAL, __FILE__, __LINE__, "OutOfMemory encountered: %s", message);
+      report_fatal(OOM_JAVA_HEAP_FATAL, __FILENAME_ONLY__, __LINE__, "OutOfMemory encountered: %s", message);
     }
 
     if (ExitOnOutOfMemoryError) {
@@ -739,9 +757,11 @@ struct TestMultipleStaticAssertFormsInClassScope {
 };
 
 #endif // !PRODUCT
+#endif // !SVM
 
 // Support for showing register content on asserts/guarantees.
 #ifdef CAN_SHOW_REGISTERS_ON_ASSERT
+#ifndef SVM
 void initialize_assert_poison() {
   char* page = os::reserve_memory(os::vm_page_size(), mtInternal);
   if (page) {
@@ -782,4 +802,8 @@ bool handle_assert_poison_fault(const void* ucVoid) {
   }
   return true;
 }
+#endif // !SVM
 #endif // CAN_SHOW_REGISTERS_ON_ASSERT
+
+} // namespace svm_gc
+

@@ -24,6 +24,9 @@
 #ifndef SHARE_LOGGING_LOGTAGSETDESCRIPTIONS_HPP
 #define SHARE_LOGGING_LOGTAGSETDESCRIPTIONS_HPP
 
+
+namespace svm_gc {
+
 class LogTagSet;
 
 struct LogTagSetDescription {
@@ -32,5 +35,8 @@ struct LogTagSetDescription {
 };
 
 extern struct LogTagSetDescription tagset_descriptions[];
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGTAGSETDESCRIPTIONS_HPP

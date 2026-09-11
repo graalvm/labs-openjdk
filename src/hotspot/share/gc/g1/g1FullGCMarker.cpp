@@ -30,6 +30,9 @@
 #include "gc/shared/verifyOption.hpp"
 #include "memory/iterator.inline.hpp"
 
+
+namespace svm_gc {
+
 G1FullGCMarker::G1FullGCMarker(G1FullCollector* collector,
                                uint worker_id,
                                G1RegionMarkStats* mark_stats) :
@@ -38,11 +41,15 @@ G1FullGCMarker::G1FullGCMarker(G1FullCollector* collector,
     _bitmap(collector->mark_bitmap()),
     _oop_stack(),
     _objarray_stack(),
-    _mark_closure(worker_id, this, ClassLoaderData::_claim_stw_fullgc_mark, G1CollectedHeap::heap()->ref_processor_stw()),
+    _mark_closure(worker_id, this, NOT_SVM(ClassLoaderData::_claim_stw_fullgc_mark COMMA) G1CollectedHeap::heap()->ref_processor_stw()),
     _stack_closure(this),
+#ifndef SVM
     _cld_closure(mark_closure(), ClassLoaderData::_claim_stw_fullgc_mark),
+#endif // !SVM
     _mark_stats_cache(mark_stats, G1RegionMarkStatsCache::RegionMarkStatsCacheSize) {
+#ifndef SVM
   ClassLoaderDataGraph::verify_claimed_marks_cleared(ClassLoaderData::_claim_stw_fullgc_mark);
+#endif // !SVM
 }
 
 G1FullGCMarker::~G1FullGCMarker() {
@@ -69,3 +76,6 @@ void G1FullGCMarker::complete_marking(OopQueueSet* oop_stacks,
 void G1FullGCMarker::flush_mark_stats_cache() {
   _mark_stats_cache.evict_all();
 }
+
+} // namespace svm_gc
+

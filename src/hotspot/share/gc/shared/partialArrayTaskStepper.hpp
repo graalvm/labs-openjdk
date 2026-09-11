@@ -28,6 +28,9 @@
 #include "oops/arrayOop.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class PartialArrayState;
 
 // Helper for partial array chunking tasks.
@@ -75,5 +78,8 @@ private:
   // For unit tests.
   inline Step next_impl(size_t length, volatile size_t* index_addr) const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PARTIALARRAYTASKSTEPPER_HPP

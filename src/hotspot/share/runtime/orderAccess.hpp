@@ -235,6 +235,9 @@
 // instructions that come after the fence in program order are fetched
 // from the cache or memory after the fence has completed.
 
+
+namespace svm_gc {
+
 class OrderAccess : public AllStatic {
  public:
   // barriers
@@ -247,10 +250,12 @@ class OrderAccess : public AllStatic {
   static void     release();
   static void     fence();
 
+#ifndef SVM
   static void     cross_modify_fence() {
     cross_modify_fence_impl();
     cross_modify_fence_verify();
   }
+#endif // !SVM
 
   // Processors which are not multi-copy-atomic require a full fence
   // to enforce a globally consistent order of Independent Reads of
@@ -266,12 +271,17 @@ private:
   // This is a helper that invokes the StubRoutines::fence_entry()
   // routine if it exists, It should only be used by platforms that
   // don't have another way to do the inline assembly.
+#ifndef SVM
   static void StubRoutines_fence();
 
   static void cross_modify_fence_impl();
 
   static void cross_modify_fence_verify() PRODUCT_RETURN;
+#endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #include OS_CPU_HEADER(orderAccess)
 

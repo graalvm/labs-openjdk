@@ -30,6 +30,9 @@
 
 #include <float.h>
 
+
+namespace svm_gc {
+
 class G1Predictions;
 
 // Container for TruncatedSeqs that need separate predictors by GC phase.
@@ -52,5 +55,8 @@ public:
 
   double predict(const G1Predictions* predictor, bool use_young_only_phase_seq) const;
 };
+
+
+} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1ANALYTICSSEQUENCES_HPP */

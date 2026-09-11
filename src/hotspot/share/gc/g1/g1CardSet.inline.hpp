@@ -31,6 +31,9 @@
 #include "gc/g1/g1GCPhaseTimes.hpp"
 #include "logging/log.hpp"
 
+
+namespace svm_gc {
+
 template <class T>
 inline T* G1CardSet::container_ptr(ContainerPtr ptr) {
   return (T*)strip_container_type(ptr);
@@ -79,5 +82,8 @@ inline void G1CardSet::iterate_cards_or_ranges_in_container(ContainerPtr const c
   log_error(gc)("Unknown card set container type %u", container_type(container));
   ShouldNotReachHere();
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CARDSET_INLINE_HPP

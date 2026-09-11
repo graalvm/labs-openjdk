@@ -32,6 +32,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 template<typename T, typename EVENT>
 static void trace_flag_changed(JVMFlag* flag, const T old_value, const T new_value, const JVMFlagOrigin origin) {
   EVENT e;
@@ -366,6 +369,7 @@ JVMFlag::Error JVMFlagAccess::check_constraint(const JVMFlag* flag, void * func,
   return access_impl(flag)->check_constraint(flag, func, verbose);
 }
 
+#ifndef SVM
 void JVMFlagAccess::print_range(outputStream* st, const JVMFlag* flag, const JVMFlagLimit* range) {
   return access_impl(flag)->print_range(st, range);
 }
@@ -401,3 +405,7 @@ void JVMFlagAccess::print_range(outputStream* st, const JVMFlag* flag) {
     }
   }
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

@@ -29,6 +29,9 @@
 #include "suspendResume_posix.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class OSThread : public OSThreadBase {
   friend class VMStructs;
 
@@ -40,15 +43,19 @@ class OSThread : public OSThreadBase {
   // (e.g. pthread_kill).
   pthread_t _pthread_id;
 
+#ifndef SVM
   sigset_t _caller_sigmask; // Caller's signal mask
+#endif // !SVM
 
  public:
   OSThread();
   ~OSThread();
 
+#ifndef SVM
   // Methods to save/restore caller's signal mask
   sigset_t  caller_sigmask() const       { return _caller_sigmask; }
   void    set_caller_sigmask(sigset_t sigmask)  { _caller_sigmask = sigmask; }
+#endif // !SVM
 
   thread_id_t thread_id() const {
     return _thread_id;
@@ -68,10 +75,12 @@ class OSThread : public OSThreadBase {
   // suspension support.
   // ***************************************************************
 
+#ifndef SVM
   // flags that support signal based suspend/resume on Linux are in a
   // separate class to avoid confusion with many flags in OSThread that
   // are used by VM level suspend/resume.
   SuspendResume sr;
+#endif // !SVM
 
   // _ucontext and _siginfo are used by SR_handler() to save thread context,
   // and they will later be used to walk the stack or reposition thread PC.
@@ -87,12 +96,15 @@ class OSThread : public OSThreadBase {
   // should be in a place where we are native and will block ourselves
   // if we transition.
 private:
+#ifndef SVM
   void* _siginfo;
   ucontext_t* _ucontext;
   int _expanding_stack;                 /* non zero if manually expanding stack */
   address _alt_sig_stack;               /* address of base of alternate signal stack */
+#endif // !SVM
 
 public:
+#ifndef SVM
   void* siginfo() const                   { return _siginfo;  }
   void set_siginfo(void* ptr)             { _siginfo = ptr;   }
   ucontext_t* ucontext() const            { return _ucontext; }
@@ -103,6 +115,7 @@ public:
 
   void set_alt_sig_stack(address val)     { _alt_sig_stack = val; }
   address alt_sig_stack(void)             { return _alt_sig_stack; }
+#endif // !SVM
 
 private:
   Monitor* _startThread_lock;     // sync parent and child in thread creation
@@ -118,5 +131,8 @@ public:
     return (uintx)_thread_id;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // OS_LINUX_OSTHREAD_LINUX_HPP

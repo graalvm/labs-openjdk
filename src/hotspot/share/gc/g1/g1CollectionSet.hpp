@@ -29,6 +29,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 class G1CollectorState;
 class G1GCPhaseTimes;
@@ -308,5 +311,8 @@ public:
   void print(outputStream* st);
 #endif // !PRODUCT
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COLLECTIONSET_HPP

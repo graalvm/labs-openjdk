@@ -28,6 +28,9 @@
 #include "gc/g1/g1RegionsOnNodes.hpp"
 #include "runtime/globals.hpp"
 
+
+namespace svm_gc {
+
 template <typename T>
 class GrowableArray;
 class G1HeapRegion;
@@ -59,5 +62,8 @@ public:
 
   void add_used_bytes(size_t used_bytes);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1SURVIVORREGIONS_HPP

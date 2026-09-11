@@ -32,6 +32,9 @@
 
 #if ALLOCATION_FAILURE_INJECTOR
 
+
+namespace svm_gc {
+
 inline bool G1YoungGCAllocationFailureInjector::allocation_should_fail(size_t& counter, uint region_idx) {
   if (!_inject_allocation_failure_for_current_gc) {
     return false;
@@ -45,6 +48,9 @@ inline bool G1YoungGCAllocationFailureInjector::allocation_should_fail(size_t& c
   counter = 0;
   return true;
 }
+
+
+} // namespace svm_gc
 
 #endif  // #if ALLOCATION_FAILURE_INJECTOR
 

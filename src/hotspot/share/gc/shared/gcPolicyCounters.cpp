@@ -26,10 +26,21 @@
 #include "gc/shared/gcPolicyCounters.hpp"
 #include "memory/resourceArea.hpp"
 
+
+namespace svm_gc {
+
 GCPolicyCounters::GCPolicyCounters(const char* name, int collectors,
                                    int generations) {
 
   if (UsePerfData) {
+#ifdef SVM
+    G1GCPolicyPerfData *data = G1PerfData::get()->gc_policy();
+    data->max_tenuring_threshold()->set_value(MaxTenuringThreshold);
+    _tenuring_threshold = data->tenuring_threshold();
+    _tenuring_threshold->set_value(MaxTenuringThreshold);
+    _desired_survivor_size = data->desired_survivor_size();
+    _gc_overhead_limit_exceeded_counter = data->gc_time_limit_exceeded();
+#else
     EXCEPTION_MARK;
     ResourceMark rm;
 
@@ -64,5 +75,9 @@ GCPolicyCounters::GCPolicyCounters(const char* name, int collectors,
     _gc_overhead_limit_exceeded_counter =
         PerfDataManager::create_variable(SUN_GC, cname, PerfData::U_Events,
                                          CHECK);
+#endif // SVM
   }
 }
+
+} // namespace svm_gc
+

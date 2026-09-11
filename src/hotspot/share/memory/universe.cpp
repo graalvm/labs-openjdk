@@ -88,9 +88,21 @@
 #include "utilities/ostream.hpp"
 #include "utilities/preserveException.hpp"
 
+#ifdef SVM
+
+namespace svm_gc {
+
+Klass *Universe::_dynamic_hub_klass                   = nullptr;
+
+} // namespace svm_gc
+
+#else
 // A helper class for caching a Method* when the user of the cache
 // only cares about the latest version of the Method*. This cache safely
 // interacts with the RedefineClasses API.
+
+namespace svm_gc {
+
 class LatestMethodCache {
   // We save the InstanceKlass* and the idnum of Method* in order to get
   // the current Method*.
@@ -114,7 +126,15 @@ static LatestMethodCache _do_stack_walk_cache;              // AbstractStackWalk
 // Known objects
 TypeArrayKlass* Universe::_typeArrayKlasses[T_LONG+1] = { nullptr /*, nullptr...*/ };
 ObjArrayKlass* Universe::_objectArrayKlass            = nullptr;
-Klass* Universe::_fillerArrayKlass                    = nullptr;
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+namespace svm_gc {
+
+TypeArrayKlass* Universe::_fillerArrayKlass           = nullptr;
+#ifndef SVM
 OopHandle Universe::_basic_type_mirrors[T_VOID+1];
 #if INCLUDE_CDS_JAVA_HEAP
 int Universe::_archived_basic_type_mirror_indices[T_VOID+1];
@@ -148,13 +168,19 @@ volatile jint Universe::_preallocated_out_of_memory_error_avail_count = 0;
 // used when throwing OOME, we should try to avoid further allocation in such case
 OopHandle Universe::_msg_metaspace;
 OopHandle Universe::_msg_class_metaspace;
+#endif // !SVM
 
 OopHandle Universe::_reference_pending_list;
+#ifdef SVM
+uint64_t Universe::_reference_pending_list_wakeup_count = 0;
+#endif // SVM
 
+#ifndef SVM
 Array<Klass*>* Universe::_the_array_interfaces_array = nullptr;
+#endif // !SVM
 
 long Universe::verify_flags                           = Universe::Verify_All;
-
+#ifndef SVM
 Array<int>* Universe::_the_empty_int_array            = nullptr;
 Array<u2>* Universe::_the_empty_short_array           = nullptr;
 Array<Klass*>* Universe::_the_empty_klass_array     = nullptr;
@@ -167,10 +193,12 @@ uintx Universe::_the_empty_klass_bitmap      = 0;
 // These variables are guarded by FullGCALot_lock.
 DEBUG_ONLY(OopHandle Universe::_fullgc_alot_dummy_array;)
 DEBUG_ONLY(int Universe::_fullgc_alot_dummy_next = 0;)
+#endif // !SVM
 
 // Heap
 int             Universe::_verify_count = 0;
 
+#ifndef SVM
 // Oop verification (see MacroAssembler::verify_oop)
 uintptr_t       Universe::_verify_oop_mask = 0;
 uintptr_t       Universe::_verify_oop_bits = (uintptr_t) -1;
@@ -178,6 +206,7 @@ uintptr_t       Universe::_verify_oop_bits = (uintptr_t) -1;
 int             Universe::_base_vtable_size = 0;
 bool            Universe::_bootstrapping = false;
 bool            Universe::_module_initialized = false;
+#endif // !SVM
 bool            Universe::_fully_initialized = false;
 
 OopStorage*     Universe::_vm_weak = nullptr;
@@ -185,6 +214,7 @@ OopStorage*     Universe::_vm_global = nullptr;
 
 CollectedHeap*  Universe::_collectedHeap = nullptr;
 
+#ifndef SVM
 // These are the exceptions that are always created and are guatanteed to exist.
 // If possible, they can be stored as CDS archived objects to speed up AOT code.
 class BuiltinException {
@@ -365,6 +395,7 @@ void Universe::serialize(SerializeClosure* f) {
   f->do_ptr(&_the_empty_klass_array);
   f->do_ptr(&_the_empty_instance_klass_array);
 }
+#endif // !SVM
 
 
 void Universe::check_alignment(uintx size, uintx alignment, const char* name) {
@@ -374,6 +405,7 @@ void Universe::check_alignment(uintx size, uintx alignment, const char* name) {
   }
 }
 
+#ifndef SVM
 static void initialize_basic_type_klass(Klass* k, TRAPS) {
   Klass* ok = vmClasses::Object_klass();
 #if INCLUDE_CDS
@@ -392,8 +424,10 @@ static void initialize_basic_type_klass(Klass* k, TRAPS) {
   }
   k->append_to_sibling_list();
 }
+#endif // !SVM
 
-void Universe::genesis(TRAPS) {
+void Universe::genesis(NOT_SVM(TRAPS)) {
+#ifndef SVM
   ResourceMark rm(THREAD);
   HandleMark   hm(THREAD);
 
@@ -482,10 +516,12 @@ void Universe::genesis(TRAPS) {
     Handle tns = java_lang_String::create_from_str("<null_sentinel>", CHECK);
     _the_null_sentinel = OopHandle(vm_global(), tns());
   }
+#endif // !SVM
 
   // Create a handle for reference_pending_list
   _reference_pending_list = OopHandle(vm_global(), nullptr);
 
+#ifndef SVM
   // Maybe this could be lifted up now that object array can be initialized
   // during the bootstrapping.
 
@@ -542,8 +578,10 @@ void Universe::genesis(TRAPS) {
     assert(i == ((objArrayOop)_fullgc_alot_dummy_array.resolve())->length(), "just checking");
   }
   #endif
+#endif // !SVM
 }
 
+#ifndef SVM
 void Universe::initialize_basic_type_mirrors(TRAPS) {
 #if INCLUDE_CDS_JAVA_HEAP
     if (CDSConfig::is_using_archive() &&
@@ -599,6 +637,7 @@ void Universe::fixup_mirrors(TRAPS) {
   delete java_lang_Class::fixup_mirror_list();
   java_lang_Class::set_fixup_mirror_list(nullptr);
 }
+#endif // !SVM
 
 #define assert_pll_locked(test) \
   assert(Heap_lock->test(), "Reference pending list access requires lock")
@@ -629,6 +668,18 @@ oop Universe::swap_reference_pending_list(oop list) {
   return _reference_pending_list.xchg(list);
 }
 
+#ifdef SVM
+uint64_t Universe::reference_pending_list_wakeup_count() {
+  return _reference_pending_list_wakeup_count;
+}
+
+void Universe::request_reference_pending_list_waiters_wakeup() {
+  assert_pll_locked(is_locked);
+  _reference_pending_list_wakeup_count++;
+}
+#endif // SVM
+
+#ifndef SVM
 #undef assert_pll_locked
 #undef assert_pll_ownership
 
@@ -657,11 +708,13 @@ static void reinitialize_itables() {
   ReinitTableClosure cl;
   ClassLoaderDataGraph::classes_do(&cl);
 }
+#endif // !SVM
 
 bool Universe::on_page_boundary(void* addr) {
   return is_aligned(addr, os::vm_page_size());
 }
 
+#ifndef SVM
 // the array of preallocated errors with backtraces
 objArrayOop Universe::preallocated_out_of_memory_errors() {
   return (objArrayOop)_preallocated_out_of_memory_error_array.resolve();
@@ -851,6 +904,7 @@ static void initialize_global_behaviours() {
   LSAN_IGNORE_OBJECT(protection_behavior);
   CompiledICProtectionBehaviour::set_current(protection_behavior);
 }
+#endif // !SVM
 
 jint universe_init() {
   assert(!Universe::_fully_initialized, "called after initialize_vtables");
@@ -860,22 +914,27 @@ jint universe_init() {
   guarantee(sizeof(oop) % sizeof(HeapWord) == 0,
             "oop size is not not a multiple of HeapWord size");
 
+#ifndef SVM
   TraceTime timer("Genesis", TRACETIME_LOG(Info, startuptime));
 
   initialize_global_behaviours();
+#endif // !SVM
 
   GCLogPrecious::initialize();
 
   // Initialize CPUTimeCounters object, which must be done before creation of the heap.
   CPUTimeCounters::initialize();
 
+#ifndef SVM
   ObjLayout::initialize();
 
 #ifdef _LP64
   MetaspaceShared::adjust_heap_sizes_for_dumping();
 #endif // _LP64
 
+  // NOTE (chaeubl): this part was moved to Threads::parse_arguments()
   GCConfig::arguments()->initialize_heap_sizes();
+#endif // !SVM
 
   jint status = Universe::initialize_heap();
   if (status != JNI_OK) {
@@ -884,16 +943,19 @@ jint universe_init() {
 
   Universe::initialize_tlab();
 
+#ifndef SVM
   Metaspace::global_initialize();
 
   // Initialize performance counters for metaspaces
   MetaspaceCounters::initialize_performance_counters();
+#endif // !SVM
 
   // Checks 'AfterMemoryInit' constraints.
   if (!JVMFlagLimit::check_all_constraints(JVMFlagConstraintPhase::AfterMemoryInit)) {
     return JNI_EINVAL;
   }
 
+#ifndef SVM
   ClassLoaderData::init_null_class_loader_data();
 
 #if INCLUDE_CDS
@@ -915,6 +977,7 @@ jint universe_init() {
   }
 
   ResolvedMethodTable::create_table();
+#endif // !SVM
 
   return JNI_OK;
 }
@@ -935,6 +998,7 @@ void Universe::initialize_tlab() {
   }
 }
 
+#ifndef SVM
 ReservedHeapSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
 
   assert(alignment <= Arguments::conservative_max_heap_alignment(),
@@ -990,6 +1054,7 @@ ReservedHeapSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
 OopStorage* Universe::vm_weak() {
   return Universe::_vm_weak;
 }
+#endif // !SVM
 
 OopStorage* Universe::vm_global() {
   return Universe::_vm_global;
@@ -1004,6 +1069,7 @@ void universe_oopstorage_init() {
   Universe::oopstorage_init();
 }
 
+#ifndef SVM
 void LatestMethodCache::init(JavaThread* current, InstanceKlass* ik,
                              const char* method, Symbol* signature, bool is_static)
 {
@@ -1070,20 +1136,26 @@ void Universe::initialize_known_methods(JavaThread* current) {
                           "doStackWalk",
                           vmSymbols::doStackWalk_signature(), false);
 }
+#endif // !SVM
 
 void universe2_init() {
+#ifndef SVM
   EXCEPTION_MARK;
-  Universe::genesis(CATCH);
+#endif // !SVM
+  Universe::genesis(NOT_SVM(CATCH));
 }
 
+#ifndef SVM
 // Set after initialization of the module runtime, call_initModuleRuntime
 void universe_post_module_init() {
   Universe::_module_initialized = true;
 }
+#endif // !SVM
 
 bool universe_post_init() {
   assert(!is_init_completed(), "Error: initialization not yet completed!");
   Universe::_fully_initialized = true;
+#ifndef SVM
   EXCEPTION_MARK;
   if (!CDSConfig::is_using_archive()) {
     reinitialize_vtables();
@@ -1131,27 +1203,31 @@ bool universe_post_init() {
   Universe::_class_init_stack_overflow_error = OopHandle(Universe::vm_global(), instance);
 
   Universe::initialize_known_methods(THREAD);
+#endif // !SVM
 
   // This needs to be done before the first scavenge/gc, since
   // it's an input to soft ref clearing policy.
   {
-    MutexLocker x(THREAD, Heap_lock);
+    MutexLocker x(SVM_ONLY(Thread::current()) NOT_SVM(THREAD), Heap_lock);
     Universe::heap()->update_capacity_and_used_at_gc();
   }
 
   // ("weak") refs processing infrastructure initialization
   Universe::heap()->post_initialize();
 
+#ifndef SVM
   MemoryService::add_metaspace_memory_pools();
 
   MemoryService::set_universe_heap(Universe::heap());
 #if INCLUDE_CDS
   MetaspaceShared::post_initialize(CHECK_false);
 #endif
+#endif // !SVM
   return true;
 }
 
 
+#ifndef SVM
 void Universe::compute_base_vtable_size() {
   _base_vtable_size = ClassLoader::compute_Object_vtable();
 }
@@ -1215,6 +1291,7 @@ void Universe::initialize_verify_flags() {
   }
   FREE_C_HEAP_ARRAY(char, subset_list);
 }
+#endif // !SVM
 
 bool Universe::should_verify_subset(uint subset) {
   if (verify_flags & subset) {
@@ -1224,11 +1301,15 @@ bool Universe::should_verify_subset(uint subset) {
 }
 
 void Universe::verify(VerifyOption option, const char* prefix) {
-  COMPILER2_PRESENT(
+#ifdef SVM
+  StackFramesPerThread *stack_frames = Threads::set_java_stack_frames();
+#endif // SVM
+
+#if defined(COMPILER2) || defined(SVM)
     assert(!DerivedPointerTable::is_active(),
          "DPT should not be active during verification "
          "(of thread stacks below)");
-  )
+#endif // COMPILER2 || SVM
 
   Thread* thread = Thread::current();
   ResourceMark rm(thread);
@@ -1245,6 +1326,7 @@ void Universe::verify(VerifyOption option, const char* prefix) {
     log_debug(gc, verify)("Heap");
     heap()->verify(option);
   }
+#ifndef SVM
   if (should_verify_subset(Verify_SymbolTable)) {
     log_debug(gc, verify)("SymbolTable");
     SymbolTable::verify();
@@ -1273,10 +1355,12 @@ void Universe::verify(VerifyOption option, const char* prefix) {
     log_debug(gc, verify)("JNIHandles");
     JNIHandles::verify();
   }
+#endif // !SVM
   if (should_verify_subset(Verify_CodeCacheOops)) {
     log_debug(gc, verify)("CodeCache Oops");
     CodeCache::verify_oops();
   }
+#ifndef SVM
   if (should_verify_subset(Verify_ResolvedMethodTable)) {
     log_debug(gc, verify)("ResolvedMethodTable Oops");
     ResolvedMethodTable::verify();
@@ -1285,9 +1369,15 @@ void Universe::verify(VerifyOption option, const char* prefix) {
     log_debug(gc, verify)("String Deduplication");
     StringDedup::verify();
   }
+#endif // !SVM
+
+#ifdef SVM
+  Threads::free_java_stack_frames(stack_frames);
+#endif // SVM
 }
 
 
+#ifndef SVM
 #ifndef PRODUCT
 void Universe::calculate_verify_data(HeapWord* low_boundary, HeapWord* high_boundary) {
   assert(low_boundary < high_boundary, "bad interval");
@@ -1347,8 +1437,10 @@ uintptr_t Universe::verify_mark_bits() {
   return bits;
 }
 #endif // PRODUCT
+#endif // !SVM
 
 #ifdef ASSERT
+#ifndef SVM
 // Release dummy object(s) at bottom of heap
 bool Universe::release_fullgc_alot_dummy() {
   MutexLocker ml(FullGCALot_lock);
@@ -1370,9 +1462,13 @@ bool Universe::release_fullgc_alot_dummy() {
 bool Universe::is_stw_gc_active() {
   return heap()->is_stw_gc_active();
 }
+#endif // !SVM
 
 bool Universe::is_in_heap(const void* p) {
   return heap()->is_in(p);
 }
 
 #endif // ASSERT
+
+} // namespace svm_gc
+

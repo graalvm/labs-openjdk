@@ -35,6 +35,9 @@
 #include "memory/padded.hpp"
 #include "utilities/nonblockingQueue.hpp"
 
+
+namespace svm_gc {
+
 class G1PrimaryConcurrentRefineThread;
 class G1DirtyCardQueueSet;
 class G1RedirtyCardsQueueSet;
@@ -298,5 +301,8 @@ public:
   // Set number of cards above which mutator threads should do refinement.
   void set_mutator_refinement_threshold(size_t value);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1DIRTYCARDQUEUE_HPP

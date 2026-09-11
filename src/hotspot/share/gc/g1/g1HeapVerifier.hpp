@@ -31,6 +31,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 
 class G1HeapVerifier : public CHeapObj<mtGC> {
@@ -84,5 +87,8 @@ public:
   void verify_dirty_region(G1HeapRegion* hr) PRODUCT_RETURN;
   void verify_dirty_young_regions() PRODUCT_RETURN;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPVERIFIER_HPP

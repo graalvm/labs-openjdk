@@ -36,6 +36,9 @@
 #include "memory/universe.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 
+
+namespace svm_gc {
+
 bool VM_G1CollectFull::skip_operation() const {
   // There is a race between the periodic collection task's checks for
   // wanting a collection and processing its request.  A collection in that
@@ -50,7 +53,13 @@ bool VM_G1CollectFull::skip_operation() const {
 void VM_G1CollectFull::doit() {
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
   GCCauseSetter x(g1h, _gc_cause);
+#ifdef SVM
+  // A full GC triggered by WhiteBox tests needs to clear soft references as well.
+  // Instead of manipulating soft_ref_policy(), we add some logic here to avoid races.
+  g1h->do_full_collection(_gc_cause == GCCause::_wb_full_gc,
+#else
   g1h->do_full_collection(false /* clear_all_soft_refs */,
+#endif
                           false /* do_maximal_compaction */,
                           size_t(0) /* allocation_word_size */);
 }
@@ -173,3 +182,5 @@ void VM_G1PauseCleanup::work() {
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
   g1h->concurrent_mark()->cleanup();
 }
+
+} // namespace svm_gc

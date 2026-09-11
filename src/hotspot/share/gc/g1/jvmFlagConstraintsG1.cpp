@@ -29,6 +29,9 @@
 #include "runtime/globals_extension.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 JVMFlag::Error G1RemSetArrayOfCardsEntriesConstraintFunc(uint value, bool verbose) {
   if (!UseG1GC) return JVMFlag::SUCCESS;
 
@@ -210,3 +213,6 @@ JVMFlag::Error G1UpdateBufferSizeConstraintFunc(size_t value, bool verbose) {
                                        value,
                                        verbose);
 }
+
+} // namespace svm_gc
+

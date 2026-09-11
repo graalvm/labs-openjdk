@@ -40,6 +40,9 @@
 #include "prims/jvmtiTagMap.hpp"
 #endif // INCLUDE_JVMTI
 
+
+namespace svm_gc {
+
 static void notify_jvmti_tagmaps() {
 #if INCLUDE_JVMTI
   // Notify JVMTI tagmaps that a STW weak reference processing might be
@@ -50,6 +53,7 @@ static void notify_jvmti_tagmaps() {
 #endif // INCLUDE_JVMTI
 }
 
+#ifndef SVM
 void WeakProcessor::weak_oops_do(BoolObjectClosure* is_alive, OopClosure* keep_alive) {
 
   notify_jvmti_tagmaps();
@@ -70,6 +74,7 @@ void WeakProcessor::oops_do(OopClosure* closure) {
     storage->weak_oops_do(closure);
   }
 }
+#endif // !SVM
 
 uint WeakProcessor::ergo_workers(uint max_workers) {
   // Ignore ParallelRefProcEnabled; that's for j.l.r.Reference processing.
@@ -120,3 +125,6 @@ void WeakProcessor::Task::report_num_dead() {
 void WeakProcessor::WeakOopsDoTask::work(uint worker_id) {
   _erased_do_work(this, worker_id);
 }
+
+} // namespace svm_gc
+

@@ -55,6 +55,9 @@
 // \tparam next_ptr is a function pointer.  Applying this function to
 // an object of type T must return a pointer to the list entry member
 // of the object associated with the LockFreeStack type.
+
+namespace svm_gc {
+
 template<typename T, T* volatile* (*next_ptr)(T&)>
 class LockFreeStack {
   T* volatile _top;
@@ -171,5 +174,8 @@ public:
     Atomic::store(next_ptr(value), new_next);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_LOCKFREESTACK_HPP

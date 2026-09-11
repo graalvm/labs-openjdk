@@ -35,6 +35,9 @@
 // into "N"-word subregions (where "N" = 2^"LogN".  An array with an entry
 // for each such subregion indicates how far back one must go to find the
 // start of the chunk that includes the first word of the subregion.
+
+namespace svm_gc {
+
 class G1BlockOffsetTable: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -86,6 +89,10 @@ private:
   }
 
 public:
+#ifdef SVM
+  MemRegion* reserved() { return &_reserved; }
+  const uint8_t* entry_for_addr_for_read(const void* const p) const { return entry_for_addr(p); }
+#endif // SVM
 
   // Return the number of slots needed for an offset array
   // that covers mem_region_words words.
@@ -99,6 +106,11 @@ public:
   // Initialize the Block Offset Table to cover the memory region passed
   // in the heap parameter.
   G1BlockOffsetTable(MemRegion heap, G1RegionToSpaceMapper* storage);
+
+#ifdef SVM
+  // Initialize a read-only view backed by prebuilt BOT entries from the image.
+  G1BlockOffsetTable(MemRegion heap, const uint8_t* bot_entries);
+#endif // SVM
 
   static bool is_crossing_card_boundary(HeapWord* const obj_start,
                                         HeapWord* const obj_end) {
@@ -117,5 +129,8 @@ public:
     }
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1BLOCKOFFSETTABLE_HPP

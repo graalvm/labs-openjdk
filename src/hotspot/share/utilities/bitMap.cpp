@@ -30,6 +30,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/population_count.hpp"
 
+
+namespace svm_gc {
+
 using bm_word_t = BitMap::bm_word_t;
 using idx_t = BitMap::idx_t;
 
@@ -146,10 +149,12 @@ void GrowableBitMap<BitMapWithAllocator>::truncate(idx_t start_bit, idx_t end_bi
   update(new_map, new_size_in_bits);
 }
 
+#ifndef SVM
 ArenaBitMap::ArenaBitMap(Arena* arena, idx_t size_in_bits, bool clear)
   : GrowableBitMap<ArenaBitMap>(), _arena(arena) {
   initialize(size_in_bits, clear);
 }
+#endif // !SVM
 
 bm_word_t* ArenaBitMap::allocate(idx_t size_in_words) const {
   return (bm_word_t*)_arena->Amalloc(size_in_words * BytesPerWord);
@@ -159,10 +164,12 @@ bm_word_t* ArenaBitMap::reallocate(bm_word_t* old_map, size_t old_size_in_words,
   return pseudo_reallocate(*this, old_map, old_size_in_words, new_size_in_words);
 }
 
+#ifndef SVM
 ResourceBitMap::ResourceBitMap(idx_t size_in_bits, bool clear)
   : GrowableBitMap<ResourceBitMap>() {
   initialize(size_in_bits, clear);
 }
+#endif // !SVM
 
 bm_word_t* ResourceBitMap::allocate(idx_t size_in_words) const {
   return (bm_word_t*)NEW_RESOURCE_ARRAY(bm_word_t, size_in_words);
@@ -215,9 +222,11 @@ void BitMap::verify_range(idx_t beg, idx_t end) const {
 }
 #endif // #ifdef ASSERT
 
+#ifndef SVM
 void BitMap::pretouch() {
   os::pretouch_memory(word_addr(0), word_addr(size()));
 }
+#endif // !SVM
 
 void BitMap::set_range_within_word(idx_t beg, idx_t end) {
   // With a valid range (beg <= end), this test ensures that end != 0, as
@@ -337,6 +346,7 @@ void BitMap::clear_large_range(idx_t beg, idx_t end) {
   clear_range_within_word(bit_index(end_full_word), end);
 }
 
+#ifndef SVM
 void BitMap::at_put(idx_t bit, bool value) {
   if (value) {
     set_bit(bit);
@@ -344,6 +354,7 @@ void BitMap::at_put(idx_t bit, bool value) {
     clear_bit(bit);
   }
 }
+#endif // !SVM
 
 // Return true to indicate that this thread changed
 // the bit, false to indicate that someone else did.
@@ -364,6 +375,7 @@ bool BitMap::par_at_put(idx_t bit, bool value) {
   return value ? par_set_bit(bit) : par_clear_bit(bit);
 }
 
+#ifndef SVM
 void BitMap::at_put_range(idx_t beg, idx_t end, bool value) {
   if (value) {
     set_range(beg, end);
@@ -371,6 +383,7 @@ void BitMap::at_put_range(idx_t beg, idx_t end, bool value) {
     clear_range(beg, end);
   }
 }
+#endif // !SVM
 
 void BitMap::par_at_put_range(idx_t beg, idx_t end, bool value) {
   verify_range(beg, end);
@@ -396,6 +409,7 @@ void BitMap::par_at_put_range(idx_t beg, idx_t end, bool value) {
 
 }
 
+#ifndef SVM
 void BitMap::at_put_large_range(idx_t beg, idx_t end, bool value) {
   if (value) {
     set_large_range(beg, end);
@@ -403,6 +417,7 @@ void BitMap::at_put_large_range(idx_t beg, idx_t end, bool value) {
     clear_large_range(beg, end);
   }
 }
+#endif // !SVM
 
 void BitMap::par_at_put_large_range(idx_t beg, idx_t end, bool value) {
   verify_range(beg, end);
@@ -425,6 +440,7 @@ void BitMap::par_at_put_large_range(idx_t beg, idx_t end, bool value) {
   par_put_range_within_word(bit_index(end_full_word), end, value);
 }
 
+#ifndef SVM
 inline bm_word_t tail_mask(idx_t tail_bits) {
   assert(tail_bits != 0, "precondition"); // Works, but shouldn't be called.
   assert(tail_bits < (idx_t)BitsPerWord, "precondition");
@@ -636,6 +652,7 @@ bool BitMap::is_empty() const {
 void BitMap::clear_large() {
   clear_large_range_of_words(0, size_in_words());
 }
+#endif // !SVM
 
 BitMap::idx_t BitMap::count_one_bits_in_range_of_words(idx_t beg_full_word, idx_t end_full_word) const {
   idx_t sum = 0;
@@ -657,9 +674,11 @@ BitMap::idx_t BitMap::count_one_bits_within_word(idx_t beg, idx_t end) const {
   return 0;
 }
 
+#ifndef SVM
 BitMap::idx_t BitMap::count_one_bits() const {
   return count_one_bits(0, size());
 }
+#endif // !SVM
 
 // Returns the number of bits set within  [beg, end).
 BitMap::idx_t BitMap::count_one_bits(idx_t beg, idx_t end) const {
@@ -693,6 +712,7 @@ void BitMap::print_range_on(outputStream* st, const char* prefix) const {
       prefix, p2i(map()), p2i((char*)map() + (size() >> LogBitsPerByte)));
 }
 
+#ifndef SVM
 void BitMap::write_to(bm_word_t* buffer, size_t buffer_size_in_bytes) const {
   assert(buffer_size_in_bytes == size_in_bytes(), "must be");
   memcpy(buffer, _map, size_in_bytes());
@@ -718,7 +738,11 @@ void BitMap::print_on(outputStream* st) const {
   }
   st->cr();
 }
+#endif // !SVM
 
 template class GrowableBitMap<ArenaBitMap>;
 template class GrowableBitMap<ResourceBitMap>;
 template class GrowableBitMap<CHeapBitMap>;
+
+} // namespace svm_gc
+

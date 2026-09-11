@@ -36,6 +36,9 @@
 #include "utilities/ostream.hpp"
 #include "utilities/permitForbiddenFunctions.hpp"
 
+
+namespace svm_gc {
+
 LogTagSet*  LogTagSet::_list      = nullptr;
 size_t      LogTagSet::_ntagsets  = 0;
 
@@ -85,6 +88,7 @@ void LogTagSet::log(LogLevelType level, const char* msg) {
   }
 }
 
+#ifndef SVM
 void LogTagSet::log(const LogMessageBuffer& msg) {
   LogOutputList::Iterator it = _output_list.iterator(msg.least_detailed_level());
   LogDecorations decorations(LogLevel::Invalid, *this, _decorators);
@@ -93,6 +97,7 @@ void LogTagSet::log(const LogMessageBuffer& msg) {
     (*it)->write(msg.iterator(it.level(), decorations));
   }
 }
+#endif // !SVM
 
 void LogTagSet::label(outputStream* st, const char* separator) const {
   for (size_t i = 0; i < _ntags; i++) {
@@ -110,12 +115,14 @@ int LogTagSet::label(char* buf, size_t len, const char* separator) const {
   return (int)written;
 }
 
+#ifndef SVM
 void LogTagSet::write(LogLevelType level, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
   vwrite(level, fmt, args);
   va_end(args);
 }
+#endif // !SVM
 
 const size_t vwrite_buffer_size = 512;
 
@@ -217,3 +224,6 @@ void LogTagSet::list_all_tagsets(outputStream* out) {
   out->cr();
   FREE_C_HEAP_ARRAY(char*, tagset_labels);
 }
+
+} // namespace svm_gc
+

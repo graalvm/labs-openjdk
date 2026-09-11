@@ -28,6 +28,9 @@
 #include "gc/g1/g1CollectedHeap.hpp"
 #include "memory/iterator.hpp"
 
+
+namespace svm_gc {
+
 class G1ConcurrentMark;
 class nmethod;
 
@@ -80,5 +83,8 @@ public:
 
   void do_nmethod(nmethod* nm);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1NMETHODCLOSURE_HPP

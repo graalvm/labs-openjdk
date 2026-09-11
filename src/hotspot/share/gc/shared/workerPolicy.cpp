@@ -30,6 +30,9 @@
 #include "runtime/os.hpp"
 #include "runtime/vm_version.hpp"
 
+
+namespace svm_gc {
+
 uint WorkerPolicy::_parallel_worker_threads = 0;
 bool WorkerPolicy::_parallel_worker_threads_initialized = false;
 
@@ -66,7 +69,7 @@ uint WorkerPolicy::nof_parallel_worker_threads(uint num,
 }
 
 uint WorkerPolicy::calc_parallel_worker_threads() {
-  uint den = VM_Version::parallel_worker_threads_denominator();
+  uint den = Abstract_VM_Version::parallel_worker_threads_denominator();
   return nof_parallel_worker_threads(5, den, 8);
 }
 
@@ -161,6 +164,7 @@ uint WorkerPolicy::calc_active_workers(uintx total_workers,
   return new_active_workers;
 }
 
+#ifndef SVM
 uint WorkerPolicy::calc_active_conc_workers(uintx total_workers,
                                             uintx active_workers,
                                             uintx application_workers) {
@@ -174,3 +178,7 @@ uint WorkerPolicy::calc_active_conc_workers(uintx total_workers,
     return no_of_gc_threads;
   }
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

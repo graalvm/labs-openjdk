@@ -28,6 +28,8 @@
 
 #include <signal.h>
 
+namespace svm_gc {
+
 OSThread::OSThread()
   : _thread_id(
 #ifdef __APPLE__
@@ -37,6 +39,7 @@ OSThread::OSThread()
 #endif
     ),
     _pthread_id(nullptr),
+#ifndef SVM
     _unique_thread_id(0),
     _caller_sigmask(),
     sr(),
@@ -44,10 +47,14 @@ OSThread::OSThread()
     _ucontext(nullptr),
     _expanding_stack(0),
     _alt_sig_stack(nullptr),
+#endif // !SVM
     _startThread_lock(new Monitor(Mutex::event, "startThread_lock")) {
+#ifndef SVM
   sigemptyset(&_caller_sigmask);
+#endif // !SVM
 }
 
+#ifndef SVM
 // Additional thread_id used to correlate threads in SA
 void OSThread::set_unique_thread_id() {
 #ifdef __APPLE__
@@ -63,7 +70,11 @@ void OSThread::set_unique_thread_id() {
   _unique_thread_id = m_ident_info.thread_id;
 #endif
 }
+#endif // !SVM
 
 OSThread::~OSThread() {
   delete _startThread_lock;
 }
+
+} // namespace svm_gc
+
