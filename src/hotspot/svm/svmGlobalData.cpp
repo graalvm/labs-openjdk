@@ -106,6 +106,7 @@ void SVMGlobalData::verify_offsets(bool use_perf_data) {
   assert(!SVMGlobalData::_closed_type_world || SVMGlobalData::_offsets._hybrid_layout._closed_type_world_type_check_slots > oopDesc::klass_offset_in_bytes(), "must be");
 
   assert(SVMGlobalData::_offsets._thread_locals._next_thread >= 0, "must be");
+  assert(SVMGlobalData::_offsets._thread_locals._barrier_and_allocation_data >= 0, "must be");
   assert(SVMGlobalData::_offsets._thread_locals._java_thread >= 0, "must be");
   assert(SVMGlobalData::_offsets._thread_locals._thread_status >= 0, "must be");
   assert(SVMGlobalData::_offsets._thread_locals._pod_reference_map >= 0, "must be");

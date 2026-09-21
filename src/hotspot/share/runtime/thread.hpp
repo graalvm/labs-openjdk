@@ -161,15 +161,22 @@ class Thread NOT_SVM(: public ThreadShadow) {
   // Thread local data area available to the GC. The internal
   // structure and contents of this data area is GC-specific.
   // Only GC and GC barrier code should access this data area.
-  GCThreadLocalData _gc_data;
 #ifdef SVM
+  // SVM can place this data outside Thread so generated code can access it at low offsets.
+  GCThreadLocalData* _gc_data;
   uint _gc_id; // The current GC id when a thread takes part in GC
+#else
+  GCThreadLocalData _gc_data;
 #endif // SVM
 
  public:
+#ifndef SVM
   static ByteSize gc_data_offset() {
     return byte_offset_of(Thread, _gc_data);
   }
+#else
+  void set_gc_data(GCThreadLocalData* gc_data) { _gc_data = gc_data; }
+#endif // !SVM
 
 #ifdef SVM
   void set_gc_id(uint gc_id) { _gc_id = gc_id; }
@@ -177,8 +184,13 @@ class Thread NOT_SVM(: public ThreadShadow) {
 #endif // SVM
 
   template <typename T> T* gc_data() {
+#ifdef SVM
+    STATIC_ASSERT(sizeof(T) <= sizeof(*_gc_data));
+    return reinterpret_cast<T*>(_gc_data);
+#else
     STATIC_ASSERT(sizeof(T) <= sizeof(_gc_data));
     return reinterpret_cast<T*>(&_gc_data);
+#endif // SVM
   }
 
   // Exception handling
@@ -317,6 +329,11 @@ class Thread NOT_SVM(: public ThreadShadow) {
   static void clear_thread_current(); // TLS cleanup needed before threads terminate
 
  protected:
+#ifdef SVM
+  void initialize_barrier_set_data();
+  void destroy_barrier_set_data();
+#endif // SVM
+
   // To be implemented by children.
   virtual void run() = 0;
   virtual void pre_run() = 0;
@@ -648,9 +665,9 @@ protected:
 #endif // !SVM
 
   static ByteSize tlab_start_offset()            { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::start_offset(); }
+#ifndef SVM
   static ByteSize tlab_end_offset()              { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::end_offset(); }
   static ByteSize tlab_top_offset()              { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::top_offset(); }
-#ifndef SVM
   static ByteSize tlab_pf_top_offset()           { return byte_offset_of(Thread, _tlab) + ThreadLocalAllocBuffer::pf_top_offset(); }
 
   JFR_ONLY(DEFINE_THREAD_LOCAL_OFFSET_JFR;)

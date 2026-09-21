@@ -48,6 +48,10 @@ class IsolateThread {
     return *(IsolateThread**)thread_local_at(SVMGlobalData::_offsets._thread_locals._next_thread);
   }
 
+  address barrier_and_allocation_data() {
+    return thread_local_at(SVMGlobalData::_offsets._thread_locals._barrier_and_allocation_data);
+  }
+
   JavaThread* java_thread() {
     return (JavaThread*)thread_local_at(SVMGlobalData::_offsets._thread_locals._java_thread);
   }

@@ -39,6 +39,11 @@ namespace svm_gc {
 class G1ThreadLocalData {
 private:
   SATBMarkQueue _satb_mark_queue;
+#ifdef SVM
+  SVMThreadLocalAllocBufferData _tlab;
+  // SVM Java code assumes that the inherited _buf in _dirty_card_queue is the last field in
+  // G1ThreadLocalData that it accesses directly.
+#endif // SVM
   G1DirtyCardQueue _dirty_card_queue;
 
   // Per-thread cache of pinned object count to reduce atomic operation traffic
@@ -48,6 +53,9 @@ private:
 
   G1ThreadLocalData() :
       _satb_mark_queue(&G1BarrierSet::satb_mark_queue_set()),
+#ifdef SVM
+      _tlab(),
+#endif // SVM
       _dirty_card_queue(&G1BarrierSet::dirty_card_queue_set()),
       _pin_cache() {}
 
@@ -57,20 +65,36 @@ private:
   }
 
   static ByteSize satb_mark_queue_offset() {
+#ifdef SVM
+    return byte_offset_of(G1ThreadLocalData, _satb_mark_queue);
+#else
     return Thread::gc_data_offset() + byte_offset_of(G1ThreadLocalData, _satb_mark_queue);
+#endif // SVM
   }
 
   static ByteSize dirty_card_queue_offset() {
+#ifdef SVM
+    return byte_offset_of(G1ThreadLocalData, _dirty_card_queue);
+#else
     return Thread::gc_data_offset() + byte_offset_of(G1ThreadLocalData, _dirty_card_queue);
+#endif // SVM
   }
 
 public:
   static void create(Thread* thread) {
+#ifdef SVM
+    G1ThreadLocalData* thread_data = new (data(thread)) G1ThreadLocalData();
+    thread->tlab().set_allocation_data(&thread_data->_tlab);
+#else
     new (data(thread)) G1ThreadLocalData();
+#endif // SVM
   }
 
   static void destroy(Thread* thread) {
     data(thread)->~G1ThreadLocalData();
+#ifdef SVM
+    thread->tlab().set_allocation_data(nullptr);
+#endif // SVM
   }
 
   static SATBMarkQueue& satb_mark_queue(Thread* thread) {
@@ -100,6 +124,16 @@ public:
   static ByteSize dirty_card_queue_buffer_offset() {
     return dirty_card_queue_offset() + G1DirtyCardQueue::byte_offset_of_buf();
   }
+
+#ifdef SVM
+  static ByteSize tlab_top_offset() {
+    return byte_offset_of(G1ThreadLocalData, _tlab) + SVMThreadLocalAllocBufferData::top_offset();
+  }
+
+  static ByteSize tlab_end_offset() {
+    return byte_offset_of(G1ThreadLocalData, _tlab) + SVMThreadLocalAllocBufferData::end_offset();
+  }
+#endif // SVM
 
   static G1RegionPinCache& pin_count_cache(Thread* thread) {
     return data(thread)->_pin_cache;

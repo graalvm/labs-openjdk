@@ -35,6 +35,22 @@ namespace svm_gc {
 
 class ThreadLocalAllocStats;
 
+#ifdef SVM
+// TLAB fields stored in the collector's barrier and allocation data and accessed by generated allocation code.
+class SVMThreadLocalAllocBufferData {
+  friend class ThreadLocalAllocBuffer;
+
+  HeapWord* _top;
+  HeapWord* _end;
+
+public:
+  SVMThreadLocalAllocBufferData() : _top(nullptr), _end(nullptr) {}
+
+  static ByteSize top_offset() { return byte_offset_of(SVMThreadLocalAllocBufferData, _top); }
+  static ByteSize end_offset() { return byte_offset_of(SVMThreadLocalAllocBufferData, _end); }
+};
+#endif // SVM
+
 // ThreadLocalAllocBuffer: a descriptor for thread-local storage used by
 // the threads for allocation.
 //            It is thread-private at any time, but maybe multiplexed over
@@ -51,9 +67,13 @@ class ThreadLocalAllocBuffer: public CHeapObj<mtThread> {
   friend class JVMCIVMStructs;
 private:
   HeapWord* _start;                              // address of TLAB
+#ifdef SVM
+  SVMThreadLocalAllocBufferData* _allocation_data;
+#else
   HeapWord* _top;                                // address after last allocation
   HeapWord* _pf_top;                             // allocation prefetch watermark
   HeapWord* _end;                                // allocation end (can be the sampling end point or _allocation_end)
+#endif // SVM
   HeapWord* _allocation_end;                     // end for allocations (actual TLAB end, excluding alignment_reserve)
 
   size_t    _desired_size;                       // desired size   (including alignment_reserve)
@@ -75,10 +95,12 @@ private:
   void reset_statistics();
 
   void set_start(HeapWord* start)                { _start = start; }
-  void set_end(HeapWord* end)                    { _end = end; }
+  void set_end(HeapWord* end)                    { SVM_ONLY(_allocation_data->_end) NOT_SVM(_end) = end; }
   void set_allocation_end(HeapWord* ptr)         { _allocation_end = ptr; }
-  void set_top(HeapWord* top)                    { _top = top; }
+  void set_top(HeapWord* top)                    { SVM_ONLY(_allocation_data->_top) NOT_SVM(_top) = top; }
+#ifndef SVM
   void set_pf_top(HeapWord* pf_top)              { _pf_top = pf_top; }
+#endif // !SVM
   void set_desired_size(size_t desired_size)     { _desired_size = desired_size; }
   void set_refill_waste_limit(size_t waste)      { _refill_waste_limit = waste;  }
 
@@ -110,16 +132,22 @@ private:
 public:
   ThreadLocalAllocBuffer();
 
+#ifdef SVM
+  void set_allocation_data(SVMThreadLocalAllocBufferData* allocation_data) { _allocation_data = allocation_data; }
+#endif // SVM
+
   static size_t min_size();
   static size_t max_size()                       { assert(_max_size != 0, "max_size not set up"); return _max_size; }
   static size_t max_size_in_bytes()              { return max_size() * BytesPerWord; }
   static void set_max_size(size_t max_size)      { _max_size = max_size; }
 
   HeapWord* start() const                        { return _start; }
-  HeapWord* end() const                          { return _end; }
-  HeapWord* top() const                          { return _top; }
+  HeapWord* end() const                          { return SVM_ONLY(_allocation_data->_end) NOT_SVM(_end); }
+  HeapWord* top() const                          { return SVM_ONLY(_allocation_data->_top) NOT_SVM(_top); }
   HeapWord* hard_end();
+#ifndef SVM
   HeapWord* pf_top() const                       { return _pf_top; }
+#endif // !SVM
   size_t desired_size() const                    { return _desired_size; }
   size_t used() const                            { return pointer_delta(top(), start()); }
   size_t used_bytes() const                      { return pointer_delta(top(), start(), 1); }
@@ -178,17 +206,22 @@ public:
 
   template <typename T> void addresses_do(T f) {
     f(&_start);
+#ifdef SVM
+    f(&_allocation_data->_top);
+    f(&_allocation_data->_end);
+#else
     f(&_top);
     f(&_pf_top);
     f(&_end);
+#endif // SVM
     f(&_allocation_end);
   }
 
   // Code generation support
   static ByteSize start_offset()                 { return byte_offset_of(ThreadLocalAllocBuffer, _start); }
+#ifndef SVM
   static ByteSize end_offset()                   { return byte_offset_of(ThreadLocalAllocBuffer, _end); }
   static ByteSize top_offset()                   { return byte_offset_of(ThreadLocalAllocBuffer, _top); }
-#ifndef SVM
   static ByteSize pf_top_offset()                { return byte_offset_of(ThreadLocalAllocBuffer, _pf_top); }
 #endif // !SVM
 };

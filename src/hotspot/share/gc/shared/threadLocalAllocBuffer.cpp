@@ -45,9 +45,13 @@ unsigned int ThreadLocalAllocBuffer::_target_refills = 0;
 
 ThreadLocalAllocBuffer::ThreadLocalAllocBuffer() :
   _start(nullptr),
+#ifdef SVM
+  _allocation_data(nullptr),
+#else
   _top(nullptr),
   _pf_top(nullptr),
   _end(nullptr),
+#endif // SVM
   _allocation_end(nullptr),
   _desired_size(0),
   _refill_waste_limit(0),
@@ -194,7 +198,9 @@ void ThreadLocalAllocBuffer::initialize(HeapWord* start,
                                         HeapWord* end) {
   set_start(start);
   set_top(top);
+#ifndef SVM
   set_pf_top(top);
+#endif // !SVM
   set_end(end);
   set_allocation_end(end);
   invariants();
@@ -489,7 +495,11 @@ const HeapWord* ThreadLocalAllocBuffer::start_relaxed() const {
 }
 
 const HeapWord* ThreadLocalAllocBuffer::top_relaxed() const {
+#ifdef SVM
+  return Atomic::load(&_allocation_data->_top);
+#else
   return Atomic::load(&_top);
+#endif // SVM
 }
 
 } // namespace svm_gc

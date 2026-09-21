@@ -45,7 +45,7 @@
 
 namespace svm_gc {
 
-typedef uint64_t GCThreadLocalData[8]; // 64 bytes
+typedef uint64_t GCThreadLocalData[10]; // 80 bytes
 
 } // namespace svm_gc
 

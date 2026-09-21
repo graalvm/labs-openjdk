@@ -515,6 +515,7 @@ class ReadReleaseFileTask : public PeriodicTask {
 
 #ifdef SVM
 jint Threads::create_vm(IsolateThread *isolate_thread) {
+  JavaThread* java_thread = isolate_thread->java_thread();
   // NOTE (chaeubl): the early initialization & the argument parsing were moved to the method above
 #else
 jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
@@ -643,7 +644,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
 #endif // !SVM
 
   // Attach the main thread to this os thread
-  JavaThread* main_thread = SVM_ONLY(new (isolate_thread->java_thread()) JavaThread()) NOT_SVM(new JavaThread());
+  JavaThread* main_thread = SVM_ONLY(new (java_thread) JavaThread()) NOT_SVM(new JavaThread());
 #ifndef SVM
   main_thread->set_thread_state(_thread_in_vm);
 #endif // SVM
