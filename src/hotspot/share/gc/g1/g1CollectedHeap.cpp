@@ -2099,7 +2099,8 @@ bool G1CollectedHeap::try_collect(GCCause::Cause cause,
     return try_collect_concurrently(cause,
                                     counters_before.total_collections(),
                                     counters_before.old_marking_cycles_started());
-  } else if (cause == GCCause::_wb_young_gc
+  } else if (cause == GCCause::_wb_young_gc ||
+             cause == GCCause::_runtime_state_trim_young_gc
              DEBUG_ONLY(|| cause == GCCause::_scavenge_alot)) {
 
     // Schedule a standard evacuation pause. We're setting word_size
