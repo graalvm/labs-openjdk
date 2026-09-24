@@ -43,9 +43,11 @@ class GCCause : public AllStatic {
     _dcmd_gc_run = 6,
     _wb_young_gc = 7,
     _wb_full_gc = 8,
+    _runtime_state_trim_young_gc = 9,
+    _runtime_state_trim_full_gc = 10,
 
     // GC causes that are used but that native-image does not know about
-    _scavenge_alot = 10,
+    _scavenge_alot = 11,
     _wb_breakpoint,
 
     _no_gc,
@@ -82,7 +84,9 @@ class GCCause : public AllStatic {
                                                              cause) {
     return (cause == GCCause::_jvmti_force_gc ||
             cause == GCCause::_heap_inspection ||
-            cause == GCCause::_heap_dump);
+            cause == GCCause::_heap_dump ||
+            cause == GCCause::_runtime_state_trim_young_gc ||
+            cause == GCCause::_runtime_state_trim_full_gc);
   }
 
   inline static bool is_codecache_requested_gc(GCCause::Cause cause) {

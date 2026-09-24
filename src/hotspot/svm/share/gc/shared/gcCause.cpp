@@ -56,6 +56,12 @@ const char* GCCause::to_string(GCCause::Cause cause) {
     case _wb_breakpoint:
       return "WhiteBox Initiated Run to Breakpoint";
 
+    case _runtime_state_trim_young_gc:
+      return "Runtime-State Trim Young GC";
+
+    case _runtime_state_trim_full_gc:
+      return "Runtime-State Trim Full GC";
+
     case _no_gc:
       return "No GC";
 

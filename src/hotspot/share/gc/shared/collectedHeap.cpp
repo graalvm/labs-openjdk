@@ -371,6 +371,8 @@ void CollectedHeap::collect_as_vm_thread(GCCause::Cause cause) {
     case GCCause::_codecache_GC_aggressive:
     case GCCause::_heap_inspection:
     case GCCause::_heap_dump:
+    case GCCause::_runtime_state_trim_young_gc:
+    case GCCause::_runtime_state_trim_full_gc:
     case GCCause::_metadata_GC_threshold: {
       HandleMark hm(thread);
       do_full_collection(false);        // don't clear all soft refs
