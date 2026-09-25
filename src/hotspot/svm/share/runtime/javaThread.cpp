@@ -124,6 +124,10 @@ JavaThread::JavaThread(MemTag mem_tag) :
   _stack_frames(nullptr),
   _code_infos(nullptr),
   _deferred_card_mark(MemRegion()) {
+#ifdef SVM
+  set_gc_data((GCThreadLocalData*)isolate_thread()->barrier_and_allocation_data());
+  initialize_barrier_set_data();
+#endif // SVM
   // NOTE (chaeubl): for the main thread, this constructor is executed before the Java heap is fully initialized.
   // So, we had to move all relevant code parts to JavaThread::initialize().
   assert(_stack_frames == nullptr && _code_infos == nullptr, "memory must have been zeroed out");
@@ -135,6 +139,9 @@ JavaThread::~JavaThread() {
     retire_tlab();
   }
   BarrierSet::barrier_set()->on_thread_detach(this);
+#ifdef SVM
+  destroy_barrier_set_data();
+#endif // SVM
 }
 
 void JavaThread::initialize() {

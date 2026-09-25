@@ -78,12 +78,14 @@ Thread::Thread(MemTag mem_tag) {
 
   DEBUG_ONLY(_run_state = PRE_CALL_RUN;)
 
-#ifndef SVM
+#ifdef SVM
+  set_gc_data(nullptr);
+#else
   // stack and get_thread
   set_stack_base(nullptr);
   set_stack_size(0);
   set_lgrp_id(-1);
-#endif // !SVM
+#endif // SVM
   DEBUG_ONLY(clear_suspendible_thread();)
   DEBUG_ONLY(clear_indirectly_suspendible_thread();)
   DEBUG_ONLY(clear_indirectly_safepoint_thread();)
@@ -152,6 +154,7 @@ Thread::Thread(MemTag mem_tag) {
   }
 #endif // CHECK_UNHANDLED_OOPS
 
+#ifndef SVM
   // Notify the barrier set that a thread is being created. The initial
   // thread is created before the barrier set is available.  The call to
   // BarrierSet::on_thread_create() for this thread is therefore deferred
@@ -166,11 +169,33 @@ Thread::Thread(MemTag mem_tag) {
     // If the main thread creates other threads before the barrier set that is an error.
     assert(Thread::current_or_null() == nullptr, "creating thread before barrier set");
   }
-
-#ifndef SVM
   MACOS_AARCH64_ONLY(DEBUG_ONLY(_wx_init = false));
 #endif // !SVM
 }
+
+#ifdef SVM
+void Thread::initialize_barrier_set_data() {
+  // The initial thread is created before the barrier set is available. The call to
+  // BarrierSet::on_thread_create() for this thread is therefore deferred to
+  // BarrierSet::set_barrier_set().
+  BarrierSet* const barrier_set = BarrierSet::barrier_set();
+  if (barrier_set != nullptr) {
+    barrier_set->on_thread_create(this);
+  } else {
+    // Only the main thread should be created before the barrier set and that happens just before
+    // Thread::current is set. No other thread can attach as the VM is not created yet.
+    assert(Thread::current_or_null() == nullptr, "creating thread before barrier set");
+  }
+}
+
+void Thread::destroy_barrier_set_data() {
+  // A barrier set might not be available if we encountered errors during bootstrapping.
+  BarrierSet* const barrier_set = BarrierSet::barrier_set();
+  if (barrier_set != nullptr) {
+    barrier_set->on_thread_destroy(this);
+  }
+}
+#endif // SVM
 
 #ifndef SVM
 #ifdef ASSERT
@@ -319,12 +344,14 @@ Thread::~Thread() {
          _run_state == POST_RUN, "Active Thread deleted before post_run(): "
          "_run_state=%d", (int)_run_state);
 
+#ifndef SVM
   // Notify the barrier set that a thread is being destroyed. Note that a barrier
   // set might not be available if we encountered errors during bootstrapping.
   BarrierSet* const barrier_set = BarrierSet::barrier_set();
   if (barrier_set != nullptr) {
     barrier_set->on_thread_destroy(this);
   }
+#endif // !SVM
 
   // deallocate data structures
   delete resource_area();

@@ -55,6 +55,7 @@ struct SVMHybridLayoutOffsets {
 
 struct SVMThreadLocalOffsets {
   int _next_thread;
+  int _barrier_and_allocation_data;
   int _java_thread;
   int _thread_status;
   int _pod_reference_map;

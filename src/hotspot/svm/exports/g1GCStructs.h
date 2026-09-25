@@ -51,6 +51,7 @@ struct G1InitState {
   int card_queue_index_offset;
   int card_table_shift;
   int log_of_heap_region_grain_bytes;
+  int barrier_and_allocation_data_size;
   int java_thread_size;
   int vm_operation_data_size;
   int vm_operation_wrapper_data_size;

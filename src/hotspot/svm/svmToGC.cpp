@@ -103,7 +103,7 @@ EXPORT_FOR_SVM void svm_g1gc_parse_options(int actual_native_image_version, int 
     size_t max_heap_address_space_size, size_t heap_base_alignment, size_t null_regions_size, size_t image_heap_size,
     int compressed_reference_shift, bool is_containerized, jlong container_memory_limit_in_bytes, int container_active_processor_count, G1HeapOptions *result) {
   // verify invariants
-  int expected_native_image_version = 250302;
+  int expected_native_image_version = 250500;
   guarantee(actual_native_image_version >= expected_native_image_version, "incompatible GC version: the native-image tries to use a GC that is too new");
   guarantee(actual_native_image_version <= expected_native_image_version, "incompatible GC version: the native-image tries to use a GC that is too old");
 #ifdef SVM_COMPRESSED_REFERENCES
@@ -165,6 +165,11 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
     fetchContinuationStackFramesFunc fetch_continuation_stack_frames, freeContinuationStackFramesFunc free_continuation_stack_frames,
     fetchCodeInfosFunc fetch_code_infos, freeCodeInfosFunc free_code_infos, cleanRuntimeCodeCacheFunc clean_runtime_code_cache,
     threadStateTransitionFunc transition_vm_to_native, fastThreadStateTransitionFunc fast_transition_native_to_vm, threadStateTransitionFunc slow_transition_native_to_vm) {
+  guarantee(isolate_thread != nullptr, "must be");
+  guarantee(offsets != nullptr, "must be");
+  guarantee(offsets_length > 0, "must be");
+  SVMGlobalData::initialize_offsets(offsets, offsets_length);
+
   assert(isolate_thread->has_status_created(), "unexpected thread state");
   guarantee(SVMIsolateData::_heap_base == nullptr, "GC doesn't support multiple isolates at the moment.");
 
@@ -176,7 +181,6 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
   guarantee(TLABSize >= 0, "must be");
 
   // verify all arguments
-  guarantee(isolate_thread != nullptr, "must be");
   guarantee(heap_base != nullptr, "must be");
   guarantee(closed_image_heap_regions >= 0, "must be");
   guarantee(open_image_heap_regions >= 0, "must be");
@@ -196,8 +200,6 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
   guarantee(runtime_code_info_memory != nullptr, "must be");
   guarantee(reference_map_compressed_offset_shift == ReferenceMapCompressedOffsetShift, "must be");
   guarantee(thread_locals_reference_map != nullptr, "must be");
-  guarantee(offsets != nullptr, "must be");
-  guarantee(offsets_length > 0, "must be");
   guarantee(collect_for_allocation_op != nullptr, "must be");
   guarantee(execute_pause_remark_op != nullptr, "must be");
   guarantee(execute_pause_cleanup_op != nullptr, "must be");
@@ -261,9 +263,7 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
   SVMGlobalData::_try_fast_transition_native_to_vm = fast_transition_native_to_vm;
   SVMGlobalData::_slow_transition_native_to_vm = slow_transition_native_to_vm;
   SVMGlobalData::_clean_runtime_code_cache = clean_runtime_code_cache;
-  SVMGlobalData::initialize_offsets(offsets, offsets_length);
   SVMGlobalData::verify_offsets(performance_data != nullptr);
-
   Universe::_dynamic_hub_klass = dynamic_hub_klass;
   Universe::_fillerArrayKlass = filler_array_klass;
   vmClasses::_string_klass = string_klass;
@@ -298,8 +298,8 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
     // return a data structure with relevant offsets and constants (some of the values depend on the VM arguments)
     g1_init_state.card_table_address = (address)ci_card_table_address();
     g1_init_state.gc_total_collections_address = (address)Universe::heap()->total_collections_address();
-    g1_init_state.tlab_top_offset = in_bytes(Thread::tlab_top_offset());
-    g1_init_state.tlab_end_offset = in_bytes(Thread::tlab_end_offset());
+    g1_init_state.tlab_top_offset = in_bytes(G1ThreadLocalData::tlab_top_offset());
+    g1_init_state.tlab_end_offset = in_bytes(G1ThreadLocalData::tlab_end_offset());
     g1_init_state.satb_queue_marking_offset = in_bytes(G1ThreadLocalData::satb_mark_queue_active_offset());
     g1_init_state.satb_queue_buffer_offset = in_bytes(G1ThreadLocalData::satb_mark_queue_buffer_offset());
     g1_init_state.satb_queue_index_offset = in_bytes(G1ThreadLocalData::satb_mark_queue_index_offset());
@@ -307,6 +307,7 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
     g1_init_state.card_queue_index_offset = in_bytes(G1ThreadLocalData::dirty_card_queue_index_offset());
     g1_init_state.card_table_shift = CardTable::card_shift();
     g1_init_state.log_of_heap_region_grain_bytes = G1HeapRegion::LogOfHRGrainBytes;
+    g1_init_state.barrier_and_allocation_data_size = sizeof(GCThreadLocalData);
     g1_init_state.java_thread_size = sizeof(JavaThread);
     g1_init_state.vm_operation_data_size = sizeof(VM_OperationData);
     g1_init_state.vm_operation_wrapper_data_size = sizeof(VM_OperationWrapperData);
@@ -360,7 +361,8 @@ EXPORT_FOR_SVM bool svm_g1gc_teardown() {
 // NO_TRANSITION - Uninterruptible code that may be called by any Java thread.
 EXPORT_FOR_SVM void svm_g1gc_attach_thread(IsolateThread *thread) {
   assert(thread->has_status_created(), "unexpected thread state");
-  JavaThread *java_thread = new (thread->java_thread()) JavaThread();
+  JavaThread *java_thread = thread->java_thread();
+  java_thread = new (java_thread) JavaThread();
   assert(is_aligned(java_thread, wordSize), "must be");
   java_thread->initialize_thread_current();
   java_thread->initialize();

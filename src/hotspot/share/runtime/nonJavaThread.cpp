@@ -70,10 +70,18 @@ void NonJavaThread::Iterator::step() {
 }
 
 NonJavaThread::NonJavaThread() : Thread(), _next(nullptr) {
+#ifdef SVM
+  set_gc_data(&_gc_data_storage);
+  initialize_barrier_set_data();
+#endif // SVM
   assert(BarrierSet::barrier_set() != nullptr, "NonJavaThread created too soon!");
 }
 
-NonJavaThread::~NonJavaThread() { }
+NonJavaThread::~NonJavaThread() {
+#ifdef SVM
+  destroy_barrier_set_data();
+#endif // SVM
+}
 
 void NonJavaThread::add_to_the_list() {
   MutexLocker ml(NonJavaThreadsList_lock, Mutex::_no_safepoint_check_flag);
