@@ -25,6 +25,9 @@
 #include "gc/g1/g1OldGenAllocationTracker.hpp"
 #include "logging/log.hpp"
 
+
+namespace svm_gc {
+
 G1OldGenAllocationTracker::G1OldGenAllocationTracker() :
   _last_period_old_gen_bytes(0),
   _last_period_old_gen_growth(0),
@@ -59,3 +62,6 @@ void G1OldGenAllocationTracker::reset_after_gc(size_t humongous_bytes_after_gc) 
   _allocated_bytes_since_last_gc = 0;
   _allocated_humongous_bytes_since_last_gc = 0;
 }
+
+} // namespace svm_gc
+

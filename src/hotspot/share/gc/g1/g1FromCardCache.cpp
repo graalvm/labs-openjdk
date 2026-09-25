@@ -30,6 +30,9 @@
 #include "runtime/globals.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 uintptr_t** G1FromCardCache::_cache = nullptr;
 uint        G1FromCardCache::_max_reserved_regions = 0;
 size_t      G1FromCardCache::_static_mem_size = 0;
@@ -69,6 +72,7 @@ void G1FromCardCache::invalidate(uint start_idx, size_t new_num_regions) {
 }
 
 #ifndef PRODUCT
+#ifndef SVM
 void G1FromCardCache::print(outputStream* out) {
   for (uint i = 0; i < num_par_rem_sets(); i++) {
     for (uint j = 0; j < _max_reserved_regions; j++) {
@@ -77,6 +81,7 @@ void G1FromCardCache::print(outputStream* out) {
     }
   }
 }
+#endif // !SVM
 #endif
 
 uint G1FromCardCache::num_par_rem_sets() {
@@ -89,3 +94,6 @@ void G1FromCardCache::clear(uint region_idx) {
     set(i, region_idx, InvalidCard);
   }
 }
+
+} // namespace svm_gc
+

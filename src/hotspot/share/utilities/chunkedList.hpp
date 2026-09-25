@@ -28,6 +28,9 @@
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 template <class T, MemTag MT> class ChunkedList : public CHeapObj<MT> {
   template <class U> friend class TestChunkedList;
 
@@ -77,5 +80,8 @@ template <class T, MemTag MT> class ChunkedList : public CHeapObj<MT> {
     return _values[i];
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_CHUNKEDLIST_HPP

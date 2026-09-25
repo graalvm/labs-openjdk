@@ -71,11 +71,17 @@
 # include <sys/wait.h>
 # include <pwd.h>
 # include <poll.h>
+#ifndef SVM
 # include <ucontext.h>
+#endif // !SVM
 
 #define REG_FP 29
 #define REG_LR 30
 #define REG_BCP 22
+
+#ifndef SVM
+
+namespace svm_gc {
 
 NOINLINE address os::current_stack_pointer() {
   return (address)__builtin_frame_address(0);
@@ -317,9 +323,17 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
   return false; // Mute compiler
 }
 
+} // namespace svm_gc
+
+#endif // !SVM
+
+
+namespace svm_gc {
+
 void os::Linux::init_thread_fpu_state(void) {
 }
 
+#ifndef SVM
 int os::Linux::get_fpu_control_word(void) {
   return 0;
 }
@@ -335,6 +349,7 @@ void os::Linux::set_fpu_control_word(int fpu_control) {
 size_t os::_compiler_thread_min_stack_allowed = 72 * K;
 size_t os::_java_thread_min_stack_allowed = 72 * K;
 size_t os::_vm_internal_thread_min_stack_allowed = 72 * K;
+#endif // !SVM
 
 // return default stack size for thr_type
 size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
@@ -343,6 +358,7 @@ size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
   return s;
 }
 
+#ifndef SVM
 /////////////////////////////////////////////////////////////////////////////
 // helper functions for fatal error handler
 
@@ -389,13 +405,25 @@ int os::extra_bang_size_in_bytes() {
   // AArch64 does not require the additional stack bang.
   return 0;
 }
+#endif // !SVM
 
 static inline void atomic_copy64(const volatile void *src, volatile void *dst) {
   *(jlong *) dst = *(const jlong *) src;
 }
 
 extern "C" {
+
+#ifdef SVM
+  void aarch64_custom_spin_wait();
+  void (*volatile aarch64_custom_spin_wait_ptr)() = &aarch64_custom_spin_wait;
+#endif // SVM
+
   int SpinPause() {
+#ifdef SVM
+    // Note this is a call to an empty method
+    // This indirect call pattern is done to imitate the same calling overheads as hotspot
+    (*aarch64_custom_spin_wait_ptr)();
+#else
     using spin_wait_func_ptr_t = void (*)();
     spin_wait_func_ptr_t func = CAST_TO_FN_PTR(spin_wait_func_ptr_t, StubRoutines::aarch64::spin_wait());
     assert(func != nullptr, "StubRoutines::aarch64::spin_wait must not be null.");
@@ -409,6 +437,7 @@ extern "C" {
     // - return from the stub
     // - return from SpinPause
     // So '1' always is returned.
+#endif // SVM
     return 1;
   }
 
@@ -477,3 +506,6 @@ extern "C" {
     memmove(to, from, count * 8);
   }
 };
+
+} // namespace svm_gc
+

@@ -31,6 +31,9 @@
 #include "memory/padded.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 class G1RedirtyCardsQueueSet;
 
 // A thread-local qset and queue.  It provides an uncontended staging
@@ -94,5 +97,8 @@ public:
   BufferNode* all_completed_buffers() const;
   BufferNodeList take_all_completed_buffers();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1REDIRTYCARDSQUEUE_HPP

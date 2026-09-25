@@ -40,36 +40,56 @@
 // support is provided. Allocation by the interpreter and compiled code is done inline
 // and bails out to Scavenge::invoke_and_allocate.
 
+
+namespace svm_gc {
+
 class CollectedHeap;
+#ifndef SVM
 class DeferredObjAllocEvent;
 class OopStorage;
 class SerializeClosure;
+#endif // !SVM
 
 class Universe: AllStatic {
+#ifndef SVM
   // Ugh.  Universe is much too friendly.
   friend class SerialFullGC;
+#endif // !SVM
   friend class oopDesc;
+#ifndef SVM
   friend class ClassLoader;
   friend class SystemDictionary;
   friend class VMStructs;
   friend class VM_PopulateDumpSharedSpace;
   friend class Metaspace;
   friend class MetaspaceShared;
+#endif // !SVM
   friend class vmClasses;
+#ifdef SVM
+  friend class G1CollectedHeap;
+#endif // SVM
 
   friend jint  universe_init();
   friend void  universe2_init();
   friend bool  universe_post_init();
+#ifndef SVM
   friend void  universe_post_module_init();
+#endif // !SVM
 
+#ifdef SVM
+public:
+  static Klass *_dynamic_hub_klass;
+#else
  private:
   // Known classes in the VM
   static TypeArrayKlass* _typeArrayKlasses[T_LONG+1];
   static ObjArrayKlass* _objectArrayKlass;
+#endif // SVM
   // Special int-Array that represents filler objects that are used by GC to overwrite
   // dead objects. References to them are generally an error.
-  static Klass* _fillerArrayKlass;
+  static TypeArrayKlass* _fillerArrayKlass;
 
+#ifndef SVM
   // Known objects in the VM
   static OopHandle    _main_thread_group;             // Reference to the main thread group object
   static OopHandle    _system_thread_group;           // Reference to the system thread group object
@@ -107,13 +127,18 @@ class Universe: AllStatic {
   // preallocated message detail strings for error objects
   static OopHandle _msg_metaspace;
   static OopHandle _msg_class_metaspace;
+#endif // !SVM
 
   // References waiting to be transferred to the ReferenceHandler
   static OopHandle    _reference_pending_list;
+#ifdef SVM
+  static uint64_t     _reference_pending_list_wakeup_count;
+#endif // SVM
 
   // The particular choice of collected heap.
   static CollectedHeap* _collectedHeap;
 
+#ifndef SVM
   static intptr_t _non_oop_bits;
 
   // array of dummy objects used with +FullGCAlot
@@ -126,8 +151,10 @@ class Universe: AllStatic {
   // Initialization
   static bool _bootstrapping;                         // true during genesis
   static bool _module_initialized;                    // true after call_initPhase2 called
+#endif // !SVM
   static bool _fully_initialized;                     // true after universe_init and initialize_vtables called
 
+#ifndef SVM
   // the array of preallocated errors with backtraces
   static objArrayOop  preallocated_out_of_memory_errors();
 
@@ -135,29 +162,35 @@ class Universe: AllStatic {
   // generate an out of memory error; if possible using an error with preallocated backtrace;
   // otherwise return the given default error.
   static oop        gen_out_of_memory_error(oop default_err);
+#endif // !SVM
 
   static OopStorage* _vm_weak;
   static OopStorage* _vm_global;
 
   static jint initialize_heap();
   static void initialize_tlab();
+#ifndef SVM
   static void initialize_basic_type_mirrors(TRAPS);
   static void fixup_mirrors(TRAPS);
 
   static void compute_base_vtable_size();             // compute vtable size of class Object
+#endif // !SVM
 
-  static void genesis(TRAPS);                         // Create the initial world
+  static void genesis(NOT_SVM(TRAPS));                         // Create the initial world
 
+#ifndef SVM
   // Mirrors for primitive classes (created eagerly)
   static oop check_mirror(oop m) {
     assert(m != nullptr, "mirror not initialized");
     return m;
   }
+#endif // !SVM
 
   // Debugging
   static int _verify_count;                           // number of verifies done
   static long verify_flags;
 
+#ifndef SVM
   static uintptr_t _verify_oop_mask;
   static uintptr_t _verify_oop_bits;
 
@@ -170,8 +203,10 @@ class Universe: AllStatic {
   // from the archive heap using HeapShared::get_root(int)
   static int _archived_basic_type_mirror_indices[T_VOID+1];
 #endif
+#endif // !SVM
 
  public:
+#ifndef SVM
   static void calculate_verify_data(HeapWord* low_boundary, HeapWord* high_boundary) PRODUCT_RETURN;
   static void set_verify_data(uintptr_t mask, uintptr_t bits) PRODUCT_RETURN;
 
@@ -186,9 +221,11 @@ class Universe: AllStatic {
   static TypeArrayKlass* doubleArrayKlass()      { return typeArrayKlass(T_DOUBLE); }
 
   static ObjArrayKlass* objectArrayKlass()       { return _objectArrayKlass; }
+#endif // !SVM
 
-  static Klass* fillerArrayKlass()               { return _fillerArrayKlass; }
+  static TypeArrayKlass* fillerArrayKlass()      { return _fillerArrayKlass; }
 
+#ifndef SVM
   static TypeArrayKlass* typeArrayKlass(BasicType t) {
     assert((uint)t >= T_BOOLEAN, "range check for type: %s", type2name(t));
     assert((uint)t < T_LONG+1,   "range check for type: %s", type2name(t));
@@ -250,6 +287,7 @@ class Universe: AllStatic {
   static void initialize_known_methods(JavaThread* current);
 
   static void create_preallocated_out_of_memory_errors(TRAPS);
+#endif // !SVM
 
   // Reference pending list manipulation.  Access is protected by
   // Heap_lock.  The getter, setter and predicate require the caller
@@ -261,7 +299,12 @@ class Universe: AllStatic {
   static void         clear_reference_pending_list();
   static bool         has_reference_pending_list();
   static oop          swap_reference_pending_list(oop list);
+#ifdef SVM
+  static uint64_t reference_pending_list_wakeup_count();
+  static void request_reference_pending_list_waiters_wakeup();
+#endif
 
+#ifndef SVM
   static Array<int>*             the_empty_int_array()    { return _the_empty_int_array; }
   static Array<u2>*              the_empty_short_array()  { return _the_empty_short_array; }
   static Array<Method*>*         the_empty_method_array() { return _the_empty_method_array; }
@@ -283,6 +326,7 @@ class Universe: AllStatic {
   static oop out_of_memory_error_realloc_objects();
 
   static oop delayed_stack_overflow_error_message();
+#endif // !SVM
 
   // Saved StackOverflowError and OutOfMemoryError for use when
   // class initialization can't create ExceptionInInitializerError.
@@ -300,23 +344,30 @@ class Universe: AllStatic {
   DEBUG_ONLY(static bool is_in_heap(const void* p);)
   DEBUG_ONLY(static bool is_in_heap_or_null(const void* p) { return p == nullptr || is_in_heap(p); })
 
+#ifndef SVM
   // Reserve Java heap and determine CompressedOops mode
   static ReservedHeapSpace reserve_heap(size_t heap_size, size_t alignment);
 
   // Global OopStorages
   static OopStorage* vm_weak();
+#endif // !SVM
   static OopStorage* vm_global();
   static void oopstorage_init();
 
   // Testers
+#ifndef SVM
   static bool is_bootstrapping()                      { return _bootstrapping; }
   static bool is_module_initialized()                 { return _module_initialized; }
+#endif // !SVM
   static bool is_fully_initialized()                  { return _fully_initialized; }
 
   static bool        on_page_boundary(void* addr);
+#ifndef SVM
   static bool        should_fill_in_stack_trace(Handle throwable);
+#endif // !SVM
   static void check_alignment(uintx size, uintx alignment, const char* name);
 
+#ifndef SVM
   // CDS support
   static void serialize(SerializeClosure* f);
 
@@ -324,26 +375,36 @@ class Universe: AllStatic {
   // SystemDictionary).
   static void basic_type_classes_do(KlassClosure* closure);
   static void metaspace_pointers_do(MetaspaceClosure* it);
+#endif // !SVM
 
   // Debugging
   enum VERIFY_FLAGS {
     Verify_Threads = 1,
     Verify_Heap = 2,
+#ifndef SVM
     Verify_SymbolTable = 4,
     Verify_StringTable = 8,
+#endif // !SVM
     Verify_CodeCache = 16,
+#ifndef SVM
     Verify_SystemDictionary = 32,
     Verify_ClassLoaderDataGraph = 64,
     Verify_MetaspaceUtils = 128,
     Verify_JNIHandles = 256,
+#endif // !SVM
     Verify_CodeCacheOops = 512,
     Verify_ResolvedMethodTable = 1024,
+#ifndef SVM
     Verify_StringDedup = 2048,
+#endif // !SVM
     Verify_All = -1
   };
+#ifndef SVM
   static void initialize_verify_flags();
+#endif // !SVM
   static bool should_verify_subset(uint subset);
   static void verify(VerifyOption option, const char* prefix);
+
   static void verify(const char* prefix) {
     verify(VerifyOption::Default, prefix);
   }
@@ -351,6 +412,7 @@ class Universe: AllStatic {
     verify("");
   }
 
+#ifndef SVM
   static int  verify_count()       { return _verify_count; }
   static void print_on(outputStream* st);
   static void print_heap_at_SIGBREAK();
@@ -370,6 +432,10 @@ class Universe: AllStatic {
 
   // Compiler support
   static int base_vtable_size()               { return _base_vtable_size; }
+#endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_UNIVERSE_HPP

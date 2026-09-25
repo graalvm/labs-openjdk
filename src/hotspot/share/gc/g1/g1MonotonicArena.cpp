@@ -28,6 +28,9 @@
 #include "runtime/vmOperations.hpp"
 #include "utilities/globalCounter.inline.hpp"
 
+
+namespace svm_gc {
+
 G1MonotonicArena::Segment::Segment(uint slot_size, uint num_slots, Segment* next, MemTag mem_tag) :
   _slot_size(slot_size),
   _num_slots(num_slots),
@@ -49,7 +52,7 @@ G1MonotonicArena::Segment* G1MonotonicArena::Segment::create_segment(uint slot_s
 void G1MonotonicArena::Segment::delete_segment(Segment* segment) {
   // Wait for concurrent readers of the segment to exit before freeing; but only if the VM
   // isn't exiting.
-  if (!VM_Exit::vm_exited()) {
+  if (SVM_ONLY(true) NOT_SVM(!VM_Exit::vm_exited())) {
     GlobalCounter::write_synchronize();
   }
   segment->~Segment();
@@ -248,3 +251,6 @@ void G1MonotonicArena::iterate_segments(SegmentClosure& closure) const {
     cur = cur->next();
   }
 }
+
+} // namespace svm_gc
+

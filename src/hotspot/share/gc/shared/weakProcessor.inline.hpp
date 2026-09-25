@@ -37,6 +37,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/enumIterator.hpp"
 
+
+namespace svm_gc {
+
 class BoolObjectClosure;
 class OopClosure;
 
@@ -152,5 +155,8 @@ void WeakProcessor::weak_oops_do(WorkerThreads* workers,
   weak_oops_do(workers, is_alive, keep_alive, &times);
   times.log_subtotals(indent_log); // Caller logs total if desired.
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WEAKPROCESSOR_INLINE_HPP

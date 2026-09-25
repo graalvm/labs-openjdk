@@ -42,6 +42,9 @@
 
 //------------------------------ResourceArea-----------------------------------
 // A ResourceArea is an Arena that supports safe usage of ResourceMark.
+
+namespace svm_gc {
+
 class ResourceArea: public Arena {
 #ifdef ASSERT
   int _nesting;                 // current # of nested ResourceMarks
@@ -253,6 +256,7 @@ public:
 // misuse so we duplicate the ResourceMark functionality via a shared implementation
 // class.
 
+#ifndef SVM
 class DeoptResourceMark: public CHeapObj<mtInternal> {
   const ResourceMarkImpl _impl;
 
@@ -263,5 +267,9 @@ public:
 
   void reset_to_mark() { _impl.reset_to_mark(); }
 };
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_RESOURCEAREA_HPP

@@ -59,6 +59,10 @@
 #define REG_FP Rbp
 #define REG_PC Rip
 #define REG_BCP R13
+#ifndef SVM
+
+
+namespace svm_gc {
 
 JNIEXPORT
 extern LONG WINAPI topLevelExceptionFilter(_EXCEPTION_POINTERS* );
@@ -473,10 +477,19 @@ void os::print_register_info(outputStream *st, const void *context, int& continu
   }
 }
 
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+
+namespace svm_gc {
+
 extern "C" int SpinPause () {
    return 0 ;
 }
 
+#ifndef SVM
 juint os::cpu_microcode_revision() {
   juint result = 0;
   BYTE data[8] = {0};
@@ -512,3 +525,7 @@ int os::extra_bang_size_in_bytes() {
   // JDK-8050147 requires the full cache line bang for x86.
   return VM_Version::L1_line_size();
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

@@ -146,6 +146,7 @@ static void pd_disjoint_words(const HeapWord* from, HeapWord* to, size_t count) 
 #endif // AMD64
 }
 
+#ifndef SVM
 static void pd_disjoint_words_atomic(const HeapWord* from, HeapWord* to, size_t count) {
 #ifdef AMD64
   shared_disjoint_words_atomic(from, to, count);
@@ -154,6 +155,7 @@ static void pd_disjoint_words_atomic(const HeapWord* from, HeapWord* to, size_t 
   pd_disjoint_words(from, to, count);
 #endif // AMD64
 }
+#endif // !SVM
 
 static void pd_aligned_conjoint_words(const HeapWord* from, HeapWord* to, size_t count) {
   pd_conjoint_words(from, to, count);
@@ -287,6 +289,7 @@ static void pd_conjoint_jlongs_atomic(const jlong* from, jlong* to, size_t count
 #endif // AMD64
 }
 
+#ifndef SVM
 static void pd_conjoint_oops_atomic(const oop* from, oop* to, size_t count) {
 #ifdef AMD64
   assert(BytesPerLong == BytesPerOop, "jlongs and oops must be the same size");
@@ -297,6 +300,7 @@ static void pd_conjoint_oops_atomic(const oop* from, oop* to, size_t count) {
   pd_conjoint_words((const HeapWord*)from, (HeapWord*)to, count);
 #endif // AMD64
 }
+#endif // !SVM
 
 static void pd_arrayof_conjoint_bytes(const HeapWord* from, HeapWord* to, size_t count) {
   _Copy_arrayof_conjoint_bytes(from, to, count);
@@ -322,6 +326,7 @@ static void pd_arrayof_conjoint_jlongs(const HeapWord* from, HeapWord* to, size_
 #endif // AMD64
 }
 
+#ifndef SVM
 static void pd_arrayof_conjoint_oops(const HeapWord* from, HeapWord* to, size_t count) {
 #ifdef AMD64
   assert(BytesPerLong == BytesPerOop, "jlongs and oops must be the same size");
@@ -330,6 +335,7 @@ static void pd_arrayof_conjoint_oops(const HeapWord* from, HeapWord* to, size_t 
   pd_conjoint_oops_atomic((const oop*)from, (oop*)to, count);
 #endif // AMD64
 }
+#endif // !SVM
 
 #endif // _WINDOWS
 

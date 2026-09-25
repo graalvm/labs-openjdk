@@ -41,6 +41,9 @@
 #include "gc/shared/c2/cardTableBarrierSetC2.hpp"
 #endif
 
+
+namespace svm_gc {
+
 class CardTableBarrierSetC1;
 class CardTableBarrierSetC2;
 
@@ -48,27 +51,36 @@ class CardTableBarrierSetC2;
 // enumerate ref fields that have been modified (since the last
 // enumeration.)
 
-CardTableBarrierSet::CardTableBarrierSet(BarrierSetAssembler* barrier_set_assembler,
+CardTableBarrierSet::CardTableBarrierSet(
+#ifndef SVM
+                                         BarrierSetAssembler* barrier_set_assembler,
                                          BarrierSetC1* barrier_set_c1,
                                          BarrierSetC2* barrier_set_c2,
+#endif // !SVM
                                          CardTable* card_table,
                                          const BarrierSet::FakeRtti& fake_rtti) :
-  ModRefBarrierSet(barrier_set_assembler,
+  ModRefBarrierSet(
+#ifndef SVM
+                   barrier_set_assembler,
                    barrier_set_c1,
                    barrier_set_c2,
+#endif // !SVM
                    fake_rtti.add_tag(BarrierSet::CardTableBarrierSet)),
   _defer_initial_card_mark(false),
   _card_table(card_table)
 {}
 
+#ifndef SVM
 CardTableBarrierSet::CardTableBarrierSet(CardTable* card_table) :
-  ModRefBarrierSet(make_barrier_set_assembler<CardTableBarrierSetAssembler>(),
+  ModRefBarrierSet(
+                   make_barrier_set_assembler<CardTableBarrierSetAssembler>(),
                    make_barrier_set_c1<CardTableBarrierSetC1>(),
                    make_barrier_set_c2<CardTableBarrierSetC2>(),
                    BarrierSet::FakeRtti(BarrierSet::CardTableBarrierSet)),
   _defer_initial_card_mark(false),
   _card_table(card_table)
 {}
+#endif // !SVM
 
 void CardTableBarrierSet::initialize() {
   initialize_deferred_card_mark_barriers();
@@ -145,7 +157,7 @@ void CardTableBarrierSet::initialize_deferred_card_mark_barriers() {
   // Used for ReduceInitialCardMarks (when COMPILER2 or JVMCI is used);
   // otherwise remains unused.
 #if COMPILER2_OR_JVMCI
-  _defer_initial_card_mark = CompilerConfig::is_c2_or_jvmci_compiler_enabled() && ReduceInitialCardMarks
+  _defer_initial_card_mark = NOT_SVM(CompilerConfig::is_c2_or_jvmci_compiler_enabled() &&) ReduceInitialCardMarks
                              && (DeferInitialCardMark || card_mark_must_follow_store());
 #else
   assert(_defer_initial_card_mark == false, "Who would set it?");
@@ -173,7 +185,9 @@ void CardTableBarrierSet::flush_deferred_card_mark_barrier(JavaThread* thread) {
   assert(thread->deferred_card_mark().is_empty(), "invariant");
 #else
   assert(!_defer_initial_card_mark, "Should be false");
+#ifndef SVM
   assert(thread->deferred_card_mark().is_empty(), "Should be empty");
+#endif // !SVM
 #endif
 }
 
@@ -189,3 +203,6 @@ void CardTableBarrierSet::on_thread_detach(Thread* thread) {
 bool CardTableBarrierSet::card_mark_must_follow_store() const {
   return false;
 }
+
+} // namespace svm_gc
+

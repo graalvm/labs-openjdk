@@ -28,6 +28,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 OopStorage* OopStorageSet::_storages[all_count] = {};
 
 OopStorage* OopStorageSet::create_strong(const char* name, MemTag mem_tag) {
@@ -47,6 +50,7 @@ OopStorage* OopStorageSet::create_weak(const char* name, MemTag mem_tag) {
 }
 
 
+#ifndef SVM
 void OopStorageSet::fill_strong(OopStorage* to[strong_count]) {
   for (uint i = 0; i < OopStorageSet::strong_count; i++) {
     to[i] = get_storage(strong_start + i);
@@ -64,6 +68,7 @@ void OopStorageSet::fill_all(OopStorage* to[all_count]) {
     to[i] = get_storage(all_start + i);
   }
 }
+#endif // !SVM
 
 OopStorage* OopStorageSet::get_storage(uint index) {
   verify_initialized(index);
@@ -81,6 +86,7 @@ template OopStorage* OopStorageSet::get_storage(StrongId);
 template OopStorage* OopStorageSet::get_storage(WeakId);
 template OopStorage* OopStorageSet::get_storage(Id);
 
+#ifndef SVM
 bool OopStorageSet::print_containing(const void* addr, outputStream* st) {
   if (addr != nullptr) {
     const void* aligned_addr = align_down(addr, alignof(oop));
@@ -99,6 +105,7 @@ bool OopStorageSet::print_containing(const void* addr, outputStream* st) {
   }
   return false;
 }
+#endif // !SVM
 
 #ifdef ASSERT
 
@@ -108,3 +115,6 @@ void OopStorageSet::verify_initialized(uint index) {
 }
 
 #endif // ASSERT
+
+} // namespace svm_gc
+

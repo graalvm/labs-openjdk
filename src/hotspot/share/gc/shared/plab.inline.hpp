@@ -31,6 +31,9 @@
 #include "memory/allocation.inline.hpp"
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 void PLABStats::add_allocated(size_t v) {
   Atomic::add(&_allocated, v);
 }
@@ -46,5 +49,8 @@ void PLABStats::add_wasted(size_t v) {
 void PLABStats::add_undo_wasted(size_t v) {
   Atomic::add(&_undo_wasted, v);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PLAB_INLINE_HPP

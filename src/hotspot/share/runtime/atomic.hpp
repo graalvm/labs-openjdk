@@ -36,6 +36,9 @@
 
 #include <type_traits>
 
+
+namespace svm_gc {
+
 enum atomic_memory_order {
   // The modes that align with C++11 are intended to
   // follow the same semantics.
@@ -859,6 +862,9 @@ class ScopedFence : public ScopedFenceGeneral<T> {
 
 // platform specific in-line definitions - must come before shared definitions
 
+
+} // namespace svm_gc
+
 #include OS_CPU_HEADER(atomic)
 
 // shared in-line definitions
@@ -867,6 +873,9 @@ class ScopedFence : public ScopedFenceGeneral<T> {
 #if (SIZE_MAX != UINTPTR_MAX)
 #error size_t is not WORD_SIZE, interesting platform, but missing implementation here
 #endif
+
+
+namespace svm_gc {
 
 template<typename T>
 inline T Atomic::load(const volatile T* dest) {
@@ -1231,5 +1240,8 @@ inline T Atomic::XchgUsingCmpxchg<byte_size>::operator()(T volatile* dest,
   } while (old_value != Atomic::cmpxchg(dest, old_value, exchange_value, order));
   return old_value;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_ATOMIC_HPP

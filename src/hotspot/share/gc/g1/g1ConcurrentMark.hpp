@@ -40,6 +40,9 @@
 #include "utilities/compilerWarnings.hpp"
 #include "utilities/numberSeq.hpp"
 
+
+namespace svm_gc {
+
 class ConcurrentGCTimer;
 class G1CollectedHeap;
 class G1ConcurrentMark;
@@ -380,6 +383,9 @@ class G1ConcurrentMark : public CHeapObj<mtGC> {
   friend class G1CMRefProcProxyTask;
   friend class G1CMRemarkTask;
   friend class G1CMRootRegionScanTask;
+#ifdef SVM
+  friend class G1CMRemarkCodeCacheTask;
+#endif // SVM
   friend class G1CMTask;
   friend class G1ConcurrentMarkThread;
 
@@ -874,6 +880,10 @@ public:
                        bool do_termination,
                        bool is_serial);
 
+#ifdef SVM
+  bool iterate_open_image_heap_region(G1CMBitMapClosure* cl);
+#endif // SVM
+
   // These two calls start and stop the timer
   void record_start_time() {
     _elapsed_time_ms = os::elapsedTime() * 1000.0;
@@ -993,4 +1003,7 @@ public:
   virtual bool do_heap_region(G1HeapRegion* r);
   ~G1PrintRegionLivenessInfoClosure();
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_G1_G1CONCURRENTMARK_HPP

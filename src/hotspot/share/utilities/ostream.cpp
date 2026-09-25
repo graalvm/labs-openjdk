@@ -40,8 +40,13 @@
 #include "utilities/xmlstream.hpp"
 
 // Declarations of jvm methods
-extern "C" void jio_print(const char* s, size_t len);
+
+namespace svm_gc {
+
+NOT_EXTERN_C_IF_SVM void jio_print(const char* s, size_t len);
+#ifndef SVM
 extern "C" int jio_printf(const char *fmt, ...);
+#endif // !SVM
 
 outputStream::outputStream(bool has_time_stamps) {
   _position    = 0;
@@ -185,9 +190,11 @@ void outputStream::vprint(const char *format, va_list argptr) {
   do_vsnprintf_and_write(format, argptr, false);
 }
 
+#ifndef SVM
 void outputStream::vprint_cr(const char* format, va_list argptr) {
   do_vsnprintf_and_write(format, argptr, true);
 }
+#endif // !SVM
 
 void outputStream::print_raw(const char* str, size_t len) {
   if (_autoindent && _position == 0) {
@@ -202,6 +209,7 @@ int outputStream::fill_to(int col) {
   return need_fill;
 }
 
+#ifndef SVM
 void outputStream::move_to(int col, int slop, int min_space) {
   if (position() >= col + slop)
     cr();
@@ -216,6 +224,7 @@ void outputStream::put(char ch) {
   char buf[] = { ch, '\0' };
   write(buf, 1);
 }
+#endif // !SVM
 
 void outputStream::sp(int count) {
   if (count < 0)  return;
@@ -231,6 +240,7 @@ void outputStream::cr() {
   this->write("\n", 1);
 }
 
+#ifndef SVM
 void outputStream::stamp() {
   if (! _stamp.is_updated()) {
     _stamp.update(); // start at 0 on first call to stamp()
@@ -273,12 +283,14 @@ void outputStream::date_stamp(bool guard,
   print_raw(suffix);
   return;
 }
+#endif // !SVM
 
 outputStream& outputStream::indent() {
   sp(_indentation - _position);
   return *this;
 }
 
+#ifndef SVM
 void outputStream::print_jlong(jlong value) {
   print(JLONG_FORMAT, value);
 }
@@ -331,6 +343,7 @@ void outputStream::print_data(void* data, size_t len, bool with_ascii, bool rel_
     }
   }
 }
+#endif // !SVM
 
 stringStream::stringStream(size_t initial_capacity) :
   outputStream(),
@@ -433,12 +446,14 @@ char* stringStream::as_string(bool c_heap) const {
   return copy;
 }
 
+#ifndef SVM
 char* stringStream::as_string(Arena* arena) const {
   char* copy = NEW_ARENA_ARRAY(arena, char, _written + 1);
   ::memcpy(copy, _buffer, _written);
   copy[_written] = '\0';  // terminating null
   return copy;
 }
+#endif // !SVM
 
 stringStream::~stringStream() {
   if (!_is_fixed && _buffer != _small_buffer) {
@@ -458,6 +473,7 @@ stringStream::~stringStream() {
 static nullStream tty_preinit_stream;
 outputStream* tty = &tty_preinit_stream;
 
+#ifndef SVM
 xmlStream*   xtty;
 
 #define EXTRACHARLEN   32
@@ -602,6 +618,7 @@ fileStream::fileStream(const char* file_name, const char* opentype) {
     _need_close = false;
   }
 }
+#endif // !SVM
 
 void fileStream::write(const char* s, size_t len) {
   if (_file != nullptr)  {
@@ -611,6 +628,7 @@ void fileStream::write(const char* s, size_t len) {
   }
 }
 
+#ifndef SVM
 int64_t fileStream::fileSize() {
   int64_t size = -1;
   if (_file != nullptr) {
@@ -623,6 +641,7 @@ int64_t fileStream::fileSize() {
   }
   return size;
 }
+#endif // !SVM
 
 fileStream::~fileStream() {
   if (_file != nullptr) {
@@ -657,22 +676,29 @@ FILE* defaultStream::_error_stream  = stderr;
 #define LOG_MAJOR_VERSION 160
 #define LOG_MINOR_VERSION 1
 
+#ifndef SVM
 void defaultStream::init() {
   _inited = true;
   if (LogVMOutput || LogCompilation) {
     init_log();
   }
 }
+#endif // !SVM
 
 bool defaultStream::has_log_file() {
+#ifdef SVM
+  return false;
+#else
   // lazily create log file (at startup, LogVMOutput is false even
   // if +LogVMOutput is used, because the flags haven't been parsed yet)
   // For safer printing during fatal error handling, do not init logfile
   // if a VM error has been reported.
   if (!_inited && !VMError::is_error_reported())  init();
   return _log_file != nullptr;
+#endif
 }
 
+#ifndef SVM
 fileStream* defaultStream::open_file(const char* log_name) {
   const char* try_name = make_log_name(log_name, nullptr);
   if (try_name == nullptr) {
@@ -842,6 +868,7 @@ void defaultStream::finish_log_on_error(char *buf, int buflen) {
     }
   }
 }
+#endif // !SVM
 
 intx defaultStream::hold(intx writer_id) {
   bool has_log = has_log_file();  // check before locking
@@ -875,9 +902,11 @@ intx defaultStream::hold(intx writer_id) {
   // got the lock
   if (writer_id != _last_writer) {
     if (has_log) {
+#ifndef SVM
       _log_file->bol();
       // output a hint where this output is coming from:
       _log_file->print_cr("<writer thread='%zu'/>", writer_id);
+#endif // !SVM
     }
     _last_writer = writer_id;
   }
@@ -901,10 +930,13 @@ void defaultStream::write(const char* s, size_t len) {
   intx thread_id = os::current_thread_id();
   intx holder = hold(thread_id);
 
+#ifndef SVM
   if (DisplayVMOutput &&
       (_outer_xmlStream == nullptr || !_outer_xmlStream->inside_attrs())) {
+#endif // !SVM
     // print to output stream. It can be redirected by a vfprintf hook
     jio_print(s, len);
+#ifndef SVM
   }
 
   // print to log file
@@ -915,13 +947,16 @@ void defaultStream::write(const char* s, size_t len) {
     if (nl) {
       flush();
     }
-  } else {
+  } else
+#endif // !SVM
+  {
     update_position(s, len);
   }
 
   release(holder);
 }
 
+#ifndef SVM
 intx ttyLocker::hold_tty() {
   if (defaultStream::instance == nullptr)  return defaultStream::NO_WRITER;
   intx thread_id = os::current_thread_id();
@@ -954,6 +989,7 @@ void ttyLocker::break_tty_lock_for_safepoint(intx holder) {
   }
   // (else there was no lock to break)
 }
+#endif // !SVM
 
 void ostream_init() {
   if (defaultStream::instance == nullptr) {
@@ -971,7 +1007,7 @@ void ostream_init() {
 void ostream_init_log() {
   // Note : this must be called AFTER ostream_init()
 
-  ClassListWriter::init();
+  NOT_SVM(ClassListWriter::init();)
 
   // If we haven't lazily initialized the logfile yet, do it now,
   // to avoid the possibility of lazy initialization during a VM
@@ -985,7 +1021,7 @@ void ostream_exit() {
   static bool ostream_exit_called = false;
   if (ostream_exit_called)  return;
   ostream_exit_called = true;
-  ClassListWriter::delete_classlist();
+  NOT_SVM(ClassListWriter::delete_classlist();)
   // Make sure tty works after VM exit by assigning an always-on functioning fdStream.
   outputStream* tmp = tty;
   tty = DisplayVMOutputToStderr ? fdStream::stderr_stream() : fdStream::stdout_stream();
@@ -993,7 +1029,9 @@ void ostream_exit() {
     delete tmp;
   }
   delete defaultStream::instance;
+#ifndef SVM
   xtty = nullptr;
+#endif // !SVM
   defaultStream::instance = nullptr;
 }
 
@@ -1002,12 +1040,15 @@ void ostream_abort() {
   // Here we can't delete tty, just flush its output
   if (tty) tty->flush();
 
+#ifndef SVM
   if (defaultStream::instance != nullptr) {
     static char buf[4096];
     defaultStream::instance->finish_log_on_error(buf, sizeof(buf));
   }
+#endif // !SVM
 }
 
+#ifndef SVM
 bufferedStream::bufferedStream(size_t initial_size, size_t bufmax) : outputStream() {
   buffer_length = initial_size;
   buffer        = NEW_C_HEAP_ARRAY(char, buffer_length, mtInternal);
@@ -1015,6 +1056,7 @@ bufferedStream::bufferedStream(size_t initial_size, size_t bufmax) : outputStrea
   buffer_max    = bufmax;
   truncated     = false;
 }
+#endif // !SVM
 
 void bufferedStream::write(const char* s, size_t len) {
 
@@ -1063,16 +1105,21 @@ void bufferedStream::write(const char* s, size_t len) {
   }
 }
 
+#ifndef SVM
 char* bufferedStream::as_string() {
   char* copy = NEW_RESOURCE_ARRAY(char, buffer_pos+1);
   strncpy(copy, buffer, buffer_pos);
   copy[buffer_pos] = 0;  // terminating null
   return copy;
 }
+#endif // !SVM
 
 bufferedStream::~bufferedStream() {
   FREE_C_HEAP_ARRAY(char, buffer);
 }
+
+
+} // namespace svm_gc
 
 #ifndef PRODUCT
 
@@ -1086,7 +1133,11 @@ bufferedStream::~bufferedStream() {
 #include <Ws2tcpip.h>
 #endif
 
+#ifndef SVM
 // Network access
+
+namespace svm_gc {
+
 networkStream::networkStream() : bufferedStream(1024*10, 1024*10) {
 
   _socket = -1;
@@ -1150,5 +1201,9 @@ bool networkStream::connect(const char *host, short port) {
   freeaddrinfo(addr_info);
   return (conn >= 0);
 }
+
+} // namespace svm_gc
+
+#endif // !SVM
 
 #endif

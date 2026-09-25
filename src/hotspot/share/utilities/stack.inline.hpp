@@ -31,6 +31,9 @@
 #include "utilities/align.hpp"
 #include "utilities/copy.hpp"
 
+
+namespace svm_gc {
+
 template <MemTag MT> StackBase<MT>::StackBase(size_t segment_size, size_t max_cache_size,
                      size_t max_size):
   _seg_size(segment_size),
@@ -264,5 +267,8 @@ E* StackIterator<E, MT>::next_addr()
   }
   return _cur_seg + --_cur_seg_size;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_STACK_INLINE_HPP

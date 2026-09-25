@@ -24,6 +24,12 @@
 #ifndef CPU_X86_GC_G1_G1GLOBALS_X86_HPP
 #define CPU_X86_GC_G1_G1GLOBALS_X86_HPP
 
+
+namespace svm_gc {
+
 const size_t G1MergeHeapRootsPrefetchCacheSize = 8;
+
+
+} // namespace svm_gc
 
 #endif // CPU_X86_GC_G1_G1GLOBALS_X86_HPP

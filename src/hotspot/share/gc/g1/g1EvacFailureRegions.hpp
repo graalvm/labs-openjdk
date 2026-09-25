@@ -27,6 +27,9 @@
 
 #include "utilities/bitMap.hpp"
 
+
+namespace svm_gc {
+
 class G1AbstractSubTask;
 class G1HeapRegionClaimer;
 class G1HeapRegionClosure;
@@ -88,5 +91,8 @@ public:
   // failure in that region.
   inline bool record(uint worker_id, uint region_idx, bool cause_pinned);
 };
+
+
+} // namespace svm_gc
 
 #endif //SHARE_GC_G1_G1EVACFAILUREREGIONS_HPP

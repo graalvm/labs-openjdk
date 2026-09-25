@@ -31,6 +31,9 @@
 #include "utilities/vmEnums.hpp"
 #include <type_traits>
 
+
+namespace svm_gc {
+
 class outputStream;
 
 enum class JVMFlagOrigin : int {
@@ -39,16 +42,20 @@ enum class JVMFlagOrigin : int {
   // flag was never changed, or was most recently changed by FLAG_SET_DEFAULT.
   DEFAULT          = 0,
   COMMAND_LINE     = 1,
+#ifndef SVM
   ENVIRON_VAR      = 2,
   CONFIG_FILE      = 3,
+#endif // SVM
   MANAGEMENT       = 4,
   ERGONOMIC        = 5,
+#ifndef SVM
   ATTACH_ON_DEMAND = 6,
   INTERNAL         = 7,
   JIMAGE_RESOURCE  = 8,
+#endif // !SVM
 };
 
-ENUMERATOR_RANGE(JVMFlagOrigin, JVMFlagOrigin::DEFAULT, JVMFlagOrigin::JIMAGE_RESOURCE)
+ENUMERATOR_RANGE(JVMFlagOrigin, JVMFlagOrigin::DEFAULT, SVM_ONLY(JVMFlagOrigin::ERGONOMIC) NOT_SVM(JVMFlagOrigin::JIMAGE_RESOURCE))
 
 class JVMFlag {
   friend class VMStructs;
@@ -59,6 +66,11 @@ public:
     VALUE_ORIGIN_MASK = right_n_bits(VALUE_ORIGIN_BITS),
 
     // flag kind
+#ifdef SVM
+    KIND_HOSTED             = 1 << 4,
+    KIND_RUNTIME            = 1 << 5,
+    KIND_INTERNAL           = 1 << 6,
+#else
     KIND_PRODUCT            = 1 << 4,
     KIND_MANAGEABLE         = 1 << 5,
     KIND_DIAGNOSTIC         = 1 << 6,
@@ -70,6 +82,7 @@ public:
     KIND_ARCH               = 1 << 12,
     KIND_LP64_PRODUCT       = 1 << 13,
     KIND_JVMCI              = 1 << 14,
+#endif // SVM
 
     // Note the difference:
     // f->get_origin() == COMMAND_LINE
@@ -153,7 +166,11 @@ public:
   static size_t numFlags;
 
 private:
+#ifdef SVM
+  static JVMFlag* find_flag(const char* name, size_t length, bool allow_hosted);
+#else
   static JVMFlag* find_flag(const char* name, size_t length, bool allow_locked, bool return_flag);
+#endif // SVM
 
 public:
   constexpr JVMFlag() : _addr(), _name(), _flags(), _type() NOT_PRODUCT(COMMA _doc()) {}
@@ -164,6 +181,11 @@ public:
   constexpr JVMFlag(int flag_enum,  FlagType type, const char* name,
                     void* addr, int flags, const char* doc);
 
+#ifdef SVM
+  static JVMFlag* find_flag(const char* name, bool allow_hosted) {
+    return find_flag(name, strlen(name), allow_hosted);
+  }
+#else
   static JVMFlag* find_flag(const char* name) {
     return find_flag(name, strlen(name), false, false);
   }
@@ -175,9 +197,12 @@ public:
   }
 
   static JVMFlag* fuzzy_match(const char* name, size_t length, bool allow_locked = false);
+#endif // SVM
 
   static void assert_valid_flag_enum(JVMFlagsEnum i) NOT_DEBUG_RETURN;
+#ifndef SVM
   static void check_all_flag_declarations() NOT_DEBUG_RETURN;
+#endif // !SVM
 
   inline JVMFlagsEnum flag_enum() const {
     JVMFlagsEnum i = static_cast<JVMFlagsEnum>(this - JVMFlag::flags);
@@ -241,6 +266,10 @@ public:
   bool is_ergonomic() const       { return (get_origin() == JVMFlagOrigin::ERGONOMIC);        }
   bool is_command_line() const    { return (_flags & WAS_SET_ON_COMMAND_LINE) != 0;           }
   void set_command_line()         { _flags = Flags(_flags | WAS_SET_ON_COMMAND_LINE);         }
+#ifdef SVM
+  bool is_hosted() const          { return (_flags & KIND_HOSTED) != 0;                       }
+  bool is_internal() const        { return (_flags & KIND_INTERNAL) != 0;                     }
+#else
   bool is_jimage_resource() const { return (get_origin() == JVMFlagOrigin::JIMAGE_RESOURCE);  }
   bool is_product() const         { return (_flags & KIND_PRODUCT) != 0;                      }
   bool is_manageable() const      { return (_flags & KIND_MANAGEABLE) != 0;                   }
@@ -263,6 +292,7 @@ public:
   void set_product();
 
   JVMFlag::MsgType get_locked_message(char*, int) const;
+#endif // !SVM
 
   static bool is_default(JVMFlagsEnum flag);
   static bool is_ergo(JVMFlagsEnum flag);
@@ -270,12 +300,13 @@ public:
   static bool is_jimage_resource(JVMFlagsEnum flag);
   static void setOnCmdLine(JVMFlagsEnum flag);
 
-
+#ifndef SVM
   // printRanges will print out flags type, name and range values as expected by -XX:+PrintFlagsRanges
   void print_on(outputStream* st, bool withComments = false, bool printRanges = false) const;
   void print_kind(outputStream* st, unsigned int width) const;
   void print_origin(outputStream* st, unsigned int width) const;
   void print_as_flag(outputStream* st) const;
+#endif // !SVM
 
 private:
   // type checking - the following functions make sure you access *_addr as
@@ -310,7 +341,9 @@ public:
   }
 
 public:
+#ifndef SVM
   static void printSetFlags(outputStream* out);
+#endif // !SVM
 
   // printRanges will print out flags type, name and range values as expected by -XX:+PrintFlagsRanges
   static void printFlags(outputStream* out, bool withComments, bool printRanges = false, bool skipDefaults = false);
@@ -320,5 +353,8 @@ public:
 };
 
 #define DECLARE_CONSTRAINT(type, func) JVMFlag::Error func(type value, bool verbose);
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_JVMFLAG_HPP

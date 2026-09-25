@@ -30,6 +30,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 template<typename T> class WorkerDataArray;
 
 class WeakProcessorTimes {
@@ -106,5 +109,8 @@ public:
 
   ~WeakProcessorParTimeTracker();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WEAKPROCESSORTIMES_HPP

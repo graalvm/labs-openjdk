@@ -31,9 +31,14 @@
 #include "jni.h"
 #include "jvm_md.h"
 
+
+namespace svm_gc {
+
+#ifndef SVM
 #ifdef __cplusplus
 extern "C" {
 #endif
+#endif // !SVM
 
 /*
  * The standard printing functions supported by the Java VM. (Should they
@@ -61,8 +66,13 @@ jio_fprintf(FILE *, const char *fmt, ...);
 JNIEXPORT int
 jio_vfprintf(FILE *, const char *fmt, va_list args);
 
+#ifndef SVM
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif /* _JVM_IO_H_ */

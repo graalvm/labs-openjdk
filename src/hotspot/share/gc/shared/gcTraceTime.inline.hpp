@@ -32,6 +32,9 @@
 #include "runtime/os.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 inline GCTraceTimeDriver::GCTraceTimeDriver(
     TimespanCallback* cb0,
     TimespanCallback* cb1,
@@ -243,5 +246,8 @@ GCTraceConcTimeImpl<Level, T0, T1, T2, T3, T4, GuardTag>::~GCTraceConcTimeImpl()
 #define GCTraceTimeLogger(Level, ...) GCTraceTimeLoggerWrapper<LogLevel::Level, LOG_TAGS(__VA_ARGS__)>
 
 #define GCTraceConcTime(Level, ...) GCTraceConcTimeImpl<LogLevel::Level, LOG_TAGS(__VA_ARGS__)>
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCTRACETIME_INLINE_HPP

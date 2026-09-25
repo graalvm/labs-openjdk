@@ -39,6 +39,9 @@
 #include "memory/iterator.inline.hpp"
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 class G1AdjustLiveClosure : public StackObj {
   G1AdjustClosure* _adjust_closure;
 public:
@@ -62,6 +65,24 @@ class G1AdjustRegionClosure : public G1HeapRegionClosure {
 
   bool do_heap_region(G1HeapRegion* r) {
     G1AdjustClosure cl(_collector);
+#ifdef SVM
+    // NOTE (chaeubl): similar to the code in the #else branch
+    if (r->is_closed_image_heap() || r->is_free()) {
+      // nothing to do
+    } else if (r->is_humongous()) {
+      // NOTE (chaeubl): This includes humongous open image heap regions and humongous regions where the object is explicitly pinned.
+      assert(_bitmap->is_marked(r->humongous_start_region()->bottom()) SVM_ONLY(|| r->is_open_image_heap()), "no need to update a dead object");
+      oop obj = cast_to_oop(r->humongous_start_region()->bottom());
+      obj->oop_iterate(&cl, MemRegion(r->bottom(), r->top()));
+    } else if (r->is_open_image_heap()) {
+      // NOTE (chaeubl): image heap objects are always alive and therefore not marked. So, we just
+      // visit all objects in the open image heap region instead of doing a bitmap-based iteration.
+      r->oop_iterate(&cl);
+    } else {
+      G1AdjustLiveClosure adjust(&cl);
+      r->apply_to_marked_objects(_bitmap, &adjust);
+    }
+#else
     if (r->is_humongous()) {
       // Special handling for humongous regions to get somewhat better
       // work distribution.
@@ -72,6 +93,7 @@ class G1AdjustRegionClosure : public G1HeapRegionClosure {
       G1AdjustLiveClosure adjust(&cl);
       r->apply_to_marked_objects(_bitmap, &adjust);
     }
+#endif // SVM
     return false;
   }
 };
@@ -82,7 +104,9 @@ G1FullGCAdjustTask::G1FullGCAdjustTask(G1FullCollector* collector) :
     _weak_proc_task(collector->workers()),
     _hrclaimer(collector->workers()),
     _adjust(collector) {
+#ifndef SVM
   ClassLoaderDataGraph::verify_claimed_marks_cleared(ClassLoaderData::_claim_stw_fullgc_adjust);
+#endif // !SVM
 }
 
 void G1FullGCAdjustTask::work(uint worker_id) {
@@ -99,12 +123,17 @@ void G1FullGCAdjustTask::work(uint worker_id) {
     _weak_proc_task.work(worker_id, &always_alive, &_adjust);
   }
 
+#ifndef SVM
   CLDToOopClosure adjust_cld(&_adjust, ClassLoaderData::_claim_stw_fullgc_adjust);
+#endif // !SVM
   NMethodToOopClosure adjust_code(&_adjust, NMethodToOopClosure::FixRelocations);
-  _root_processor.process_all_roots(&_adjust, &adjust_cld, &adjust_code);
+  _root_processor.process_all_roots(&_adjust, SVM_ONLY(false) NOT_SVM(&adjust_cld), &adjust_code);
 
   // Now adjust pointers region by region
   G1AdjustRegionClosure blk(collector(), worker_id);
   G1CollectedHeap::heap()->heap_region_par_iterate_from_worker_offset(&blk, &_hrclaimer, worker_id);
   log_task("Adjust task", worker_id, start);
 }
+
+} // namespace svm_gc
+

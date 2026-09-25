@@ -38,6 +38,9 @@
 #include "gc/parallel/objectStartArray.hpp"
 #endif
 
+
+namespace svm_gc {
+
 uint CardTable::_card_shift = 0;
 uint CardTable::_card_size = 0;
 uint CardTable::_card_size_in_words = 0;
@@ -50,14 +53,19 @@ void CardTable::initialize_card_size() {
   _card_shift = log2i_exact(_card_size);
   _card_size_in_words = _card_size / sizeof(HeapWord);
 
+#ifndef SVM
+  // NOTE (chaeubl): when this is called, the logging infrastructure is not initialized yet.
   log_info_p(gc, init)("CardTable entry size: " UINT32_FORMAT,  _card_size);
+#endif // !SVM
 }
 
+#ifndef SVM
 size_t CardTable::compute_byte_map_size(size_t num_bytes) {
   assert(_page_size != 0, "uninitialized, check declaration order");
   const size_t granularity = os::vm_allocation_granularity();
   return align_up(num_bytes, MAX2(_page_size, granularity));
 }
+#endif // !SVM
 
 CardTable::CardTable(MemRegion whole_heap) :
   _whole_heap(whole_heap),
@@ -70,6 +78,7 @@ CardTable::CardTable(MemRegion whole_heap) :
   assert((uintptr_t(_whole_heap.end()) & (_card_size - 1))  == 0, "heap must end at card boundary");
 }
 
+#ifndef SVM
 void CardTable::initialize(void* region0_start, void* region1_start) {
   size_t num_cards = cards_required(_whole_heap.word_size());
 
@@ -195,6 +204,7 @@ void CardTable::resize_covered_region(MemRegion new_region) {
   }
 #endif
 }
+#endif // !SVM
 
 // Note that these versions are precise!  The scanning code has to handle the
 // fact that the write barrier may be either precise or imprecise.
@@ -262,3 +272,6 @@ void CardTable::print_on(outputStream* st) const {
   st->print_cr("Card table byte_map: [" PTR_FORMAT "," PTR_FORMAT "] _byte_map_base: " PTR_FORMAT,
                p2i(_byte_map), p2i(_byte_map + _byte_map_size), p2i(_byte_map_base));
 }
+
+} // namespace svm_gc
+

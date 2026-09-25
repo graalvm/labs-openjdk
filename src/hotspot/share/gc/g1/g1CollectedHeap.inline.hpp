@@ -45,12 +45,51 @@
 #include "runtime/threadSMR.inline.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+namespace svm_gc {
+
 inline bool G1STWIsAliveClosure::do_object_b(oop p) {
   // An object is reachable if it is outside the collection set,
   // or is inside and copied.
   return !_g1h->is_in_cset(p) || p->is_forwarded();
 }
 
+#ifdef SVM
+inline uint G1JavaThreadsListClaimer::claim(uint& count) {
+  if (Atomic::load(&_cur_claim) >= length()) {
+    count = 0;
+    return 0;
+  }
+  uint claim = Atomic::fetch_then_add(&_cur_claim, _claim_step);
+  if (claim >= length()) {
+    count = 0;
+    return 0;
+  }
+  count = MIN2(length() - claim, _claim_step);
+  return claim;
+}
+
+inline void G1JavaThreadsListClaimer::apply(ThreadClosure* cl) {
+  JavaThreadIteratorWithHandle jtiwh;
+  uint index = 0;
+  while (true) {
+    uint count;
+    uint begin = claim(count);
+    if (count == 0) {
+      break;
+    }
+
+    uint end = begin + count;
+    do {
+      JavaThread *jt = jtiwh.next();
+      if (index >= begin) {
+        cl->do_thread(jt);
+      }
+      index++;
+    } while (index < end);
+  }
+}
+#else
 inline JavaThread* const* G1JavaThreadsListClaimer::claim(uint& count) {
   count = 0;
   if (Atomic::load(&_cur_claim) >= _list.length()) {
@@ -74,6 +113,7 @@ inline void G1JavaThreadsListClaimer::apply(ThreadClosure* cl) {
     }
   }
 }
+#endif // !SVM
 
 G1GCPhaseTimes* G1CollectedHeap::phase_times() const {
   return _policy->phase_times();
@@ -210,6 +250,7 @@ G1HeapRegionAttr G1CollectedHeap::region_attr(uint idx) const {
 }
 
 void G1CollectedHeap::register_humongous_candidate_region_with_region_attr(uint index) {
+  assert_svm_only(!region_at(index)->is_image_heap(), "must be");
   assert(!region_at(index)->has_pinned_objects(), "must be");
   assert(region_at(index)->rem_set()->is_complete(), "must be");
   _region_attr.set_humongous_candidate(index);
@@ -225,6 +266,7 @@ void G1CollectedHeap::register_region_with_region_attr(G1HeapRegion* r) {
 }
 
 void G1CollectedHeap::register_old_region_with_region_attr(G1HeapRegion* r) {
+  assert_svm_only(!r->is_image_heap(), "must be");
   assert(r->rem_set()->is_complete(), "must be");
   _region_attr.set_in_old(r->hrm_index(), true /* is_remset_tracked */, r->has_pinned_objects());
   _rem_set->exclude_region_from_scan(r->hrm_index());
@@ -253,6 +295,12 @@ inline bool G1CollectedHeap::is_obj_filler(const oop obj) {
 
 inline bool G1CollectedHeap::is_obj_dead(const oop obj, const G1HeapRegion* hr) const {
   assert(!hr->is_free(), "looking up obj " PTR_FORMAT " in Free region %u", p2i(obj), hr->hrm_index());
+#ifdef SVM
+  if (hr->is_image_heap()) {
+    // Objects in image heap regions are always alive.
+    return false;
+  } else
+#endif // !SVM
   if (hr->is_in_parsable_area(obj)) {
     // This object is in the parsable part of the heap, live unless scrubbed.
     return is_obj_filler(obj);
@@ -266,7 +314,7 @@ inline bool G1CollectedHeap::is_obj_dead(const oop obj, const G1HeapRegion* hr) 
 inline void G1CollectedHeap::pin_object(JavaThread* thread, oop obj) {
   assert(obj != nullptr, "obj must not be null");
   assert(!is_stw_gc_active(), "must not pin objects during a GC pause");
-  assert(obj->is_typeArray(), "must be typeArray");
+  NOT_SVM(assert(obj->is_typeArray(), "must be typeArray"));
 
   uint obj_region_idx = heap_region_containing(obj)->hrm_index();
   G1ThreadLocalData::pin_count_cache(thread).inc_count(obj_region_idx);
@@ -287,7 +335,7 @@ inline bool G1CollectedHeap::is_obj_dead(const oop obj) const {
 }
 
 inline bool G1CollectedHeap::is_obj_dead_full(const oop obj, const G1HeapRegion* hr) const {
-   return !is_marked(obj);
+   return !is_marked(obj) SVM_ONLY(&& !hr->is_image_heap());
 }
 
 inline bool G1CollectedHeap::is_obj_dead_full(const oop obj) const {
@@ -315,5 +363,8 @@ inline bool G1CollectedHeap::is_collection_set_candidate(const G1HeapRegion* r) 
   const G1CollectionSetCandidates* candidates = collection_set()->candidates();
   return candidates->contains(r);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COLLECTEDHEAP_INLINE_HPP

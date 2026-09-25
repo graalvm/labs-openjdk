@@ -29,6 +29,9 @@
 
 #include "gc/g1/g1CollectedHeap.inline.hpp"
 
+
+namespace svm_gc {
+
 inline void G1RegionPinCache::inc_count(uint region_idx) {
   if (region_idx == _region_idx) {
     ++_count;
@@ -56,5 +59,8 @@ inline void G1RegionPinCache::flush_and_set(uint new_region_idx, size_t new_coun
 inline void G1RegionPinCache::flush() {
   flush_and_set(G1_NO_HRM_INDEX, 0);
 }
+
+
+} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1REGIONPINCACHE_INLINE_HPP */

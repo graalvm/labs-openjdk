@@ -29,6 +29,7 @@
 
 #include "runtime/prefetch.hpp"
 
+namespace svm_gc {
 
 inline void Prefetch::read (const void *loc, intx interval) {
   if (interval >= 0)
@@ -39,5 +40,7 @@ inline void Prefetch::write(void *loc, intx interval) {
   if (interval >= 0)
     asm("prfm PSTL1KEEP, [%0, %1]" : : "r"(loc), "r"(interval));
 }
+
+} // namespace svm_gc
 
 #endif // OS_CPU_BSD_AARCH64_PREFETCH_BSD_AARCH64_INLINE_HPP

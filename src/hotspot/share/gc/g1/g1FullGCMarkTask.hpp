@@ -33,6 +33,9 @@
 #include "gc/shared/referenceProcessor.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class G1FullGCMarkTask : public G1FullGCTask {
   G1RootProcessor          _root_processor;
   TaskTerminator           _terminator;
@@ -41,5 +44,20 @@ public:
   G1FullGCMarkTask(G1FullCollector* collector);
   void work(uint worker_id);
 };
+
+#ifdef SVM
+// NOTE (chaeubl): similar to G1FullGCMarkTask
+class G1FullGCMarkCodeCacheTask : public G1FullGCTask {
+  NMethodMarkScope         _mark_scope;
+  TaskTerminator           _terminator;
+
+public:
+  G1FullGCMarkCodeCacheTask(G1FullCollector* collector);
+  void work(uint worker_id);
+};
+#endif // SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCMARKTASK_HPP

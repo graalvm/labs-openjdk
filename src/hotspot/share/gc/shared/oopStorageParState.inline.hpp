@@ -32,6 +32,9 @@
 
 #include <type_traits>
 
+
+namespace svm_gc {
+
 template<typename F>
 class OopStorage::BasicParState::AlwaysTrueFn {
   F _f;
@@ -97,5 +100,8 @@ template<typename IsAliveClosure, typename Closure>
 inline void OopStorage::ParState<false, false>::weak_oops_do(IsAliveClosure* is_alive, Closure* cl) {
   this->iterate(if_alive_fn(is_alive, oop_fn(cl)));
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGEPARSTATE_INLINE_HPP

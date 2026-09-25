@@ -32,6 +32,9 @@
 // Sets the default values for platform dependent flags used by the runtime system.
 // (see globals.hpp)
 
+
+namespace svm_gc {
+
 define_pd_global(bool, ImplicitNullChecks,       true);  // Generate code for implicit null checks
 define_pd_global(bool, TrapBasedNullChecks,     false);
 define_pd_global(bool, UncommonNullCast,         true);  // Uncommon-trap nulls past to check cast
@@ -78,7 +81,11 @@ define_pd_global(intx, InitArrayShortSize, BytesPerLong);
 define_pd_global(intx, InlineSmallCode,          1000);
 #endif
 
-#define ARCH_FLAGS(develop,                                             \
+#define ARCH_FLAGS(ni_hosted,                                           \
+                   ni_hosted_pd,                                        \
+                   ni_runtime,                                          \
+                   ni_runtime_pd,                                       \
+                   develop,                                             \
                    product,                                             \
                    range,                                               \
                    constraint)                                          \
@@ -128,5 +135,8 @@ define_pd_global(intx, InlineSmallCode,          1000);
           "Always merge DMB instructions in code emission")             \
 
 // end of ARCH_FLAGS
+
+
+} // namespace svm_gc
 
 #endif // CPU_AARCH64_GLOBALS_AARCH64_HPP

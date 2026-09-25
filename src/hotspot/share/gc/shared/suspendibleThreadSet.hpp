@@ -36,6 +36,9 @@
 // may not enter the set when an attempted suspension is in progress. The
 // suspending thread later calls desynchronize(), allowing the suspended
 // threads to continue.
+
+namespace svm_gc {
+
 class SuspendibleThreadSet : public AllStatic {
   friend class SuspendibleThreadSetJoiner;
   friend class SuspendibleThreadSetLeaver;
@@ -123,5 +126,8 @@ public:
     }
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_SUSPENDIBLETHREADSET_HPP

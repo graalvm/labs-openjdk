@@ -28,6 +28,9 @@
 #include "oops/oopsHierarchy.hpp"
 #include "utilities/chunkedList.hpp"
 
+
+namespace svm_gc {
+
 class OopClosure;
 
 class G1OopStarChunkedList : public CHeapObj<mtGC> {
@@ -60,5 +63,8 @@ class G1OopStarChunkedList : public CHeapObj<mtGC> {
   inline void push_root(oop* p);
   inline void push_root(narrowOop* p);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1OOPSTARCHUNKEDLIST_HPP

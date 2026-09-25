@@ -34,6 +34,9 @@
 
 // These fascilities are used for allocating, and initializing newly allocated objects.
 
+
+namespace svm_gc {
+
 class MemAllocator: StackObj {
 protected:
   class Allocation;
@@ -107,6 +110,7 @@ public:
   virtual oop initialize(HeapWord* mem) const;
 };
 
+#ifndef SVM
 class ClassAllocator: public MemAllocator {
 public:
   ClassAllocator(Klass* klass, size_t word_size, Thread* thread = Thread::current())
@@ -114,7 +118,32 @@ public:
 
   virtual oop initialize(HeapWord* mem) const;
 };
+#endif // !SVM
 
+#ifdef SVM
+class StackChunkAllocator : public MemAllocator {
+  SVM_ONLY(const int _length);
+  NOT_SVM(const size_t _stack_size;)
+
+public:
+  StackChunkAllocator(Klass* klass, size_t word_size, SVM_ONLY(int length) NOT_SVM(size_t stack_size), Thread* thread = Thread::current())
+    : MemAllocator(klass, word_size, thread),
+      SVM_ONLY(_length(length)) NOT_SVM(_stack_size(stack_size)) {}
+  virtual oop initialize(HeapWord* mem) const;
+};
+
+class PodAllocator : public MemAllocator {
+  const int _length;
+
+public:
+  PodAllocator(Klass* klass, size_t word_size, int length, Thread* thread = Thread::current())
+    : MemAllocator(klass, word_size, thread),
+      _length(length) {}
+  virtual oop initialize(HeapWord* mem) const;
+};
+#endif // SVM
+
+#ifndef SVM
 // Manages a scope where a failed heap allocation results in
 // suppression of JVMTI "resource exhausted" events and
 // throwing a shared, backtrace-less OOME instance.
@@ -141,5 +170,9 @@ class InternalOOMEMark: public StackObj {
 
   JavaThread* thread() const  { return _thread; }
 };
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MEMALLOCATOR_HPP

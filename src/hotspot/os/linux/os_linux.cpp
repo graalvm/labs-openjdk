@@ -140,13 +140,24 @@
 #ifdef MUSL_LIBC
 // dlvsym is not a part of POSIX
 // and musl libc doesn't implement it.
+
+namespace svm_gc {
+
 static void *dlvsym(void *handle,
                     const char *symbol,
                     const char *version) {
    // load the latest version of symbol
    return dlsym(handle, symbol);
 }
+
+
+} // namespace svm_gc
+
 #endif
+
+#ifndef SVM
+
+namespace svm_gc {
 
 enum CoredumpFilterBit {
   FILE_BACKED_PVT_BIT = 1 << 2,
@@ -155,17 +166,27 @@ enum CoredumpFilterBit {
   DAX_SHARED_BIT = 1 << 8
 };
 
+} // namespace svm_gc
+
+#endif // !SVM
+
 ////////////////////////////////////////////////////////////////////////////////
 // global variables
+
+namespace svm_gc {
+
 physical_memory_size_type os::Linux::_physical_memory = 0;
 
+#ifndef SVM
 address   os::Linux::_initial_thread_stack_bottom = nullptr;
 uintptr_t os::Linux::_initial_thread_stack_size   = 0;
+#endif // !SVM
 
 int (*os::Linux::_pthread_getcpuclockid)(pthread_t, clockid_t *) = nullptr;
 int (*os::Linux::_pthread_setname_np)(pthread_t, const char*) = nullptr;
 pthread_t os::Linux::_main_thread;
 bool os::Linux::_supports_fast_thread_cpu_time = false;
+#ifndef SVM
 const char * os::Linux::_libc_version = nullptr;
 const char * os::Linux::_libpthread_version = nullptr;
 
@@ -358,11 +379,13 @@ bool os::free_swap_space(physical_memory_size_type& value) {
   value = host_free_swap_val;
   return true;
 }
+#endif // !SVM
 
 physical_memory_size_type os::physical_memory() {
-  if (OSContainer::is_containerized()) {
+
+  if (SVM_ONLY(SVMGlobalData::_is_containerized) NOT_SVM(OSContainer::is_containerized())) {
     jlong mem_limit;
-    if ((mem_limit = OSContainer::memory_limit_in_bytes()) > 0) {
+    if ((mem_limit = SVM_ONLY(SVMGlobalData::_container_memory_limit_in_bytes) NOT_SVM(OSContainer::memory_limit_in_bytes())) > 0) {
       log_trace(os)("total container memory: " JLONG_FORMAT, mem_limit);
       return static_cast<physical_memory_size_type>(mem_limit);
     }
@@ -373,6 +396,7 @@ physical_memory_size_type os::physical_memory() {
   return phys_mem;
 }
 
+#ifndef SVM
 // Returns the resident set size (RSS) of the process.
 // Falls back to using VmRSS from /proc/self/status if /proc/self/smaps_rollup is unavailable.
 // Note: On kernels with memory cgroups or shared memory, VmRSS may underreport RSS.
@@ -500,6 +524,7 @@ bool os::Linux::get_tick_information(CPUPerfTicks* pticks, int which_logical_cpu
 
   return true;
 }
+#endif // !SVM
 
 #ifndef SYS_gettid
 // i386: 224, amd64: 186
@@ -522,6 +547,7 @@ pid_t os::Linux::gettid() {
   return (pid_t)rslt;
 }
 
+#ifndef SVM
 // Returns the amount of swap currently configured, in bytes.
 // This can change at any time.
 julong os::Linux::host_swap() {
@@ -537,9 +563,11 @@ static bool unsafe_chroot_detected = false;
 static const char *unstable_chroot_error = "/proc file system not found.\n"
                      "Java may be unstable running multithreaded in a chroot "
                      "environment on Linux when /proc filesystem is not mounted.";
+#endif // !SVM
 
 void os::Linux::initialize_system_info() {
   set_processor_count((int)sysconf(_SC_NPROCESSORS_CONF));
+#ifndef SVM
   if (processor_count() == 1) {
     pid_t pid = os::Linux::gettid();
     char fname[32];
@@ -551,10 +579,12 @@ void os::Linux::initialize_system_info() {
       fclose(fp);
     }
   }
+#endif // !SVM
   _physical_memory = static_cast<physical_memory_size_type>(sysconf(_SC_PHYS_PAGES)) * static_cast<physical_memory_size_type>(sysconf(_SC_PAGESIZE));
   assert(processor_count() > 0, "linux error");
 }
 
+#ifndef SVM
 void os::init_system_properties_values() {
   // The next steps are taken in the product version:
   //
@@ -828,14 +858,16 @@ bool os::Linux::manually_expand_stack(JavaThread * t, address addr) {
   }
   return false;
 }
+#endif // !SVM
 
 //////////////////////////////////////////////////////////////////////////////
 // create new thread
 
 // Thread start routine for all newly created threads
 static void *thread_native_entry(Thread *thread) {
-
+#ifndef SVM
   thread->record_stack_base_and_size();
+#endif // !SVM
 
 #ifndef __GLIBC__
   // Try to randomize the cache line index of hot stack frames.
@@ -860,6 +892,7 @@ static void *thread_native_entry(Thread *thread) {
 
   osthread->set_thread_id(checked_cast<pid_t>(os::current_thread_id()));
 
+#ifndef SVM
   if (UseNUMA) {
     int lgrp_id = os::numa_get_group_id();
     if (lgrp_id != -1) {
@@ -868,6 +901,7 @@ static void *thread_native_entry(Thread *thread) {
   }
   // initialize signal mask for this thread
   PosixSignals::hotspot_sigmask(thread);
+#endif // !SVM
 
   // initialize floating point control register
   os::Linux::init_thread_fpu_state();
@@ -1054,6 +1088,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
   }
   assert(is_aligned(stack_size, os::vm_page_size()), "stack_size not aligned");
 
+#ifndef SVM
   if (THPStackMitigation) {
     // In addition to the glibc guard page that prevents inter-thread-stack hugepage
     // coalescing (see comment in os::Linux::default_guard_size()), we also make
@@ -1065,6 +1100,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
       stack_size += os::vm_page_size();
     }
   }
+#endif // !SVM
 
   int status = pthread_attr_setstacksize(&attr, stack_size);
   if (status != 0) {
@@ -1121,6 +1157,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
     } else {
       log_warning(os, thread)("Failed to start thread \"%s\" - pthread_create failed (%s) for attributes: %s.",
                               thread->name(), os::errno_name(ret), os::Posix::describe_pthread_attr(buf, sizeof(buf), &attr));
+#ifndef SVM
       // Log some OS information which might explain why creating the thread failed.
       log_info(os, thread)("Number of threads approx. running in the VM: %d", Threads::number_of_threads());
       LogStream st(Log(os, thread)::info());
@@ -1128,6 +1165,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
       os::print_memory_info(&st);
       os::Linux::print_proc_sys_info(&st);
       os::Linux::print_container_info(&st);
+#endif // !SVM
     }
 
     pthread_attr_destroy(&attr);
@@ -1168,9 +1206,11 @@ bool os::create_main_thread(JavaThread* thread) {
 }
 
 bool os::create_attached_thread(JavaThread* thread) {
+#ifndef SVM
 #ifdef ASSERT
   thread->verify_not_published();
 #endif
+#endif // !SVM
 
   // Allocate the OSThread object
   OSThread* osthread = new (std::nothrow) OSThread();
@@ -1183,14 +1223,17 @@ bool os::create_attached_thread(JavaThread* thread) {
   osthread->set_thread_id(os::Linux::gettid());
   osthread->set_pthread_id(::pthread_self());
 
+#ifndef SVM
   // initialize floating point control register
   os::Linux::init_thread_fpu_state();
+#endif // !SVM
 
   // Initial thread state is RUNNABLE
   osthread->set_state(RUNNABLE);
 
   thread->set_osthread(osthread);
 
+#ifndef SVM
   if (UseNUMA) {
     int lgrp_id = os::numa_get_group_id();
     if (lgrp_id != -1) {
@@ -1226,6 +1269,7 @@ bool os::create_attached_thread(JavaThread* thread) {
                        ", stack: " PTR_FORMAT " - " PTR_FORMAT " (%zuK) ).",
                        os::current_thread_id(), (uintx) pthread_self(),
                        p2i(thread->stack_base()), p2i(thread->stack_end()), thread->stack_size() / K);
+#endif // !SVM
 
   return true;
 }
@@ -1242,6 +1286,7 @@ void os::pd_start_thread(Thread* thread) {
 void os::free_thread(OSThread* osthread) {
   assert(osthread != nullptr, "osthread not set");
 
+#ifndef SVM
   // We are told to free resources of the argument thread, but we can only really operate
   // on the current thread. The current thread may be already detached at this point.
   assert(Thread::current_or_null() == nullptr || Thread::current()->osthread() == osthread,
@@ -1257,6 +1302,7 @@ void os::free_thread(OSThread* osthread) {
   // Restore caller's signal mask
   sigset_t sigmask = osthread->caller_sigmask();
   pthread_sigmask(SIG_SETMASK, &sigmask, nullptr);
+#endif // !SVM
 
   delete osthread;
 }
@@ -1264,6 +1310,7 @@ void os::free_thread(OSThread* osthread) {
 //////////////////////////////////////////////////////////////////////////////
 // primordial thread
 
+#ifndef SVM
 // Check if current thread is the primordial thread, similar to Solaris thr_main.
 bool os::is_primordial_thread(void) {
   if (suppress_primordial_thread_resolution) {
@@ -1515,6 +1562,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
                          stack_top, intptr_t(_initial_thread_stack_bottom));
   }
 }
+#endif // !SVM
 
 ////////////////////////////////////////////////////////////////////////////////
 // time support
@@ -1532,8 +1580,12 @@ double os::elapsedVTime() {
 void os::Linux::fast_thread_clock_init() {
   clockid_t clockid;
   struct timespec tp;
+#if defined(SVM) && defined(MUSL_LIBC)
+  int (*pthread_getcpuclockid_func)(pthread_t, clockid_t *) = &::pthread_getcpuclockid;
+#else
   int (*pthread_getcpuclockid_func)(pthread_t, clockid_t *) =
       (int(*)(pthread_t, clockid_t *)) dlsym(RTLD_DEFAULT, "pthread_getcpuclockid");
+#endif
 
   // Switch to using fast clocks for thread cpu time if
   // the clock_getres() returns 0 error code.
@@ -1558,6 +1610,7 @@ int os::current_process_id() {
   return ::getpid();
 }
 
+#ifndef SVM
 // DLL functions
 
 // This must be hard coded because it's the system's temporary
@@ -2932,6 +2985,7 @@ void linux_wrap_code(char* base, size_t size) {
     unlink(buf);
   }
 }
+#endif // !SVM
 
 static bool recoverable_mmap_error(int err) {
   // See if the error is one we can let the caller handle. This
@@ -2978,9 +3032,11 @@ int os::Linux::commit_memory_impl(char* addr, size_t size, bool exec) {
   uintptr_t res = (uintptr_t) ::mmap(addr, size, prot,
                                      MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0);
   if (res != (uintptr_t) MAP_FAILED) {
+#ifndef SVM
     if (UseNUMAInterleaving) {
       numa_make_global(addr, size);
     }
+#endif // !SVM
     return 0;
   } else {
     ErrnoPreserver ep;
@@ -3065,10 +3121,12 @@ int os::Linux::commit_memory_impl(char* addr, size_t size,
   return err;
 }
 
+#ifndef SVM
 bool os::pd_commit_memory(char* addr, size_t size, size_t alignment_hint,
                           bool exec) {
   return os::Linux::commit_memory_impl(addr, size, alignment_hint, exec) == 0;
 }
+#endif // !SVM
 
 void os::pd_commit_memory_or_exit(char* addr, size_t size,
                                   size_t alignment_hint, bool exec,
@@ -3082,26 +3140,33 @@ void os::pd_commit_memory_or_exit(char* addr, size_t size,
   }
 }
 
+#ifndef SVM
 void os::Linux::madvise_transparent_huge_pages(void* addr, size_t bytes) {
   // We don't check the return value: madvise(MADV_HUGEPAGE) may not
   // be supported or the memory may already be backed by huge pages.
   ::madvise(addr, bytes, MADV_HUGEPAGE);
 }
+#endif // !SVM
 
 void os::pd_realign_memory(char *addr, size_t bytes, size_t alignment_hint) {
+#ifndef SVM
   if (Linux::should_madvise_anonymous_thps() && alignment_hint > vm_page_size()) {
     Linux::madvise_transparent_huge_pages(addr, bytes);
   }
+#endif // !SVM
 }
 
+#ifndef SVM
 // Hints to the OS that the memory is no longer needed and may be reclaimed by the OS when convenient.
 // The memory will be re-acquired on touch without needing explicit recommitting.
 void os::pd_disclaim_memory(char *addr, size_t bytes) {
    ::madvise(addr, bytes, MADV_DONTNEED);
 }
+#endif // !SVM
 
 size_t os::pd_pretouch_memory(void* first, void* last, size_t page_size) {
   const size_t len = pointer_delta(last, first, sizeof(char)) + page_size;
+#ifndef SVM
   // Use madvise to pretouch on Linux when THP is used, and fallback to the
   // common method if unsupported. THP can form right after madvise rather than
   // being assembled later.
@@ -3122,9 +3187,11 @@ size_t os::pd_pretouch_memory(void* first, void* last, size_t page_size) {
     }
     return 0;
   }
+#endif // !SVM
   return page_size;
 }
 
+#ifndef SVM
 void os::numa_make_global(char *addr, size_t bytes) {
   Linux::numa_interleave_memory(addr, bytes);
 }
@@ -3211,12 +3278,15 @@ size_t os::numa_get_leaf_groups(uint *ids, size_t size) {
   }
   return i;
 }
+#endif // !SVM
 
 int os::Linux::sched_getcpu_syscall(void) {
   unsigned int cpu = 0;
   long retval = -1;
 
-#if defined(IA32)
+#if defined(SVM) && defined(MUSL_LIBC)
+  retval = syscall(SYS_getcpu, &cpu, nullptr, nullptr);
+#elif defined(IA32)
   #ifndef SYS_getcpu
     #define SYS_getcpu 318
   #endif
@@ -3238,8 +3308,13 @@ int os::Linux::sched_getcpu_syscall(void) {
 
 void os::Linux::sched_getcpu_init() {
   // sched_getcpu() should be in libc.
+#if defined(SVM) && defined(MUSL_LIBC)
+  // dlsym() cannot resolve symbols in a statically linked musl executable.
+  set_sched_getcpu(&::sched_getcpu);
+#else
   set_sched_getcpu(CAST_TO_FN_PTR(sched_getcpu_func_t,
                                   dlsym(RTLD_DEFAULT, "sched_getcpu")));
+#endif
 
   // If it's not, try a direct syscall.
   if (sched_getcpu() == -1) {
@@ -3253,6 +3328,7 @@ void os::Linux::sched_getcpu_init() {
 }
 
 // Something to do with the numa-aware allocator needs these symbols
+#ifndef SVM
 extern "C" JNIEXPORT void numa_warn(int number, char *where, ...) { }
 extern "C" JNIEXPORT void numa_error(char *where) { }
 
@@ -3348,6 +3424,7 @@ bool os::Linux::libnuma_init() {
   }
   return false;
 }
+#endif // !SVM
 
 size_t os::Linux::default_guard_size(os::ThreadType thr_type) {
 
@@ -3377,6 +3454,7 @@ size_t os::Linux::default_guard_size(os::ThreadType thr_type) {
   return ((thr_type == java_thread || thr_type == compiler_thread) ? 0 : os::vm_page_size());
 }
 
+#ifndef SVM
 void os::Linux::rebuild_nindex_to_node_map() {
   int highest_node_number = Linux::numa_max_node();
 
@@ -3498,6 +3576,7 @@ int os::Linux::get_node_by_cpu(int cpu_id) {
   }
   return -1;
 }
+#endif // !SVM
 
 GrowableArray<int>* os::Linux::_cpu_to_node;
 GrowableArray<int>* os::Linux::_nindex_to_node;
@@ -3540,6 +3619,7 @@ bool os::pd_uncommit_memory(char* addr, size_t size, bool exec) {
   return true;
 }
 
+#ifndef SVM
 static address get_stack_commited_bottom(address bottom, size_t size) {
   address nbot = bottom;
   address ntop = bottom + size;
@@ -3654,6 +3734,7 @@ bool os::remove_stack_guard_pages(char* addr, size_t size) {
 
   return os::uncommit_memory(addr, size);
 }
+#endif // !SVM
 
 // 'requested_addr' is only treated as a hint, the return value may or
 // may not start from the requested address. Unlike Linux mmap(), this
@@ -3691,6 +3772,7 @@ static char* anon_mmap(char* requested_addr, size_t bytes) {
   return addr;
 }
 
+#ifndef SVM
 // Allocate (using mmap, NO_RESERVE, with small pages) at either a given request address
 //   (req_addr != nullptr) or with a given alignment.
 //  - bytes shall be a multiple of alignment.
@@ -3744,6 +3826,7 @@ static char* anon_mmap_aligned(char* req_addr, size_t bytes, size_t alignment) {
   }
   return start;
 }
+#endif // !SVM
 
 static int anon_munmap(char * addr, size_t size) {
   if (::munmap(addr, size) != 0) {
@@ -3768,6 +3851,7 @@ bool os::pd_release_memory(char* addr, size_t size) {
 extern char* g_assert_poison; // assertion poison page address
 #endif
 
+#ifndef SVM
 static bool linux_mprotect(char* addr, size_t size, int prot) {
   // Linux wants the mprotect address argument to be page aligned.
   char* bottom = (char*)align_down((intptr_t)addr, os::vm_page_size());
@@ -4246,6 +4330,7 @@ char* os::pd_attempt_map_memory_to_file_at(char* requested_addr, size_t bytes, i
   }
   return result;
 }
+#endif // !SVM
 
 // Reserve memory at an arbitrary address, only if that area is
 // available (and not reserved for something else).
@@ -4277,6 +4362,7 @@ char* os::pd_attempt_reserve_memory_at(char* requested_addr, size_t bytes, bool 
   return nullptr;
 }
 
+#ifndef SVM
 size_t os::vm_min_address() {
   // Determined by sysctl vm.mmap_min_addr. It exists as a safety zone to prevent
   // null pointer dereferences.
@@ -4296,6 +4382,7 @@ size_t os::vm_min_address() {
   }
   return value;
 }
+#endif // !SVM
 
 ////////////////////////////////////////////////////////////////////////////////
 // thread priority support
@@ -4336,6 +4423,7 @@ int os::java_to_os_priority[CriticalPriority + 1] = {
 };
 
 static int prio_init() {
+  assert_svm_only(ThreadPriorityPolicy == 0, "this is the only supported value at the moment");
   if (ThreadPriorityPolicy == 1) {
     if (geteuid() != 0) {
       if (!FLAG_IS_DEFAULT(ThreadPriorityPolicy) && !FLAG_IS_JIMAGE_RESOURCE(ThreadPriorityPolicy)) {
@@ -4384,6 +4472,7 @@ jlong os::Linux::fast_thread_cpu_time(clockid_t clockid) {
   return (tp.tv_sec * NANOSECS_PER_SEC) + tp.tv_nsec;
 }
 
+#ifndef SVM
 // copy data between two file descriptor within the kernel
 // the number of bytes written to out_fd is returned if transfer was successful
 // otherwise, returns -1 that implies an error
@@ -4458,6 +4547,7 @@ static void check_pax(void) {
   ::munmap(p, size);
 #endif
 }
+#endif // !SVM
 
 // this is called _before_ most of the global arguments have been parsed
 void os::init(void) {
@@ -4477,6 +4567,7 @@ void os::init(void) {
 
   Linux::initialize_system_info();
 
+#ifndef SVM
 #ifdef __GLIBC__
   g_mallinfo = CAST_TO_FN_PTR(mallinfo_func_t, dlsym(RTLD_DEFAULT, "mallinfo"));
   g_mallinfo2 = CAST_TO_FN_PTR(mallinfo2_func_t, dlsym(RTLD_DEFAULT, "mallinfo2"));
@@ -4491,22 +4582,30 @@ void os::init(void) {
     initial_total_ticks = pticks.total;
     initial_steal_ticks = pticks.steal;
   }
+#endif // !SVM
 
   // _main_thread points to the thread that created/loaded the JVM.
   Linux::_main_thread = pthread_self();
 
   // retrieve entry point for pthread_setname_np
+#if defined(SVM) && defined(MUSL_LIBC)
+  Linux::_pthread_setname_np = &::pthread_setname_np;
+#else
   Linux::_pthread_setname_np =
     (int(*)(pthread_t, const char*))dlsym(RTLD_DEFAULT, "pthread_setname_np");
+#endif
 
+#ifndef SVM
   check_pax();
 
   // Check the availability of MADV_POPULATE_WRITE.
   FLAG_SET_DEFAULT(UseMadvPopulateWrite, (::madvise(nullptr, 0, MADV_POPULATE_WRITE) == 0));
+#endif // !SVM
 
   os::Posix::init();
 }
 
+#ifndef SVM
 // To install functions for atexit system call
 extern "C" {
   static void perfMemory_exit_helper() {
@@ -4599,6 +4698,7 @@ void os::Linux::disable_numa(const char* reason, bool warning) {
   FLAG_SET_ERGO(UseNUMA, false);
   FLAG_SET_ERGO(UseNUMAInterleaving, false);
 }
+#endif // !SVM
 
 #if defined(IA32) && !defined(ZERO)
 /*
@@ -4692,6 +4792,7 @@ jint os::init_2(void) {
 
   Linux::fast_thread_clock_init();
 
+#ifndef SVM
   if (PosixSignals::init() == JNI_ERR) {
     return JNI_ERR;
   }
@@ -4714,18 +4815,23 @@ jint os::init_2(void) {
 #endif
 
   Linux::libpthread_init();
+#endif // !SVM
   Linux::sched_getcpu_init();
+#ifndef SVM
   log_info(os)("HotSpot is running with %s, %s",
                Linux::libc_version(), Linux::libpthread_version());
+#endif // !SVM
 
 #ifdef __GLIBC__
   // Check if we need to adjust the stack size for glibc guard pages.
   init_adjust_stacksize_for_guard_pages();
 #endif
 
+#ifndef SVM
   if (UseNUMA || UseNUMAInterleaving) {
     Linux::numa_init();
   }
+#endif // !SVM
 
   if (MaxFDLimit) {
     // set the number of file descriptors to max. print out error
@@ -4748,6 +4854,7 @@ jint os::init_2(void) {
   // call to exit(3C). There can be only 32 of these functions registered
   // and atexit() does not set errno.
 
+#ifndef SVM
   if (PerfAllowAtExitRegistration) {
     // only register atexit functions if PerfAllowAtExitRegistration is set.
     // atexit functions can be delayed until process exit time, which
@@ -4761,10 +4868,12 @@ jint os::init_2(void) {
       warning("os::init_2 atexit(perfMemory_exit_helper) failed");
     }
   }
+#endif // !SVM
 
   // initialize thread priority policy
   prio_init();
 
+#ifndef SVM
   if (!FLAG_IS_DEFAULT(AllocateHeapAt)) {
     set_coredump_filter(DAX_SHARED_BIT);
   }
@@ -4782,6 +4891,7 @@ jint os::init_2(void) {
     // exit contains all nmethods generated during execution.
     FLAG_SET_DEFAULT(UseCodeCacheFlushing, false);
   }
+#endif // !SVM
 
   // Override the timer slack value if needed. The adjustment for the main
   // thread will establish the setting for child threads, which would be
@@ -4921,8 +5031,9 @@ int os::active_processor_count() {
   }
 
   int active_cpus;
-  if (OSContainer::is_containerized()) {
-    active_cpus = OSContainer::active_processor_count();
+
+  if (SVM_ONLY(SVMGlobalData::_is_containerized) NOT_SVM(OSContainer::is_containerized())) {
+    active_cpus = SVM_ONLY(SVMGlobalData::_container_active_processor_count) NOT_SVM(OSContainer::active_processor_count());
     log_trace(os)("active_processor_count: determined by OSContainer: %d",
                    active_cpus);
   } else {
@@ -4932,6 +5043,7 @@ int os::active_processor_count() {
   return active_cpus;
 }
 
+#ifndef SVM
 static bool should_warn_invalid_processor_id() {
   if (os::processor_count() == 1) {
     // Don't warn if we only have one processor
@@ -4973,6 +5085,7 @@ uint os::processor_id() {
 
   return 0;
 }
+#endif // !SVM
 
 void os::set_native_thread_name(const char *name) {
   if (Linux::_pthread_setname_np) {
@@ -4985,6 +5098,7 @@ void os::set_native_thread_name(const char *name) {
   }
 }
 
+#ifndef SVM
 ////////////////////////////////////////////////////////////////////////////////
 // debug support
 
@@ -5118,6 +5232,7 @@ int os::open(const char *path, int oflag, int mode) {
   return fd;
 }
 
+#endif // !SVM
 static jlong slow_thread_cpu_time(Thread *thread, bool user_sys_cpu_time);
 
 static jlong fast_cpu_time(Thread *thread) {
@@ -5134,6 +5249,7 @@ static jlong fast_cpu_time(Thread *thread) {
     }
 }
 
+#ifndef SVM
 // current_thread_cpu_time(bool) and thread_cpu_time(Thread*, bool)
 // are used by JVM M&M and JVMTI to get user+sys or user CPU time
 // of a thread.
@@ -5149,6 +5265,7 @@ jlong os::current_thread_cpu_time() {
     return slow_thread_cpu_time(Thread::current(), true /* user + sys */);
   }
 }
+#endif // SVM
 
 jlong os::thread_cpu_time(Thread* thread) {
   // consistent with what current_thread_cpu_time() returns
@@ -5159,6 +5276,7 @@ jlong os::thread_cpu_time(Thread* thread) {
   }
 }
 
+#ifndef SVM
 jlong os::current_thread_cpu_time(bool user_sys_cpu_time) {
   if (user_sys_cpu_time && os::Linux::supports_fast_thread_cpu_time()) {
     return os::Linux::fast_thread_cpu_time(CLOCK_THREAD_CPUTIME_ID);
@@ -5166,6 +5284,7 @@ jlong os::current_thread_cpu_time(bool user_sys_cpu_time) {
     return slow_thread_cpu_time(Thread::current(), user_sys_cpu_time);
   }
 }
+#endif // !SVM
 
 jlong os::thread_cpu_time(Thread *thread, bool user_sys_cpu_time) {
   if (user_sys_cpu_time && os::Linux::supports_fast_thread_cpu_time()) {
@@ -5220,6 +5339,7 @@ static jlong slow_thread_cpu_time(Thread *thread, bool user_sys_cpu_time) {
   }
 }
 
+#ifndef SVM
 void os::current_thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->max_value = all_bits_jlong;    // will not wrap in less than 64 bits
   info_ptr->may_skip_backward = false;     // elapsed time not wall time
@@ -5233,6 +5353,7 @@ void os::thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->may_skip_forward = false;      // elapsed time not wall time
   info_ptr->kind = JVMTI_TIMER_TOTAL_CPU;  // user+system time is returned
 }
+#endif // !SVM
 
 bool os::is_thread_cpu_time_supported() {
   return true;
@@ -5245,6 +5366,7 @@ int os::loadavg(double loadavg[], int nelem) {
   return ::getloadavg(loadavg, nelem);
 }
 
+#ifndef SVM
 // Get the default path to the core file
 // Returns the length of the string
 int os::get_core_path(char* buffer, size_t bufferSize) {
@@ -5581,3 +5703,8 @@ bool os::pd_dll_unload(void* libhandle, char* ebuf, int ebuflen) {
 
   return res;
 } // end: os::pd_dll_unload()
+
+#endif // !SVM
+
+} // namespace svm_gc
+

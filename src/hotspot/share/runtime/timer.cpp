@@ -28,6 +28,9 @@
 #include "runtime/timer.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 double TimeHelper::counter_to_seconds(jlong counter) {
   double freq  = (double) os::elapsed_frequency();
   return (double)counter / freq;
@@ -42,6 +45,7 @@ jlong TimeHelper::millis_to_counter(jlong millis) {
   return millis * freq;
 }
 
+#ifndef SVM
 jlong TimeHelper::micros_to_counter(jlong micros) {
   jlong freq = os::elapsed_frequency() / MICROUNITS;
   return micros * freq;
@@ -85,6 +89,7 @@ jlong elapsedTimer::active_ticks() const {
   jlong counter = _counter + os::elapsed_counter() - _start_counter;
   return counter;
 }
+#endif // !SVM
 
 void TimeStamp::update_to(jlong ticks) {
   _counter = ticks;
@@ -96,6 +101,7 @@ void TimeStamp::update() {
   update_to(os::elapsed_counter());
 }
 
+#ifndef SVM
 double TimeStamp::seconds() const {
   assert(is_updated(), "must not be clear");
   jlong new_count = os::elapsed_counter();
@@ -112,3 +118,7 @@ jlong TimeStamp::ticks_since_update() const {
   assert(is_updated(), "must not be clear");
   return os::elapsed_counter() - _counter;
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

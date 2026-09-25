@@ -50,14 +50,29 @@
 #ifdef ASSERT
 #ifdef _LP64
 // Two low bits are not usable.
+
+namespace svm_gc {
+
 static void* const POISON_PTR = (void*)UCONST64(0xfbadbadbadbadbac);
+
+} // namespace svm_gc
+
 #else
 // Two low bits are not usable.
+
+namespace svm_gc {
+
 static void* const POISON_PTR = (void*)0xffbadbac;
+
+} // namespace svm_gc
+
 #endif
 #endif
 
 // Node
+
+namespace svm_gc {
+
 template <typename CONFIG, MemTag MT>
 inline typename ConcurrentHashTable<CONFIG, MT>::Node*
 ConcurrentHashTable<CONFIG, MT>::
@@ -1308,5 +1323,8 @@ inline void ConcurrentHashTable<CONFIG, MT>::
     }
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_CONCURRENTHASHTABLE_INLINE_HPP

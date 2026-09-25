@@ -42,6 +42,9 @@
 
 #define DEFAULT_ALPHA_VALUE 0.3
 
+
+namespace svm_gc {
+
 class AbsSeq: public CHeapObj<mtInternal> {
 private:
   void init(double alpha);
@@ -130,5 +133,8 @@ public:
   // Debugging/Printing
   virtual void dump_on(outputStream* s);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_NUMBERSEQ_HPP

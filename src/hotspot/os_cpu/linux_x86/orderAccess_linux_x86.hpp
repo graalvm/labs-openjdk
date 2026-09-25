@@ -33,6 +33,9 @@
 // Implementation of class OrderAccess.
 
 // A compiler barrier, forcing the C++ compiler to invalidate all memory assumptions
+
+namespace svm_gc {
+
 static inline void compiler_barrier() {
   __asm__ volatile ("" : : : "memory");
 }
@@ -55,6 +58,7 @@ inline void OrderAccess::fence() {
   compiler_barrier();
 }
 
+#ifndef SVM
 inline void OrderAccess::cross_modify_fence_impl() {
   if (VM_Version::supports_serialize()) {
     __asm__ volatile (".byte 0x0f, 0x01, 0xe8\n\t" : : :); //serialize
@@ -69,5 +73,9 @@ inline void OrderAccess::cross_modify_fence_impl() {
 #endif
   }
 }
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_X86_ORDERACCESS_LINUX_X86_HPP

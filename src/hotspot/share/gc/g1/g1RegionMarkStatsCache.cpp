@@ -27,6 +27,9 @@
 #include "memory/allocation.inline.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 G1RegionMarkStatsCache::G1RegionMarkStatsCache(G1RegionMarkStats* target, uint num_cache_entries) :
   _target(target),
   _num_cache_entries(num_cache_entries),
@@ -65,3 +68,6 @@ void G1RegionMarkStatsCache::reset() {
     _cache[i].clear(i);
   }
 }
+
+} // namespace svm_gc
+

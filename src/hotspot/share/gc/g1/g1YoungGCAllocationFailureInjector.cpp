@@ -28,6 +28,9 @@
 
 #if ALLOCATION_FAILURE_INJECTOR
 
+
+namespace svm_gc {
+
 class SelectAllocationFailureRegionClosure : public G1HeapRegionClosure {
   CHeapBitMap& _allocation_failure_regions;
   size_t _allocation_failure_regions_num;
@@ -108,5 +111,8 @@ void G1YoungGCAllocationFailureInjector::reset() {
   _last_collection_with_allocation_failure = G1CollectedHeap::heap()->total_collections();
   _inject_allocation_failure_for_current_gc = false;
 }
+
+
+} // namespace svm_gc
 
 #endif // #if ALLOCATION_FAILURE_INJECTOR

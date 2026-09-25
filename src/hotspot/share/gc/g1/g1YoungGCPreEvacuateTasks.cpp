@@ -35,6 +35,9 @@
 #include "runtime/thread.inline.hpp"
 #include "runtime/threads.hpp"
 
+
+namespace svm_gc {
+
 class G1PreEvacuateCollectionSetBatchTask::JavaThreadRetireTLABAndFlushLogs : public G1AbstractSubTask {
   G1JavaThreadsListClaimer _claimer;
 
@@ -198,3 +201,6 @@ G1PreEvacuateCollectionSetBatchTask::~G1PreEvacuateCollectionSetBatchTask() {
   size_t thread_buffer_cards = pending_cards - _old_pending_cards;
   G1CollectedHeap::heap()->policy()->record_concurrent_refinement_stats(pending_cards, thread_buffer_cards);
 }
+
+} // namespace svm_gc
+

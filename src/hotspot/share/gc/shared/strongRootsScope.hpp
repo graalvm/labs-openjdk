@@ -27,11 +27,19 @@
 
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 class MarkScope : public StackObj {
  protected:
   MarkScope();
   ~MarkScope();
 };
+
+#ifdef SVM
+class NMethodMarkScope : public MarkScope {
+};
+#endif // SVM
 
 // Sets up and tears down the required state for sequential/parallel root processing.
 class StrongRootsScope : public MarkScope {
@@ -45,5 +53,8 @@ class StrongRootsScope : public MarkScope {
 
   uint n_threads() const { return _n_threads; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_STRONGROOTSSCOPE_HPP

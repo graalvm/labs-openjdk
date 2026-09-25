@@ -30,6 +30,9 @@
 
 // G1FromCardCache remembers the most recently processed card on the heap on
 // a per-region and per-thread basis.
+
+namespace svm_gc {
+
 class G1FromCardCache : public AllStatic {
 private:
   // Array of card indices. Indexed by heap region (rows) and thread (columns) to minimize
@@ -96,5 +99,8 @@ public:
     return _static_mem_size;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FROMCARDCACHE_HPP

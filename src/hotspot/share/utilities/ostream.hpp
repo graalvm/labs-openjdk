@@ -30,6 +30,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 DEBUG_ONLY(class ResourceMark;)
 
 // Output streams for printing
@@ -111,7 +114,9 @@ class outputStream : public CHeapObjBase {
 
    // sizing
    int position() const { return _position; }
+#ifndef SVM
    julong count() const { return _precount + _position; }
+#endif // !SVM
    void set_count(julong count) { _precount = count - _position; }
    void set_position(int pos)   { _position = pos; }
 
@@ -196,6 +201,7 @@ class StreamIndentor {
   }
 };
 
+#ifndef SVM
 // advisory locking for the shared tty stream:
 class ttyLocker: StackObj {
   friend class ttyUnlocker;
@@ -227,6 +233,7 @@ class ttyUnlocker: StackObj {
     }
   }
 };
+#endif // !SVM
 
 // for writing to strings; buffer will expand automatically.
 // Buffer will always be zero-terminated.
@@ -279,8 +286,10 @@ class fileStream : public outputStream {
   bool  _need_close;
  public:
   fileStream() { _file = nullptr; _need_close = false; }
+#ifndef SVM
   fileStream(const char* file_name);
   fileStream(const char* file_name, const char* opentype);
+#endif // !SVM
   fileStream(FILE* file, bool need_close = false) { _file = file; _need_close = need_close; }
   ~fileStream();
   bool is_open() const { return _file != nullptr; }
@@ -358,6 +367,7 @@ class bufferedStream : public outputStream {
 
 #define O_BUFLEN 2000   // max size of output of individual print() methods
 
+#ifndef SVM
 #ifndef PRODUCT
 
 class networkStream : public bufferedStream {
@@ -377,5 +387,9 @@ class networkStream : public bufferedStream {
 };
 
 #endif
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_OSTREAM_HPP

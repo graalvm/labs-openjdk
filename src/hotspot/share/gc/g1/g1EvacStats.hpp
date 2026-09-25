@@ -30,6 +30,9 @@
 
 // Records various memory allocation statistics gathered during evacuation. All sizes
 // are in HeapWords.
+
+namespace svm_gc {
+
 class G1EvacStats : public PLABStats {
   size_t _default_plab_size;
   size_t _desired_net_plab_size; // Output of filter (below), suitably trimmed and quantized
@@ -94,5 +97,8 @@ public:
   inline void add_region_end_waste(size_t value);
   inline void add_failure_used_and_waste(size_t used, size_t waste);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1EVACSTATS_HPP

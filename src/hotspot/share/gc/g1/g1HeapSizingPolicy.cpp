@@ -31,6 +31,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 G1HeapSizingPolicy* G1HeapSizingPolicy::create(const G1CollectedHeap* g1h, const G1Analytics* analytics) {
   return new G1HeapSizingPolicy(g1h, analytics);
 }
@@ -291,3 +294,6 @@ size_t G1HeapSizingPolicy::full_collection_resize_amount(bool& expand, size_t al
   expand = true; // Does not matter.
   return 0;
 }
+
+} // namespace svm_gc
+

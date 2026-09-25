@@ -42,6 +42,9 @@
 #define CONSTRAINT_ENUM_(type, func)  CONSTRAINT_ENUM(func),
 #define CONSTRAINT_FUNC(type, func)   (void*)&func,
 
+
+namespace svm_gc {
+
 enum JVMFlagConstraintsEnum : int {
   ALL_CONSTRAINTS(CONSTRAINT_ENUM_)
   NUM_JVMFlagConstraintsEnum
@@ -102,10 +105,14 @@ public:
 constexpr JVMTypedFlagLimit<int> limit_dummy
 (
 #ifdef PRODUCT
- ALL_FLAGS(FLAG_LIMIT_DEFINE_DUMMY,
+ ALL_FLAGS(FLAG_LIMIT_DEFINE,
+           FLAG_LIMIT_DEFINE,
+           FLAG_LIMIT_DEFINE,
+           FLAG_LIMIT_DEFINE,
            FLAG_LIMIT_DEFINE_DUMMY,
-           FLAG_LIMIT_DEFINE,
-           FLAG_LIMIT_DEFINE,
+           FLAG_LIMIT_DEFINE_DUMMY,
+           FLAG_LIMIT_DEFINE_DUMMY,
+           FLAG_LIMIT_DEFINE_DUMMY,
            APPLY_FLAG_RANGE,
            APPLY_FLAG_CONSTRAINT)
 #else
@@ -113,6 +120,10 @@ constexpr JVMTypedFlagLimit<int> limit_dummy
            FLAG_LIMIT_DEFINE,
            FLAG_LIMIT_DEFINE,
            FLAG_LIMIT_DEFINE,
+           FLAG_LIMIT_DEFINE_DUMMY,
+           FLAG_LIMIT_DEFINE_DUMMY,
+           FLAG_LIMIT_DEFINE_DUMMY,
+           FLAG_LIMIT_DEFINE_DUMMY,
            APPLY_FLAG_RANGE,
            APPLY_FLAG_CONSTRAINT)
 #endif
@@ -123,10 +134,14 @@ static constexpr const JVMFlagLimit* const flagLimitTable[1 + NUM_JVMFlagsEnum] 
   LimitGetter<int>::get_limit(nullptr, 0
 
 #ifdef PRODUCT
-  ALL_FLAGS(FLAG_LIMIT_PTR_NONE,
+  ALL_FLAGS(FLAG_LIMIT_PTR,
+            FLAG_LIMIT_PTR,
+            FLAG_LIMIT_PTR,
+            FLAG_LIMIT_PTR,
             FLAG_LIMIT_PTR_NONE,
-            FLAG_LIMIT_PTR,
-            FLAG_LIMIT_PTR,
+            FLAG_LIMIT_PTR_NONE,
+            FLAG_LIMIT_PTR_NONE,
+            FLAG_LIMIT_PTR_NONE,
             APPLY_FLAG_RANGE,
             APPLY_FLAG_CONSTRAINT)
 #else
@@ -134,6 +149,10 @@ static constexpr const JVMFlagLimit* const flagLimitTable[1 + NUM_JVMFlagsEnum] 
             FLAG_LIMIT_PTR,
             FLAG_LIMIT_PTR,
             FLAG_LIMIT_PTR,
+            FLAG_LIMIT_PTR_NONE,
+            FLAG_LIMIT_PTR_NONE,
+            FLAG_LIMIT_PTR_NONE,
+            FLAG_LIMIT_PTR_NONE,
             APPLY_FLAG_RANGE,
             APPLY_FLAG_CONSTRAINT)
 #endif
@@ -183,6 +202,11 @@ bool JVMFlagLimit::check_all_constraints(JVMFlagConstraintPhase phase) {
   return status;
 }
 
+#ifndef SVM
 void JVMFlagLimit::print_range(outputStream* st, const JVMFlag* flag) const {
   JVMFlagAccess::print_range(st, flag, this);
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

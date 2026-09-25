@@ -37,6 +37,9 @@
 #endif
 
 // If needed, add os::strndup and use that instead.
+
+namespace svm_gc {
+
 FORBID_C_FUNCTION(char* strndup(const char*, size_t), "don't use");
 
 // These are unimplementable for Windows, and they aren't useful for a
@@ -60,5 +63,8 @@ FORBID_C_FUNCTION(char* getwd(char*), "use os::get_current_directory");
 
 // BSD utility that is subtly different from realloc.
 FORBID_C_FUNCTION(void* reallocf(void*, size_t), "use os::realloc");
+
+
+} // namespace svm_gc
 
 #endif // OS_POSIX_FORBIDDENFUNCTIONS_POSIX_HPP

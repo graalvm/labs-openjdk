@@ -30,6 +30,9 @@
 
 // VM_operations for the G1 collector.
 
+
+namespace svm_gc {
+
 class VM_G1CollectFull : public VM_GC_Operation {
 protected:
   bool skip_operation() const override;
@@ -106,5 +109,8 @@ public:
   VMOp_Type type() const override { return VMOp_G1PauseCleanup; }
   void work() override;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1VMOPERATIONS_HPP

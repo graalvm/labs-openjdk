@@ -49,6 +49,9 @@
 
 // Interface collecting various instance specific verification methods of
 // G1HeapRegionSets.
+
+namespace svm_gc {
+
 class G1HeapRegionSetChecker : public CHeapObj<mtGC> {
 public:
   // Verify MT safety for this G1HeapRegionSet.
@@ -270,5 +273,8 @@ public:
     _curr(list->_head) {
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONSET_HPP

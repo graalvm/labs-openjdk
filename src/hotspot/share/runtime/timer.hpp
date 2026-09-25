@@ -29,6 +29,9 @@
 
 // Timers for simple measurement.
 
+
+namespace svm_gc {
+
 class elapsedTimer {
   friend class VMStructs;
  private:
@@ -36,17 +39,25 @@ class elapsedTimer {
   jlong _start_counter;
   bool  _active;
  public:
+#ifndef SVM
   elapsedTimer()             { _active = false; reset(); }
+#endif // !SVM
   void add(elapsedTimer t);
   void add_nanoseconds(jlong ns);
   void start();
   void stop();
+#ifndef SVM
   void reset()               { _counter = 0; }
+#endif // !SVM
   double seconds() const;
   jlong milliseconds() const;
+#ifndef SVM
   jlong ticks() const        { return _counter; }
+#endif // !SVM
   jlong active_ticks() const;
+#ifndef SVM
   bool  is_active() const { return _active; }
+#endif // !SVM
 };
 
 // TimeStamp is used for recording when an event took place.
@@ -78,5 +89,8 @@ class TimeHelper {
   static jlong millis_to_counter(jlong millis);
   static jlong micros_to_counter(jlong micros);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_TIMER_HPP

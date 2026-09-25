@@ -37,6 +37,9 @@
 //
 // Note: all sizes are in oops
 
+
+namespace svm_gc {
+
 class AgeTable: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -79,5 +82,8 @@ class AgeTable: public CHeapObj<mtGC> {
   bool _use_perf_data;
   PerfVariable* _perf_sizes[table_size];
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_AGETABLE_HPP

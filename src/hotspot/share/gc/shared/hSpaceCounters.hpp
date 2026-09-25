@@ -32,6 +32,9 @@
 // A HSpaceCounter is a holder class for performance counters
 // that track a collections (logical spaces) in a heap;
 
+
+namespace svm_gc {
+
 class HSpaceCounters: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -42,11 +45,13 @@ class HSpaceCounters: public CHeapObj<mtGC> {
   // Constant PerfData types don't need to retain a reference.
   // However, it's a good idea to document them here.
 
+#ifndef SVM
   char*         _name_space;
+#endif // !SVM
 
  public:
 
-  HSpaceCounters(const char* name_space, const char* name, int ordinal,
+  HSpaceCounters(SVM_ONLY(int generation_ordinal) NOT_SVM(const char* name_space), const char* name, int ordinal,
                  size_t max_size, size_t initial_capacity);
 
   ~HSpaceCounters();
@@ -63,6 +68,11 @@ class HSpaceCounters: public CHeapObj<mtGC> {
     jlong capacity();
   )
 
+#ifndef SVM
   const char* name_space() const        { return _name_space; }
+#endif // !SVM
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_SHARED_HSPACECOUNTERS_HPP

@@ -28,6 +28,9 @@
 #include "logging/logLevel.hpp"
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 class LogMessageBuffer : public StackObj {
   friend class LogMessageTest;
  protected:
@@ -70,10 +73,12 @@ class LogMessageBuffer : public StackObj {
     void skip_messages_with_finer_level();
 
    public:
+#ifndef SVM
     Iterator(const LogMessageBuffer& message, LogLevelType level, LogDecorations& decorations)
         : _message(message), _current_line_index(0), _level(level), _decorations(decorations) {
       skip_messages_with_finer_level();
     }
+#endif // !SVM
 
     void operator++(int) {
       _current_line_index++;
@@ -96,6 +101,7 @@ class LogMessageBuffer : public StackObj {
 
   void reset();
 
+#ifndef SVM
   LogLevelType least_detailed_level() const {
     return _least_detailed_level;
   }
@@ -103,6 +109,7 @@ class LogMessageBuffer : public StackObj {
   Iterator iterator(LogLevelType level, LogDecorations& decorations) const {
     return Iterator(*this, level, decorations);
   }
+#endif // !SVM
 
   // Lines in LogMessageBuffers are not automatically prefixed based on tags
   // like regular simple messages (see LogPrefix.hpp for more about prefixes).
@@ -126,5 +133,8 @@ class LogMessageBuffer : public StackObj {
   LOG_LEVEL_LIST
 #undef LOG_LEVEL
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGMESSAGEBUFFER_HPP

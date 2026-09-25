@@ -30,6 +30,9 @@
 // A simplistic template providing a general save-restore pattern through a
 // local auto/stack object (scope).
 //
+
+namespace svm_gc {
+
 template<typename T> class AutoSaveRestore : public StackObj {
 public:
   AutoSaveRestore(T &loc) : _loc(loc) {
@@ -52,5 +55,8 @@ public:
     loc = value;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_AUTORESTORE_HPP

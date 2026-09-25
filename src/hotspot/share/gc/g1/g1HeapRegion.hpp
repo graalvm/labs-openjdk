@@ -36,6 +36,9 @@
 #include "runtime/mutex.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 class G1CardSet;
 class G1CardSetConfiguration;
 class G1CollectedHeap;
@@ -140,6 +143,10 @@ public:
   HeapWord* block_start(const void* addr, HeapWord* const pb) const;
 
   void object_iterate(ObjectClosure* blk);
+
+#ifdef SVM
+  void oop_iterate(OopClosure* cl);
+#endif // SVM
 
   // At the given address create an object with the given size. If the region
   // is old the BOT will be updated if the object spans a threshold.
@@ -392,7 +399,19 @@ public:
 
   bool is_old() const { return _type.is_old(); }
 
+#ifdef SVM
+  bool is_old_or_humongous_or_open_image_heap() const { return _type.is_old_or_humongous_or_open_image_heap(); }
+
+  bool is_image_heap()                          const { return _type.is_image_heap(); }
+  bool is_closed_image_heap()                   const { return _type.is_closed_image_heap(); }
+  bool is_open_image_heap()                     const { return _type.is_open_image_heap(); }
+
+  G1HeapRegionType type()                       const { return _type; }
+  void set_type(jbyte type);
+#else
+  // NOTE (chaeubl): usually, calls to this method should be replaced with is_old_or_humongous_or_open_image_heap()
   bool is_old_or_humongous() const { return _type.is_old_or_humongous(); }
+#endif // !SVM
 
   size_t pinned_count() const { return Atomic::load(&_pinned_object_count); }
   bool has_pinned_objects() const { return pinned_count() > 0; }
@@ -423,6 +442,16 @@ public:
   // region. first_hr is the "start humongous" region of the series
   // which this region will be part of.
   void set_continues_humongous(G1HeapRegion* first_hr);
+
+#ifdef SVM
+  void set_starts_humongous_in_image_heap();
+  void set_continues_humongous_in_image_heap(G1HeapRegion* first_hr);
+
+  void set_image_heap_bot(G1BlockOffsetTable* bot) {
+    assert(is_open_image_heap(), "only open image heap regions use the prebuilt BOT");
+    _bot = bot;
+  }
+#endif
 
   // Unsets the humongous-related fields on the region.
   void clear_humongous();
@@ -601,5 +630,8 @@ public:
   // and returned "false" in all cases.
   bool is_complete() { return _is_complete; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGION_HPP

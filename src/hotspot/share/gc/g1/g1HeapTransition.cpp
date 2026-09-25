@@ -28,12 +28,17 @@
 #include "logging/logStream.hpp"
 #include "memory/metaspaceUtils.hpp"
 
+
+namespace svm_gc {
+
 G1HeapTransition::Data::Data(G1CollectedHeap* g1_heap) :
   _eden_length(g1_heap->eden_regions_count()),
   _survivor_length(g1_heap->survivor_regions_count()),
   _old_length(g1_heap->old_regions_count()),
   _humongous_length(g1_heap->humongous_regions_count()),
+#ifndef SVM
   _meta_sizes(MetaspaceUtils::get_combined_statistics()),
+#endif // !SVM
   _eden_length_per_node(nullptr),
   _survivor_length_per_node(nullptr) {
 
@@ -82,6 +87,11 @@ class G1HeapTransition::DetailedUsageClosure: public G1HeapRegionClosure {
 public:
   DetailedUsage _usage;
   bool do_heap_region(G1HeapRegion* r) {
+#ifdef SVM
+    if (r->is_image_heap()) {
+      // Nothing to do - values are computed once and don't change.
+    } else
+#endif // SVM
     if (r->is_old()) {
       _usage._old_used += r->used();
       _usage._old_region_count++;
@@ -168,5 +178,16 @@ void G1HeapTransition::print() {
   log_trace(gc, heap)(" Used: %zuK, Waste: %zuK",
                       usage._humongous_used / K, ((after._humongous_length * G1HeapRegion::GrainBytes) - usage._humongous_used) / K);
 
+#ifdef SVM
+  int image_heap_regions = SVMGlobalData::_closed_image_heap_regions + SVMGlobalData::_open_image_heap_regions;
+  log_info(gc, heap)("Image heap regions: " INT32_FORMAT "->" INT32_FORMAT,
+                     image_heap_regions, image_heap_regions);
+  log_trace(gc, heap)(" Used: %zuK, Waste: %zuK",
+                     SVMGlobalData::_image_heap_size / K, SVMGlobalData::_image_heap_waste / K);
+#else
   MetaspaceUtils::print_metaspace_change(_before._meta_sizes);
+#endif // SVM
 }
+
+} // namespace svm_gc
+

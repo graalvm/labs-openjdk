@@ -28,6 +28,9 @@
 #include "memory/allocation.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class G1Analytics;
 class G1Policy;
 
@@ -66,5 +69,8 @@ public:
     return _predicted_cards_at_next_gc;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTREFINETHREADSNEEDED_HPP

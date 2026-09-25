@@ -28,6 +28,9 @@
 #include "logging/log.hpp"
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 G1SurvRateGroup::G1SurvRateGroup() :
   _stats_arrays_length(0),
   _num_added_regions(0),
@@ -136,3 +139,6 @@ void G1SurvRateGroup::finalize_predictions(const G1Predictions& predictor) {
   }
   _last_pred = pred;
 }
+
+} // namespace svm_gc
+

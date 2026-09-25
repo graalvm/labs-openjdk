@@ -32,6 +32,9 @@
 #include "utilities/align.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+namespace svm_gc {
+
 inline bool G1CMBitMap::iterate(G1CMBitMapClosure* cl, MemRegion mr) {
   assert(!mr.is_empty(), "Does not support empty memregion to iterate over");
   assert(_covered.contains(mr),
@@ -51,5 +54,8 @@ inline bool G1CMBitMap::iterate(G1CMBitMapClosure* cl, MemRegion mr) {
   }
   return true;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTMARKBITMAP_INLINE_HPP

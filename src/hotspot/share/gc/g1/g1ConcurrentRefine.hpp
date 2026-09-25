@@ -34,6 +34,9 @@
 #include "utilities/macros.hpp"
 
 // Forward decl
+
+namespace svm_gc {
+
 class G1ConcurrentRefine;
 class G1ConcurrentRefineThread;
 class G1DirtyCardQueueSet;
@@ -218,5 +221,8 @@ public:
   // Iterate over all concurrent refinement threads applying the given closure.
   void threads_do(ThreadClosure *tc);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTREFINE_HPP

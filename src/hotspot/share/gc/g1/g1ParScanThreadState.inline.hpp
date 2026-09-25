@@ -34,6 +34,9 @@
 #include "oops/access.inline.hpp"
 #include "oops/oop.inline.hpp"
 
+
+namespace svm_gc {
+
 inline void G1ParScanThreadState::push_on_queue(ScannerTask task) {
   verify_task(task);
   _task_queue->push(task);
@@ -163,5 +166,8 @@ template <class T> void G1ParScanThreadState::enqueue_card_if_tracked(G1HeapRegi
   }
   enqueue_if_new(p);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1PARSCANTHREADSTATE_INLINE_HPP

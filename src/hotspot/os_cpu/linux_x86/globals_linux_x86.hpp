@@ -29,27 +29,57 @@
 // (see globals.hpp)
 
 #ifdef AMD64
+
+namespace svm_gc {
+
 define_pd_global(intx, CompilerThreadStackSize,  1024);
 define_pd_global(intx, ThreadStackSize,          1024); // 0 => use system default
 define_pd_global(intx, VMThreadStackSize,        1024);
+
+} // namespace svm_gc
+
 #else
 // Some tests in debug VM mode run out of compile thread stack.
 // Observed on some x86_32 VarHandles tests during escape analysis.
 #ifdef ASSERT
+
+namespace svm_gc {
+
 define_pd_global(intx, CompilerThreadStackSize,   768);
+
+} // namespace svm_gc
+
 #else
+
+namespace svm_gc {
+
 define_pd_global(intx, CompilerThreadStackSize,   512);
+
+} // namespace svm_gc
+
 #endif
 // ThreadStackSize 320 allows a couple of test cases to run while
 // keeping the number of threads that can be created high.  System
 // default ThreadStackSize appears to be 512 which is too big.
+
+namespace svm_gc {
+
 define_pd_global(intx, ThreadStackSize,          320);
 define_pd_global(intx, VMThreadStackSize,        512);
+
+} // namespace svm_gc
+
 #endif // AMD64
+
+
+namespace svm_gc {
 
 define_pd_global(size_t, JVMInvokeMethodSlack,   8192);
 
 // Used on 64 bit platforms for UseCompressedOops base address
 define_pd_global(size_t, HeapBaseMinAddress,     2*G);
+
+
+} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_X86_GLOBALS_LINUX_X86_HPP

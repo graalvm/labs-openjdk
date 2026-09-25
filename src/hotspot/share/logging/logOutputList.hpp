@@ -29,6 +29,9 @@
 #include "runtime/atomic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class LogOutput;
 
 // Data structure to keep track of log outputs for a given tagset.
@@ -134,9 +137,11 @@ class LogOutputList {
       return _current != ref;
     }
 
+#ifndef SVM
     LogLevelType level() const {
       return _current->_level;
     }
+#endif // !SVM
   };
 
   Iterator iterator(LogLevelType level = LogLevel::Last) {
@@ -150,5 +155,8 @@ class LogOutputList {
     return nullptr;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGOUTPUTLIST_HPP

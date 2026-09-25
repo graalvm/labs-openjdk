@@ -28,19 +28,29 @@
 
 #include <signal.h>
 
+
+namespace svm_gc {
+
 OSThread::OSThread()
   : _thread_id(0),
     _pthread_id(0),
-    _caller_sigmask(),
+#ifndef SVM
+   _caller_sigmask(),
     sr(),
     _siginfo(nullptr),
     _ucontext(nullptr),
     _expanding_stack(0),
     _alt_sig_stack(nullptr),
+#endif // SVM
     _startThread_lock(new Monitor(Mutex::event, "startThread_lock")) {
+#ifndef SVM
   sigemptyset(&_caller_sigmask);
+#endif // !SVM
 }
 
 OSThread::~OSThread() {
   delete _startThread_lock;
 }
+
+} // namespace svm_gc
+

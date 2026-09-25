@@ -29,6 +29,9 @@
 #include "utilities/align.hpp"
 #include "utilities/bitMap.hpp"
 
+
+namespace svm_gc {
+
 class ReservedSpace;
 class WorkerThreads;
 
@@ -142,5 +145,8 @@ class G1PageBasedVirtualSpace {
   void print_on(outputStream* out) PRODUCT_RETURN;
   void print();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1PAGEBASEDVIRTUALSPACE_HPP

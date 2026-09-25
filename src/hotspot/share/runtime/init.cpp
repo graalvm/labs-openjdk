@@ -52,12 +52,26 @@
 #endif
 
 // Initialization done by VM thread in vm_init_globals()
+#ifndef SVM
+
+namespace svm_gc {
+
 void check_ThreadShadow();
 void eventlog_init();
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+namespace svm_gc {
+
 void mutex_init();
 void universe_oopstorage_init();
+#ifndef SVM
 void perfMemory_init();
+#endif // !SVM
 void SuspendibleThreadSet_init();
+#ifndef SVM
 void ExternalsRecorder_init(); // After mutex_init() and before CodeCache_init
 
 // Initialization done by Java thread in init_globals()
@@ -69,8 +83,9 @@ void codeCache_init();
 void VM_Version_init();
 void icache_init2();
 void initial_stubs_init();
-
+#endif // !SVM
 jint universe_init();           // depends on codeCache_init and initial_stubs_init
+#ifndef SVM
 // depends on universe_init, must be before interpreter_init (currently only on SPARC)
 void gc_barrier_stubs_init();
 void continuations_init();      // depends on flags (UseCompressedOops) and barrier sets
@@ -79,8 +94,10 @@ void interpreter_init_stub();   // before any methods loaded
 void interpreter_init_code();   // after methods loaded, but before they are linked
 void accessFlags_init();
 void InterfaceSupport_init();
+#endif // !SVM
 void universe2_init();  // dependent on codeCache_init and initial_stubs_init, loads primordial classes
 void referenceProcessor_init();
+#ifndef SVM
 void jni_handles_init();
 void vmStructs_init() NOT_DEBUG_RETURN;
 
@@ -91,7 +108,9 @@ void dependencyContext_init();
 void dependencies_init();
 
 // Initialization after compiler initialization
+#endif // !SVM
 bool universe_post_init();  // must happen after compiler_init
+#ifndef SVM
 void javaClasses_init();    // must happen after vtable initialization
 void compiler_stubs_init(bool in_compiler_thread); // compiler's StubRoutines stubs
 void final_stubs_init();    // final StubRoutines stubs
@@ -100,21 +119,31 @@ void final_stubs_init();    // final StubRoutines stubs
 // JNI/JVM/JVMTI functions and signal handlers to work properly
 // during VM shutdown
 void perfMemory_exit();
+#endif // !SVM
 void ostream_exit();
 
 void vm_init_globals() {
+#ifndef SVM
   check_ThreadShadow();
+#endif // !SVM
   basic_types_init();
+#ifndef SVM
   eventlog_init();
+#endif // !SVM
   mutex_init();
   universe_oopstorage_init();
+#ifndef SVM
   perfMemory_init();
+#endif // !SVM
   SuspendibleThreadSet_init();
+#ifndef SVM
   ExternalsRecorder_init(); // After mutex_init() and before CodeCache_init
+#endif // !SVM
 }
 
 
 jint init_globals() {
+#ifndef SVM
   management_init();
   JvmtiExport::initialize_oop_storage();
 #if INCLUDE_JVMTI
@@ -133,11 +162,13 @@ jint init_globals() {
   initial_stubs_init();
   // stack overflow exception blob is referenced by the interpreter
   SharedRuntime::generate_initial_stubs();
+#endif // !SVM
   jint status = universe_init();  // dependent on codeCache_init and
                                   // initial_stubs_init and metaspace_init.
   if (status != JNI_OK)
     return status;
 
+#ifndef SVM
 #ifdef LEAK_SANITIZER
   {
     // Register the Java heap with LSan.
@@ -160,14 +191,18 @@ jint init_globals() {
   SharedRuntime::generate_stubs();
   AOTCodeCache::init_shared_blobs_table();  // need this after generate_stubs
   SharedRuntime::init_adapter_library(); // do this after AOTCodeCache::init_shared_blobs_table
+#endif // !SVM
   return JNI_OK;
 }
 
 jint init_globals2() {
   universe2_init();          // dependent on codeCache_init and initial_stubs_init
+#ifndef SVM
   javaClasses_init();        // must happen after vtable initialization, before referenceProcessor_init
   interpreter_init_code();   // after javaClasses_init and before any method gets linked
+#endif // !SVM
   referenceProcessor_init();
+#ifndef SVM
   jni_handles_init();
 #if INCLUDE_VM_STRUCTS
   vmStructs_init();
@@ -193,10 +228,12 @@ jint init_globals2() {
   if (TrainingData::have_data() || TrainingData::need_data()) {
    TrainingData::initialize();
   }
+#endif // !SVM
 
   if (!universe_post_init()) {
     return JNI_ERR;
   }
+#ifndef SVM
   compiler_stubs_init(false /* in_compiler_thread */); // compiler's intrinsics stubs
   final_stubs_init();    // final StubRoutines stubs
   MethodHandles::generate_adapters();
@@ -206,6 +243,7 @@ jint init_globals2() {
   if (PrintFlagsFinal || PrintFlagsRanges) {
     JVMFlag::printFlags(tty, false, PrintFlagsRanges);
   }
+#endif // !SVM
 
   return JNI_OK;
 }
@@ -215,12 +253,14 @@ void exit_globals() {
   static bool destructorsCalled = false;
   if (!destructorsCalled) {
     destructorsCalled = true;
+#ifndef SVM
     perfMemory_exit();
     SafepointTracing::statistics_exit_log();
     if (PrintStringTableStatistics) {
       SymbolTable::dump(tty);
       StringTable::dump(tty);
     }
+#endif // !SVM
     ostream_exit();
 #ifdef LEAK_SANITIZER
     {
@@ -251,3 +291,6 @@ void set_init_completed() {
   Atomic::release_store(&_init_completed, true);
   ml.notify_all();
 }
+
+} // namespace svm_gc
+

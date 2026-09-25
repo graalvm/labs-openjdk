@@ -26,6 +26,9 @@
 #include "gc/g1/g1NUMA.hpp"
 #include "gc/g1/g1RegionsOnNodes.hpp"
 
+
+namespace svm_gc {
+
 G1RegionsOnNodes::G1RegionsOnNodes() : _count_per_node(nullptr), _numa(G1NUMA::numa()) {
   _count_per_node = NEW_C_HEAP_ARRAY(uint, _numa->num_active_nodes(), mtGC);
   clear();
@@ -56,3 +59,6 @@ void G1RegionsOnNodes::clear() {
 uint G1RegionsOnNodes::count(uint node_index) const {
   return _count_per_node[node_index];
 }
+
+} // namespace svm_gc
+

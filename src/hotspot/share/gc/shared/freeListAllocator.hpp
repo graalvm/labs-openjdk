@@ -31,6 +31,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/lockFreeStack.hpp"
 
+
+namespace svm_gc {
+
 class FreeListConfig {
   // Desired minimum transfer batch size.  There is relatively little
   // importance to the specific number.  It shouldn't be too big, else
@@ -151,5 +154,8 @@ public:
     return sizeof(*this);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_FREELISTALLOCATOR_HPP

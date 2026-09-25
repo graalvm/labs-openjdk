@@ -25,6 +25,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/stringUtils.hpp"
 
+
+namespace svm_gc {
+
 const char* LogLevel::_name[] = {
   "off",
 #define LOG_LEVEL(name, printname) #printname,
@@ -32,6 +35,7 @@ const char* LogLevel::_name[] = {
 #undef LOG_LEVEL
 };
 
+#ifndef SVM
 LogLevelType LogLevel::from_string(const char* str) {
   for (uint i = 0; i < Count; i++) {
     if (strcasecmp(str, _name[i]) == 0) {
@@ -56,3 +60,7 @@ LogLevelType LogLevel::fuzzy_match(const char *level) {
   }
   return match;
 }
+#endif // !SVM
+
+} // namespace svm_gc
+

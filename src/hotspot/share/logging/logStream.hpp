@@ -30,6 +30,9 @@
 #include "logging/logMessage.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 class LogStreamImplBase : public outputStream {
   friend class LogStreamTest_TestLineBufferAllocation_vm_Test;
   friend class LogStreamTest_TestLineBufferAllocationCap_vm_Test;
@@ -136,6 +139,7 @@ public:
     : LogStream((LogTargetImpl<level, T0, T1, T2, T3, T4, GuardTag>*)nullptr) {}
 };
 
+#ifndef SVM
 class LogMessageHandle {
   const LogLevelType _level;
   LogMessageImpl& _lm;
@@ -163,5 +167,9 @@ public:
   NonInterleavingLogStream(LogLevelType level, LogMessageImpl& lm)
     : LogStreamImpl(LogMessageHandle(level, lm)) {}
 };
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGSTREAM_HPP

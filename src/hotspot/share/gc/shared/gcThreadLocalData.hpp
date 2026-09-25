@@ -25,7 +25,6 @@
 #define SHARE_GC_SHARED_GCTHREADLOCALDATA_HPP
 
 #include "utilities/globalDefinitions.hpp"
-
 // Thread local data area for GC-specific information. Each GC
 // is free to decide the internal structure and contents of this
 // area. It is represented as a 64-bit aligned opaque blob to
@@ -40,6 +39,24 @@
 // should consider placing frequently accessed fields first in
 // T, so that field offsets relative to Thread are small, which
 // often allows for a more compact instruction encoding.
+
+#ifdef SVM
+#if INCLUDE_G1GC
+
+namespace svm_gc {
+
+typedef uint64_t GCThreadLocalData[8]; // 64 bytes
+
+} // namespace svm_gc
+
+#endif // INCLUDE_G1GC
+#else
+
+namespace svm_gc {
+
 typedef uint64_t GCThreadLocalData[43]; // 344 bytes
 
+} // namespace svm_gc
+
+#endif // SVM
 #endif // SHARE_GC_SHARED_GCTHREADLOCALDATA_HPP

@@ -32,6 +32,9 @@
 #include "utilities/concurrentHashTable.inline.hpp"
 #include "utilities/concurrentHashTableTasks.inline.hpp"
 
+
+namespace svm_gc {
+
 class G1CodeRootSetHashTableConfig : public StackObj {
 public:
   using Value = nmethod*;
@@ -187,6 +190,7 @@ public:
     }
   }
 
+#ifndef SVM
   // Removes dead/unlinked entries.
   void bulk_remove() {
     auto delete_check = [&] (nmethod** value) {
@@ -195,6 +199,7 @@ public:
 
     clean(delete_check);
   }
+#endif // !SVM
 
   // Calculate the log2 of the table size we want to shrink to.
   size_t log2_target_shrink_size(size_t current_size) const {
@@ -264,10 +269,12 @@ bool G1CodeRootSet::remove(nmethod* method) {
   return _table->remove(method);
 }
 
+#ifndef SVM
 void G1CodeRootSet::bulk_remove() {
   assert(!_is_iterating, "should not mutate while iterating the table");
   _table->bulk_remove();
 }
+#endif // !SVM
 
 bool G1CodeRootSet::contains(nmethod* method) {
   return _table->contains(method);
@@ -333,3 +340,6 @@ void G1CodeRootSet::clean(G1HeapRegion* owner) {
   CleanCallback eval(owner);
   _table->clean(eval);
 }
+
+} // namespace svm_gc
+

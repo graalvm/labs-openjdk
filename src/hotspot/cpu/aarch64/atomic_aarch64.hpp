@@ -32,6 +32,9 @@
 // x1: arg1
 // x2: arg2 (optional)
 // x3, x8, x9: scratch
+
+namespace svm_gc {
+
 typedef uint64_t (*aarch64_atomic_stub_t)(volatile void *ptr, uint64_t arg1, uint64_t arg2);
 
 // Pointers to stubs
@@ -51,5 +54,8 @@ extern aarch64_atomic_stub_t aarch64_atomic_cmpxchg_4_release_impl;
 extern aarch64_atomic_stub_t aarch64_atomic_cmpxchg_8_release_impl;
 extern aarch64_atomic_stub_t aarch64_atomic_cmpxchg_4_seq_cst_impl;
 extern aarch64_atomic_stub_t aarch64_atomic_cmpxchg_8_seq_cst_impl;
+
+
+} // namespace svm_gc
 
 #endif // CPU_AARCH64_ATOMIC_AARCH64_HPP

@@ -24,11 +24,14 @@
 
 #ifndef OS_WINDOWS_GLOBALS_WINDOWS_HPP
 #define OS_WINDOWS_GLOBALS_WINDOWS_HPP
-
 //
 // Declare Windows specific flags. They are not available on other platforms.
 //
-#define RUNTIME_OS_FLAGS(develop,                                         \
+#define RUNTIME_OS_FLAGS(ni_hosted,                                       \
+                         ni_hosted_pd,                                    \
+                         ni_runtime,                                      \
+                         ni_runtime_pd,                                   \
+                         develop,                                         \
                          develop_pd,                                      \
                          product,                                         \
                          product_pd,                                      \
@@ -51,9 +54,14 @@ product(bool, UseOSErrorReporting, false,                                 \
 // Defines Windows-specific default values. The flags are available on all
 // platforms, but they may have different default values on other platforms.
 //
+
+namespace svm_gc {
+
 define_pd_global(size_t, PreTouchParallelChunkSize, 1 * G);
 define_pd_global(bool, UseLargePages, false);
 define_pd_global(bool, UseLargePagesIndividualAllocation, true);
 define_pd_global(bool, UseThreadPriorities, true) ;
+
+} // namespace svm_gc
 
 #endif // OS_WINDOWS_GLOBALS_WINDOWS_HPP

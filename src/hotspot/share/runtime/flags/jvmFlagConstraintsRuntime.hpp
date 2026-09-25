@@ -45,6 +45,12 @@
   f(size_t, NUMAInterleaveGranularityConstraintFunc)  \
   f(size_t, LargePageSizeInBytesConstraintFunc)
 
+
+namespace svm_gc {
+
 RUNTIME_CONSTRAINTS(DECLARE_CONSTRAINT)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_JVMFLAGCONSTRAINTSRUNTIME_HPP

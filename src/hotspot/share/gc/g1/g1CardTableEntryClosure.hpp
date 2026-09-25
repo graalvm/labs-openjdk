@@ -31,6 +31,9 @@
 
 // A closure class for processing card table entries.  Note that we don't
 // require these closure objects to be stack-allocated.
+
+namespace svm_gc {
+
 class G1CardTableEntryClosure: public CHeapObj<mtGC> {
 public:
   typedef CardTable::CardValue CardValue;
@@ -48,5 +51,8 @@ public:
     }
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CARDTABLEENTRYCLOSURE_HPP

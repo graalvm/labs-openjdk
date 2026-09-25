@@ -31,6 +31,9 @@
 #include "gc/shared/plab.inline.hpp"
 #include "memory/universe.hpp"
 
+
+namespace svm_gc {
+
 inline uint G1Allocator::current_node_index() const {
   return _numa->index_of_current_thread();
 }
@@ -115,5 +118,8 @@ inline HeapWord* G1PLABAllocator::allocate(G1HeapRegionAttr dest,
   }
   return allocate_direct_or_new_plab(dest, word_sz, refill_failed, node_index);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ALLOCATOR_INLINE_HPP

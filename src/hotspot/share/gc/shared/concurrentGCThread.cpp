@@ -29,6 +29,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 ConcurrentGCThread::ConcurrentGCThread() :
     _should_terminate(false),
     _has_terminated(false) {}
@@ -47,7 +50,7 @@ void ConcurrentGCThread::run() {
   run_service();
 
   // Signal thread has terminated
-  MonitorLocker ml(Terminator_lock);
+  MonitorLocker ml(Terminator_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
   Atomic::release_store(&_has_terminated, true);
   ml.notify_all();
 }
@@ -62,7 +65,7 @@ void ConcurrentGCThread::stop() {
   stop_service();
 
   // Wait for thread to terminate
-  MonitorLocker ml(Terminator_lock);
+  MonitorLocker ml(Terminator_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
   while (!_has_terminated) {
     ml.wait();
   }
@@ -75,3 +78,6 @@ bool ConcurrentGCThread::should_terminate() const {
 bool ConcurrentGCThread::has_terminated() const {
   return Atomic::load_acquire(&_has_terminated);
 }
+
+} // namespace svm_gc
+

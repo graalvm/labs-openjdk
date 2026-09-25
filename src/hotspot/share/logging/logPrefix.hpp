@@ -40,6 +40,9 @@
 // Where the prefixer function matches the following signature: size_t (*)(char*, size_t)
 
 // Prefix function for internal vm test
+
+namespace svm_gc {
+
 DEBUG_ONLY(size_t Test_log_prefix_prefixer(char* buf, size_t len);)
 
 #define LOG_PREFIX_LIST \
@@ -122,5 +125,8 @@ template <> struct LogPrefix<__VA_ARGS__> { \
 };
 LOG_PREFIX_LIST
 #undef LOG_PREFIX
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGPREFIX_HPP

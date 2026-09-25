@@ -25,6 +25,9 @@
 #ifndef CPU_X86_GLOBALDEFINITIONS_X86_HPP
 #define CPU_X86_GLOBALDEFINITIONS_X86_HPP
 
+
+namespace svm_gc {
+
 const int StackAlignmentInBytes  = 16;
 const size_t pd_segfault_address = 1024;
 
@@ -53,5 +56,8 @@ const bool CCallingConventionRequiresIntsAsLongs = false;
 #endif
 
 #define USE_POINTERS_TO_REGISTER_IMPL_ARRAY
+
+
+} // namespace svm_gc
 
 #endif // CPU_X86_GLOBALDEFINITIONS_X86_HPP

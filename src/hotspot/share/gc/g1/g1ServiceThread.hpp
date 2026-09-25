@@ -28,6 +28,9 @@
 #include "gc/shared/concurrentGCThread.hpp"
 #include "runtime/mutex.hpp"
 
+
+namespace svm_gc {
+
 class G1ServiceTaskQueue;
 class G1ServiceThread;
 
@@ -135,5 +138,8 @@ public:
   // and notify the service thread.
   void schedule_task(G1ServiceTask* task, jlong delay_ms);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1SERVICETHREAD_HPP
