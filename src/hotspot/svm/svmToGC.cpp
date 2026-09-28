@@ -26,6 +26,7 @@
 #include "svmToGC.hpp"
 #include "svmOopMap.hpp"
 #include "svmOptionPrinter.hpp"
+#include "gc/g1/g1Metaspace.hpp"
 #include "ci/ciUtilities.hpp"
 #include "code/nmethod.hpp"
 #include "exports/sharedGCStructs.h"
@@ -100,10 +101,10 @@ static inline jlong convert_size_t_to_jlong(size_t val) {
 extern "C" {
 // NO_TRANSITION - This method is called during startup, before anything else is initialized.
 EXPORT_FOR_SVM void svm_g1gc_parse_options(int actual_native_image_version, int argc, char *argv[], char *image_build_hosted_args, char *image_build_runtime_args,
-    size_t max_heap_address_space_size, size_t heap_base_alignment, size_t null_regions_size, size_t image_heap_size,
+    size_t max_heap_address_space_size, size_t heap_base_alignment, size_t null_regions_size, size_t metaspace_size, size_t image_heap_size,
     int compressed_reference_shift, bool is_containerized, jlong container_memory_limit_in_bytes, int container_active_processor_count, G1HeapOptions *result) {
   // verify invariants
-  int expected_native_image_version = 250500;
+  int expected_native_image_version = 250501;
   guarantee(actual_native_image_version >= expected_native_image_version, "incompatible GC version: the native-image tries to use a GC that is too new");
   guarantee(actual_native_image_version <= expected_native_image_version, "incompatible GC version: the native-image tries to use a GC that is too old");
 #ifdef SVM_COMPRESSED_REFERENCES
@@ -128,6 +129,7 @@ EXPORT_FOR_SVM void svm_g1gc_parse_options(int actual_native_image_version, int 
 
   SVMGlobalData::_heap_base_alignment = heap_base_alignment;
   SVMGlobalData::_null_regions_size = null_regions_size;
+  SVMGlobalData::_metaspace_size = metaspace_size;
   SVMGlobalData::_image_heap_size = image_heap_size;
   SVMGlobalData::_image_build_hosted_args = image_build_hosted_args;
   SVMGlobalData::_image_build_runtime_args = image_build_runtime_args;
@@ -139,6 +141,8 @@ EXPORT_FOR_SVM void svm_g1gc_parse_options(int actual_native_image_version, int 
 
   Threads::parse_arguments();
 
+  guarantee(metaspace_size % G1HeapRegionSize == 0, "must be region-aligned");
+  SVMGlobalData::_metaspace_regions = (int)(metaspace_size / G1HeapRegionSize);
   assert(is_aligned(MaxHeapSize, HeapAlignment), "must be");
   result->max_heap_size = MaxHeapSize;
   result->heap_address_space_size = MaxHeapSize + null_regions_size;
@@ -175,8 +179,9 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
 
   // verify that gc_parse_options was executed properly
   guarantee(G1HeapRegionSize > 0, "must be");
-  guarantee(MaxHeapSize > (closed_image_heap_regions + open_image_heap_regions) * G1HeapRegionSize, "must be");
-  guarantee(MinHeapSize >= (closed_image_heap_regions + open_image_heap_regions) * G1HeapRegionSize, "must be");
+  size_t image_heap_and_metaspace_region_count = SVMGlobalData::_metaspace_regions + closed_image_heap_regions + open_image_heap_regions;
+  guarantee(MaxHeapSize > image_heap_and_metaspace_region_count * G1HeapRegionSize, "must be");
+  guarantee(MinHeapSize >= image_heap_and_metaspace_region_count * G1HeapRegionSize, "must be");
   guarantee(MaxNewSize >= 0, "must be");
   guarantee(TLABSize >= 0, "must be");
 
@@ -224,7 +229,9 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
   SVMIsolateData::_heap_base = heap_base;
   SVMIsolateData::_image_heap_region_types = image_heap_region_types;
   SVMIsolateData::_image_heap_region_free_spaces = image_heap_region_free_spaces;
-  SVMIsolateData::_closed_image_heap_start_addr = heap_base + SVMGlobalData::_null_regions_size;
+  SVMIsolateData::_metaspace_start_addr = heap_base + SVMGlobalData::_null_regions_size;
+  SVMIsolateData::_metaspace_end_addr = SVMIsolateData::_metaspace_start_addr + SVMGlobalData::_metaspace_size;
+  SVMIsolateData::_closed_image_heap_start_addr = SVMIsolateData::_metaspace_end_addr;
   SVMIsolateData::_closed_image_heap_end_addr = SVMIsolateData::_closed_image_heap_start_addr + closed_image_heap_regions * G1HeapRegionSize;
   SVMIsolateData::_open_image_heap_start_addr = SVMIsolateData::_closed_image_heap_end_addr;
   SVMIsolateData::_open_image_heap_end_addr = SVMIsolateData::_open_image_heap_start_addr + open_image_heap_regions * G1HeapRegionSize;
@@ -456,6 +463,25 @@ EXPORT_FOR_SVM oop svm_g1gc_allocate_array(ArrayKlass *k, int length) {
     }
   }
   return result;
+}
+
+// TO_VM - May be called by any Java thread. Uses oops. May block.
+EXPORT_FOR_SVM oop svm_g1gc_allocate_metaspace_instance(InstanceKlass *k) {
+  assert(IsolateThread::current()->has_status_vm(), "unexpected thread state");
+  return G1Metaspace::allocate_instance(k);
+}
+
+// TO_VM - May be called by any Java thread. Uses oops. May block.
+EXPORT_FOR_SVM oop svm_g1gc_allocate_metaspace_array(Klass *k, int length, int allocation_kind) {
+  assert(IsolateThread::current()->has_status_vm(), "unexpected thread state");
+  guarantee(allocation_kind >= G1Metaspace::DynamicHubAllocation && allocation_kind <= G1Metaspace::IntArrayAllocation, "invalid allocation kind");
+  return G1Metaspace::allocate_array(k, length, static_cast<G1Metaspace::AllocationKind>(allocation_kind));
+}
+
+// NO_TRANSITION - Uninterruptible code that may be called by any Java thread.
+EXPORT_FOR_SVM bool svm_g1gc_is_in_allocated_metaspace(void *address) {
+  assert(IsolateThread::current()->has_status_java(), "unexpected thread state");
+  return SVMMetaspace::metaspace()->is_in_allocated_memory(address);
 }
 
 // TO_VM - May be called by any Java thread. Uses oops. May block. May cause a safepoint.
@@ -709,6 +735,19 @@ EXPORT_FOR_SVM void svm_g1gc_get_internal_state(G1InternalState *gc_internal_dat
   gc_internal_data->block_offset_table_size = G1CollectedHeap::heap()->bot()->reserved()->byte_size();
 }
 
+// NO_TRANSITION - Only called when printing diagnostics. SVM threads may still be running concurrently, so this is racy by design.
+EXPORT_FOR_SVM void svm_g1gc_get_metaspace_statistics(MetaspaceStatistics *statistics) {
+  assert(IsolateThread::current()->has_status_java(), "unexpected thread state");
+  statistics->dynamic_hub_count = G1Metaspace::allocation_count(G1Metaspace::DynamicHubAllocation);
+  statistics->dynamic_hub_size = G1Metaspace::allocation_size(G1Metaspace::DynamicHubAllocation);
+  statistics->byte_array_count = G1Metaspace::allocation_count(G1Metaspace::ByteArrayAllocation);
+  statistics->byte_array_size = G1Metaspace::allocation_size(G1Metaspace::ByteArrayAllocation);
+  statistics->int_array_count = G1Metaspace::allocation_count(G1Metaspace::IntArrayAllocation);
+  statistics->int_array_size = G1Metaspace::allocation_size(G1Metaspace::IntArrayAllocation);
+  statistics->object_count = G1Metaspace::allocation_count(G1Metaspace::ObjectAllocation);
+  statistics->object_size = G1Metaspace::allocation_size(G1Metaspace::ObjectAllocation);
+}
+
 // NO_TRANSITION - Only called when printing diagnostics.
 EXPORT_FOR_SVM const char* svm_g1gc_get_current_thread_name() {
   assert(IsolateThread::current()->has_status_java(), "unexpected thread state");
@@ -750,8 +789,9 @@ EXPORT_FOR_SVM jlong svm_g1gc_get_used_memory() {
   assert(IsolateThread::current()->has_status_vm(), "unexpected thread state");
   MutexLocker x(Heap_lock);
   size_t n = Universe::heap()->used();
-  assert(n >= SVMGlobalData::_image_heap_used, "must be");
-  return convert_size_t_to_jlong(n - SVMGlobalData::_image_heap_used);
+  size_t image_heap_and_metaspace_used = SVMGlobalData::_image_heap_used + G1Metaspace::used();
+  assert(n >= image_heap_and_metaspace_used, "must be");
+  return convert_size_t_to_jlong(n - image_heap_and_metaspace_used);
 }
 
 // TO_VM - May be called by any Java thread. May block.
@@ -761,7 +801,7 @@ EXPORT_FOR_SVM jlong svm_g1gc_get_free_memory() {
   size_t n;
   {
      MutexLocker x(Heap_lock);
-     n = ch->capacity() - ch->used() - SVMGlobalData::_image_heap_waste;
+     n = ch->capacity() - ch->used() - SVMGlobalData::_image_heap_waste - G1Metaspace::waste();
   }
   return convert_size_t_to_jlong(n);
 }
@@ -770,24 +810,27 @@ EXPORT_FOR_SVM jlong svm_g1gc_get_free_memory() {
 EXPORT_FOR_SVM jlong svm_g1gc_get_total_memory() {
   assert(IsolateThread::current()->has_status_java(), "unexpected thread state");
   size_t n = Universe::heap()->capacity();
-  assert(n >= SVMGlobalData::_image_heap_size, "must be");
-  return convert_size_t_to_jlong(n - SVMGlobalData::_image_heap_size);
+  size_t image_heap_and_metaspace_size = SVMGlobalData::_image_heap_size + SVMGlobalData::_metaspace_size;
+  assert(n >= image_heap_and_metaspace_size, "must be");
+  return convert_size_t_to_jlong(n - image_heap_and_metaspace_size);
 }
 
 // NO_TRANSITION - Uninterruptible code that may be called by any Java thread.
 EXPORT_FOR_SVM jlong svm_g1gc_get_max_memory() {
   assert(IsolateThread::current()->has_status_java(), "unexpected thread state");
   size_t n = Universe::heap()->max_capacity();
-  assert(n >= SVMGlobalData::_image_heap_size, "must be");
-  return convert_size_t_to_jlong(n - SVMGlobalData::_image_heap_size);
+  size_t image_heap_and_metaspace_size = SVMGlobalData::_image_heap_size + SVMGlobalData::_metaspace_size;
+  assert(n >= image_heap_and_metaspace_size, "must be");
+  return convert_size_t_to_jlong(n - image_heap_and_metaspace_size);
 }
 
 // NO_TRANSITION - Can be called by any thread.
 EXPORT_FOR_SVM size_t svm_g1gc_get_used_memory_after_last_gc() {
   assert(IsolateThread::current()->has_status_java(), "unexpected thread state");
   size_t n = Universe::heap()->used_at_last_gc();
-  assert(n >= SVMGlobalData::_image_heap_used, "must be");
-  return convert_size_t_to_jlong(n - SVMGlobalData::_image_heap_used);
+  size_t image_heap_and_metaspace_used = SVMGlobalData::_image_heap_used + G1Metaspace::used_at_last_gc();
+  assert(n >= image_heap_and_metaspace_used, "must be");
+  return convert_size_t_to_jlong(n - image_heap_and_metaspace_used);
 }
 
 } // extern C

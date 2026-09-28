@@ -40,7 +40,7 @@
 #include "gc/shared/taskqueue.inline.hpp"
 #include "utilities/bitMap.inline.hpp"
 #ifdef SVM
-#include "svmImageHeap.hpp"
+#include "svmHeapAddressSpace.hpp"
 #endif // SVM
 
 
@@ -60,19 +60,19 @@ inline bool G1CMIsAliveClosure::do_object_b(oop obj) {
   }
 
   // All objects that are marked are live.
-  return _cm->is_marked_in_bitmap(obj) SVM_ONLY(|| SVMImageHeap::is_image_heap_object(obj));
+  return _cm->is_marked_in_bitmap(obj) SVM_ONLY(|| SVMHeapAddressSpace::is_image_heap_or_metaspace_object(obj));
 }
 
 inline bool G1CMSubjectToDiscoveryClosure::do_object_b(oop obj) {
   assert(obj != nullptr, "precondition");
   assert(_g1h->is_in_reserved(obj), "Trying to discover obj " PTR_FORMAT " not in heap", p2i(obj));
 
-  return SVM_ONLY(_g1h->heap_region_containing(obj)->is_old_or_humongous_or_open_image_heap()) NOT_SVM(_g1h->heap_region_containing(obj)->is_old_or_humongous());
+  return SVM_ONLY(_g1h->heap_region_containing(obj)->is_old_or_humongous_or_open_image_heap_or_metaspace()) NOT_SVM(_g1h->heap_region_containing(obj)->is_old_or_humongous());
 }
 
 inline bool G1ConcurrentMark::mark_in_bitmap(uint const worker_id, oop const obj) {
-  // NOTE (chaeubl): image heap objects are always alive, so they must not be marked.
-  if (obj_allocated_since_mark_start(obj) SVM_ONLY(|| SVMImageHeap::is_image_heap_object(obj))) {
+  // NOTE (chaeubl): image heap and metaspace objects are always alive, so they must not be marked.
+  if (obj_allocated_since_mark_start(obj) SVM_ONLY(|| SVMHeapAddressSpace::is_image_heap_or_metaspace_object(obj))) {
     return false;
   }
 
@@ -168,7 +168,7 @@ inline bool G1CMTask::is_below_finger(oop obj, HeapWord* global_finger) const {
 template<bool scan>
 inline void G1CMTask::process_grey_task_entry(G1TaskQueueEntry task_entry) {
   assert(scan || (task_entry.is_oop() && task_entry.obj()->is_typeArray()), "Skipping scan of grey non-typeArray");
-  assert(task_entry.is_array_slice() || _mark_bitmap->is_marked(cast_from_oop<HeapWord*>(task_entry.obj())) SVM_ONLY(|| SVMImageHeap::is_open_image_heap_object(task_entry.obj())),
+  assert(task_entry.is_array_slice() || _mark_bitmap->is_marked(cast_from_oop<HeapWord*>(task_entry.obj())) SVM_ONLY(|| SVMHeapAddressSpace::is_open_image_heap_or_metaspace_object(task_entry.obj())),
          "Any stolen object should be a slice or marked");
 
   if (scan) {
@@ -221,13 +221,20 @@ inline HeapWord* G1ConcurrentMark::top_at_rebuild_start(G1HeapRegion* r) const {
 }
 
 inline void G1ConcurrentMark::update_top_at_rebuild_start(G1HeapRegion* r) {
-  assert(r->is_old() || r->is_humongous() SVM_ONLY(|| r->is_open_image_heap()), "precondition");
+  assert(r->is_old() || r->is_humongous() SVM_ONLY(|| r->is_open_image_heap_or_metaspace()), "precondition");
 
   uint const region = r->hrm_index();
   assert(region < _g1h->max_num_regions(), "Tried to access TARS for region %u out of bounds", region);
   assert(_top_at_rebuild_starts[region] == nullptr,
          "TARS for region %u has already been set to " PTR_FORMAT " should be null",
          region, p2i(_top_at_rebuild_starts[region]));
+#ifdef SVM
+  if (r->is_metaspace() && r->is_empty()) {
+    // Leave TARS null so rebuild skips this region even if a concurrent allocation changes it
+    // to humongous before the object is initialized. Later stores are covered by card barriers.
+    return;
+  }
+#endif // SVM
   _top_at_rebuild_starts[region] = r->top();
 }
 

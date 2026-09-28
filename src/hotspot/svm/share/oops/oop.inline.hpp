@@ -45,6 +45,7 @@
 #include "utilities/globalDefinitions.hpp"
 #ifdef SVM
 #include "svmImageHeap.hpp"
+#include "svmMetaspace.hpp"
 #endif // SVM
 
 // Implementation of all inlined member functions defined in oop.hpp
@@ -217,7 +218,8 @@ void oopDesc::forward_to_self() {
 }
 
 oop oopDesc::cas_set_forwardee(markWord new_mark, markWord compare, atomic_memory_order order) {
-  assert_svm_only(!SVMImageHeap::is_image_heap_object(this), "image heap object must not be forwarded");
+  assert_svm_only(!SVMImageHeap::is_image_heap_object(this), "image heap objects must not be forwarded");
+  assert_svm_only(!SVMMetaspace::is_in_address_space(this), "metaspace objects must not be forwarded");
   markWord old_mark = cas_set_mark(new_mark, compare, order);
   if (old_mark == compare) {
     return nullptr;
@@ -228,7 +230,8 @@ oop oopDesc::cas_set_forwardee(markWord new_mark, markWord compare, atomic_memor
 }
 
 oop oopDesc::forward_to_atomic(oop p, markWord compare, atomic_memory_order order) {
-  assert_svm_only(!SVMImageHeap::is_image_heap_object(this), "image heap object must not be forwarded");
+  assert_svm_only(!SVMImageHeap::is_image_heap_object(this), "image heap objects must not be forwarded");
+  assert_svm_only(!SVMMetaspace::is_in_address_space(this), "metaspace objects must not be forwarded");
   assert(cast_from_oop<oopDesc*>(p) != this,
          "must not be used for self-forwarding, use forward_to_self_atomic() instead");
   markWord m = markWord::encode_pointer_as_mark(p);
@@ -237,7 +240,8 @@ oop oopDesc::forward_to_atomic(oop p, markWord compare, atomic_memory_order orde
 }
 
 oop oopDesc::forward_to_self_atomic(markWord old_mark, atomic_memory_order order) {
-  assert_svm_only(!SVMImageHeap::is_image_heap_object(this), "image heap object must not be forwarded");
+  assert_svm_only(!SVMImageHeap::is_image_heap_object(this), "image heap objects must not be forwarded");
+  assert_svm_only(!SVMMetaspace::is_in_address_space(this), "metaspace objects must not be forwarded");
   markWord new_mark = old_mark.set_self_forwarded();
   assert(forwardee(new_mark) == cast_to_oop(this), "encoding must be reversible");
   return cas_set_forwardee(new_mark, old_mark, order);

@@ -728,8 +728,8 @@ private:
         return true;
       }
 #ifdef SVM
-      // image heap regions are never marked.
-      else if (r->is_image_heap()) {
+      // Image heap and metaspace regions are never marked.
+      else if (r->is_image_heap_or_metaspace()) {
         _cm->reset_top_at_mark_start(r);
         return false;
       }
@@ -879,7 +879,7 @@ public:
   NoteStartOfMarkHRClosure() : G1HeapRegionClosure(), _cm(G1CollectedHeap::heap()->concurrent_mark()) { }
 
   bool do_heap_region(G1HeapRegion* r) override {
-    if (SVM_ONLY(r->is_old_or_humongous_or_open_image_heap()) NOT_SVM(r->is_old_or_humongous()) && !r->is_collection_set_candidate() && !r->in_collection_set()) {
+    if (SVM_ONLY(r->is_old_or_humongous_or_open_image_heap_or_metaspace()) NOT_SVM(r->is_old_or_humongous()) && !r->is_collection_set_candidate() && !r->in_collection_set()) {
       _cm->update_top_at_mark_start(r);
     }
     return false;
@@ -1248,12 +1248,14 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
 
     void reclaim_empty_humongous_region(G1HeapRegion* hr) {
       assert_svm_only(!hr->is_image_heap(), "precondition");
+      assert_svm_only(!hr->is_metaspace(), "precondition");
       assert(!hr->has_pinned_objects(), "precondition");
       assert(hr->is_starts_humongous(), "precondition");
 
       auto on_humongous_region = [&] (G1HeapRegion* hr) {
         assert(hr->used() > 0, "precondition");
         assert_svm_only(!hr->is_image_heap(), "precondition");
+        assert_svm_only(!hr->is_metaspace(), "precondition");
         assert(!hr->has_pinned_objects(), "precondition");
         assert(hr->is_humongous(), "precondition");
 
@@ -1272,6 +1274,7 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
     void reclaim_empty_old_region(G1HeapRegion* hr) {
       assert(hr->used() > 0, "precondition");
       assert_svm_only(!hr->is_image_heap(), "precondition");
+      assert_svm_only(!hr->is_metaspace(), "precondition");
       assert(!hr->has_pinned_objects(), "precondition");
       assert(hr->is_old(), "precondition");
 
@@ -1297,7 +1300,7 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
         // The liveness of this humongous obj decided by either its allocation
         // time (allocated after conc-mark-start, i.e. live) or conc-marking.
         const bool is_live = _cm->top_at_mark_start(hr) == hr->bottom()
-                          || _cm->contains_live_object(hr->hrm_index()) SVM_ONLY(|| hr->is_image_heap())
+                          || _cm->contains_live_object(hr->hrm_index()) SVM_ONLY(|| hr->is_image_heap_or_metaspace())
                           || hr->has_pinned_objects();
         if (is_live) {
           const bool selected_for_rebuild = tracker->update_humongous_before_rebuild(hr);
@@ -1312,12 +1315,13 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
         } else {
           reclaim_empty_humongous_region(hr);
         }
-      } else if (hr->is_old() SVM_ONLY(|| (hr->is_open_image_heap() && !hr->is_humongous()))) {
+      } else if (hr->is_old() SVM_ONLY(|| (hr->is_open_image_heap_or_metaspace() && !hr->is_humongous()))) {
         uint region_idx = hr->hrm_index();
         hr->note_end_of_marking(_cm->top_at_mark_start(hr), _cm->live_bytes(region_idx), _cm->incoming_refs(region_idx));
 
         const bool is_live = hr->live_bytes() != 0
-                          || hr->has_pinned_objects();
+                          || hr->has_pinned_objects()
+                          SVM_ONLY(|| hr->is_metaspace());
         if (is_live) {
           if (tracker->update_old_before_rebuild(hr)) {
             _num_selected_for_rebuild++;
@@ -2022,6 +2026,7 @@ void G1ConcurrentMark::flush_all_task_caches() {
 void G1ConcurrentMark::clear_bitmap_for_region(G1HeapRegion* hr) {
   assert_at_safepoint();
   assert_svm_only(!hr->is_image_heap(), "image heap regions are never marked");
+  assert_svm_only(!hr->is_metaspace(), "metaspace regions are never marked");
   _mark_bitmap.clear_range(MemRegion(hr->bottom(), hr->end()));
 }
 
@@ -2640,7 +2645,7 @@ void G1CMTask::process_current_region(G1CMBitMapClosure& bitmap_closure) {
     giveup_current_region();
     abort_marking_if_regular_check_fail();
   } else if (_curr_region->is_humongous() && mr.start() == _curr_region->bottom()) {
-    if (_mark_bitmap->is_marked(mr.start()) SVM_ONLY(|| (_curr_region->is_starts_humongous() && _curr_region->is_open_image_heap()))) {
+    if (_mark_bitmap->is_marked(mr.start()) SVM_ONLY(|| (_curr_region->is_starts_humongous() && _curr_region->is_open_image_heap_or_metaspace()))) {
       // The object is marked - apply the closure
       bitmap_closure.do_addr(mr.start());
     }
@@ -2648,7 +2653,7 @@ void G1CMTask::process_current_region(G1CMBitMapClosure& bitmap_closure) {
     // we can (and should) give up the current region.
     giveup_current_region();
     abort_marking_if_regular_check_fail();
-  } else if (SVM_ONLY(_curr_region->is_open_image_heap() && iterate_open_image_heap_region(&bitmap_closure) || !_curr_region->is_open_image_heap() &&) _mark_bitmap->iterate(&bitmap_closure, mr)) {
+  } else if (SVM_ONLY(iterate_current_region(&bitmap_closure, mr)) NOT_SVM(_mark_bitmap->iterate(&bitmap_closure, mr))) {
     giveup_current_region();
     abort_marking_if_regular_check_fail();
   } else {
@@ -3036,16 +3041,18 @@ void G1CMTask::do_marking_step(double time_target_ms,
 }
 
 #ifdef SVM
-// This method tries to iterate a whole open image heap region. This works because the concurrent marking claims every heap region
-// exactly once (originally for the bitmap-based marking).
-bool G1CMTask::iterate_open_image_heap_region(G1CMBitMapClosure* cl) {
-  assert(_curr_region->is_open_image_heap(), "must be");
+// Scans objects in an open image heap or metaspace region directly. These objects are not recorded
+// in the mark bitmap, so bitmap iteration would skip them.
+bool G1CMTask::iterate_unmarked_region(G1CMBitMapClosure* cl) {
+  assert(_curr_region->is_open_image_heap_or_metaspace(), "must be");
 
   // If the iteration takes too much time, the operation is aborted and continued later on. To support that properly,
   // we use the task's local finger.
   HeapWord* pos = _finger;
   HeapWord* top = _region_limit;
-  assert(top == _curr_region->top(), "we don't allocate in image heap regions, so they must always be visited as a whole");
+  // No new objects are allocated in open image heap regions, so their scan limit must equal top().
+  // Metaspace can receive new objects after its scan limit is captured, so the limit may be below its current top().
+  assert(!_curr_region->is_open_image_heap() || top == _curr_region->top(), "open image heap regions must be visited as a whole");
   while (pos < top) {
     if (!cl->do_addr(pos)) {
       return false;
@@ -3053,6 +3060,13 @@ bool G1CMTask::iterate_open_image_heap_region(G1CMBitMapClosure* cl) {
     pos = pos + (size_t)((oop)pos)->size();
   }
   return true;
+}
+
+bool G1CMTask::iterate_current_region(G1CMBitMapClosure* cl, MemRegion mr) {
+  if (_curr_region->is_open_image_heap_or_metaspace()) {
+    return iterate_unmarked_region(cl);
+  }
+  return _mark_bitmap->iterate(cl, mr);
 }
 #endif // SVM
 

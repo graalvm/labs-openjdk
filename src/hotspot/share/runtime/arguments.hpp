@@ -296,7 +296,7 @@ class Arguments : AllStatic {
 #ifdef SVM
   static void verify_heap_sizes();
   static bool assert_heap_sizes();
-  static size_t increase_by_image_heap_size(size_t size);
+  static size_t increase_heap_size(size_t size);
 #endif // SVM
 
 #ifndef SVM

@@ -54,7 +54,7 @@ static struct G1InitState g1_init_state;
 
 extern "C" {
   EXPORT_FOR_SVM void svm_g1gc_parse_options(int actual_native_image_version, int argc, char *argv[], char *image_build_hosted_args, char *image_build_runtime_args,
-      size_t max_heap_address_space_size, size_t heap_base_alignment, size_t null_regions_size, size_t image_heap_size,
+      size_t max_heap_address_space_size, size_t heap_base_alignment, size_t null_regions_size, size_t metaspace_size, size_t image_heap_size,
       int compressed_reference_shift, bool is_containerized, jlong container_memory_limit_in_bytes, int container_active_processor_count, G1HeapOptions *result);
 
   EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char *heap_base,
@@ -99,6 +99,12 @@ extern "C" {
   EXPORT_FOR_SVM oop svm_g1gc_allocate_instance(InstanceKlass *k);
 
   EXPORT_FOR_SVM oop svm_g1gc_allocate_array(ArrayKlass *k, int length);
+
+  EXPORT_FOR_SVM oop svm_g1gc_allocate_metaspace_instance(InstanceKlass *k);
+
+  EXPORT_FOR_SVM oop svm_g1gc_allocate_metaspace_array(Klass *k, int length, int allocation_kind);
+
+  EXPORT_FOR_SVM bool svm_g1gc_is_in_allocated_metaspace(void *address);
 
   EXPORT_FOR_SVM oop svm_g1gc_allocate_stack_chunk(InstanceStackChunkKlass *k, int length);
 
@@ -145,7 +151,10 @@ extern "C" {
   EXPORT_FOR_SVM void svm_g1gc_register_frame_metadata(nmethod* nm);
 
   EXPORT_FOR_SVM void svm_g1gc_register_deopt_metadata(nmethod* nm);
+
   EXPORT_FOR_SVM void svm_g1gc_get_internal_state(G1InternalState *gc_internal_data);
+
+  EXPORT_FOR_SVM void svm_g1gc_get_metaspace_statistics(MetaspaceStatistics *statistics);
 
   EXPORT_FOR_SVM const char* svm_g1gc_get_current_thread_name();
 

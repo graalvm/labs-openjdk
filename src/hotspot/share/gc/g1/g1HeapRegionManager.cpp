@@ -288,11 +288,13 @@ bool G1HeapRegionManager::has_inactive_regions() const {
 }
 
 #ifdef SVM
-void G1HeapRegionManager::create_image_heap_regions(uint num_regions, WorkerThreads* pretouch_workers) {
-  mark_image_heap_regions_as_committed(num_regions, pretouch_workers);
+void G1HeapRegionManager::create_image_heap_or_metaspace_regions(uint start, uint num_regions) {
+  if (num_regions == 0) {
+    return;
+  }
 
   // NOTE (chaeubl): similar to G1HeapRegionManager::initialize_regions()
-  for (uint i = 0; i < num_regions; i++) {
+  for (uint i = start; i < start + num_regions; i++) {
     assert(!is_available(i), "must not be in use");
     G1HeapRegion* hr = new_heap_region(i);
 
@@ -305,19 +307,43 @@ void G1HeapRegionManager::create_image_heap_regions(uint num_regions, WorkerThre
   }
 
   // NOTE (chaeubl): similar to G1HeapRegionManager::activate_regions
-  _committed_map.activate(0, num_regions);
+  _committed_map.activate(start, start + num_regions);
   verify_optional();
 }
 
-// NOTE (chaeubl): similar to HeapRegionManager::commit_regions() but does not actually commit any memory.
-void G1HeapRegionManager::mark_image_heap_regions_as_committed(size_t num_regions, WorkerThreads* pretouch_workers) {
-  guarantee(num_regions > 0, "Must commit more than zero regions");
+// Similar to G1HeapRegionManager::commit_regions(), but only commits the bitmap and card table.
+// These must cover all active regions, including empty metaspace regions, because full GC clears
+// their card tables and bitmap verification reads their bitmap ranges.
+// With 512-byte cards and 8-byte object alignment, this eagerly commits about 1.76% of the
+// reserved metaspace size (1/512 for cards + 1/64 for the bitmap), before OS page rounding.
+// For the default 32 MiB metaspace, that is 64 KiB + 512 KiB = 576 KiB of committed memory,
+// not necessarily resident physical memory. GR-79974 tracks committing this memory on demand.
+void G1HeapRegionManager::commit_image_heap_and_metaspace_auxiliary_data(uint num_regions, WorkerThreads* pretouch_workers) {
   guarantee(num_regions <= num_inactive_regions(),
             "Cannot commit more than the maximum amount of regions");
 
-  // Also commit auxiliary data
   _bitmap_mapper->commit_regions(0, num_regions, pretouch_workers);
   _cardtable_mapper->commit_regions(0, num_regions, pretouch_workers);
+}
+
+void G1HeapRegionManager::create_metaspace_regions(uint num_regions) {
+  create_image_heap_or_metaspace_regions(0, num_regions);
+}
+
+void G1HeapRegionManager::create_image_heap_regions(uint start, uint num_regions) {
+  create_image_heap_or_metaspace_regions(start, num_regions);
+}
+
+// Similar to G1HeapRegionManager::commit_regions(), but the bitmap and card table were
+// committed up front during image heap and metaspace initialization.
+void G1HeapRegionManager::commit_metaspace_region(G1HeapRegion* region, bool commit_bot, WorkerThreads* pretouch_workers) {
+  assert(region->is_metaspace(), "must be a metaspace region");
+  assert(region->top() == region->bottom(), "must be empty");
+  _heap_mapper->commit_regions(region->hrm_index(), 1, pretouch_workers);
+  // Humongous objects are located through region metadata, just like in the image heap.
+  if (commit_bot) {
+    _bot_mapper->commit_regions(region->hrm_index(), 1, pretouch_workers);
+  }
 }
 
 #ifdef ASSERT

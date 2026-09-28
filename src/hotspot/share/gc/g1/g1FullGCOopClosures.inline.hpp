@@ -38,6 +38,9 @@
 #include "oops/access.inline.hpp"
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
+#ifdef SVM
+#include "svmHeapAddressSpace.hpp"
+#endif // SVM
 
 
 namespace svm_gc {
@@ -82,7 +85,7 @@ inline void G1AdjustClosure::do_oop(oop* p)       { do_oop_work(p); }
 inline void G1AdjustClosure::do_oop(narrowOop* p) { do_oop_work(p); }
 
 inline bool G1IsAliveClosure::do_object_b(oop p) {
-  return _bitmap->is_marked(p) SVM_ONLY(|| SVMImageHeap::is_image_heap_object(p));
+  return _bitmap->is_marked(p) SVM_ONLY(|| SVMHeapAddressSpace::is_image_heap_or_metaspace_object(p));
 }
 
 template<typename T>

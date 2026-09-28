@@ -58,6 +58,7 @@ G1RootProcessor::G1RootProcessor(G1CollectedHeap* g1h, uint n_workers) :
     _g1h(g1h),
     _process_strong_tasks(G1RP_PS_NumElements),
 #ifdef SVM
+    _next_metaspace_region(0),
     _next_open_image_heap_region(0),
 #endif // SVM
     _srs(n_workers) {}
@@ -83,8 +84,8 @@ void G1RootProcessor::evacuate_roots(G1ParScanThreadState* pss, uint worker_id) 
   }
 
   // CodeCache is already processed in java roots
-  // NOTE (chaeubl): image heap is processed like any other dirty region.
-  _process_strong_tasks.all_tasks_claimed(G1RP_PS_CodeCache_oops_do SVM_ONLY(COMMA G1RP_PS_ImageHeap_oops_do));
+  // NOTE (chaeubl): image heap and metaspace are processed like any other dirty region.
+  _process_strong_tasks.all_tasks_claimed(G1RP_PS_CodeCache_oops_do SVM_ONLY(COMMA G1RP_PS_Metaspace_oops_do COMMA G1RP_PS_ImageHeap_oops_do));
 }
 
 // Adaptor to pass the closures to the strong roots in the VM.
@@ -116,7 +117,8 @@ void G1RootProcessor::process_strong_roots(OopClosure* oops,
   StrongRootsClosures closures(oops, NOT_SVM(clds COMMA) nmethods);
 
 #ifdef SVM
-  process_image_heap(&closures, nullptr, 0);
+  process_metaspace(&closures);
+  process_image_heap(&closures);
 #endif // SVM
 
   process_java_roots(&closures, nullptr, 0);
@@ -155,7 +157,7 @@ public:
 
 void G1RootProcessor::process_all_roots(OopClosure* oops,
 #ifdef SVM
-                                        bool process_image_heap,
+                                        bool process_image_heap_and_metaspace,
 #else
                                         CLDClosure* clds,
 #endif // !SVM
@@ -163,8 +165,9 @@ void G1RootProcessor::process_all_roots(OopClosure* oops,
   AllRootsClosures closures(oops NOT_SVM(COMMA clds));
 
 #ifdef SVM
-  if (process_image_heap) {
-    this->process_image_heap(&closures, nullptr, 0);
+  if (process_image_heap_and_metaspace) {
+    process_metaspace(&closures);
+    process_image_heap(&closures);
   }
 #endif // SVM
 
@@ -174,10 +177,10 @@ void G1RootProcessor::process_all_roots(OopClosure* oops,
   process_code_cache_roots(nmethods, nullptr, 0);
 
 #ifdef SVM
-  if (process_image_heap) {
+  if (process_image_heap_and_metaspace) {
     _process_strong_tasks.all_tasks_claimed(G1RP_PS_refProcessor_oops_do);
   } else {
-    _process_strong_tasks.all_tasks_claimed(G1RP_PS_refProcessor_oops_do, G1RP_PS_ImageHeap_oops_do);
+    _process_strong_tasks.all_tasks_claimed(G1RP_PS_refProcessor_oops_do, G1RP_PS_Metaspace_oops_do, G1RP_PS_ImageHeap_oops_do);
   }
 #else
   // refProcessor is not needed since we are inside a safe point
@@ -237,27 +240,27 @@ void G1RootProcessor::process_java_roots(G1RootClosures* closures,
 }
 
 #ifdef SVM
-void G1RootProcessor::process_image_heap(G1RootClosures* closures,
-                                         G1GCPhaseTimes* phase_times,
-                                         uint worker_id) {
-  // NOTE (chaeubl): This is not necessary for CDS as the heap objects are reachable via the Klass objects.
-  G1GCParPhaseTimesTracker x(phase_times, G1GCPhaseTimes::ImageHeap, worker_id);
-  // Keep the image heap entry claimed for SubTasksDone verification. Regions are claimed
+void G1RootProcessor::process_metaspace(G1RootClosures* closures) {
+  // Keep the metaspace entry claimed for SubTasksDone verification. Regions are claimed
   // separately so that all workers can participate.
-  _process_strong_tasks.try_claim_task(G1RP_PS_ImageHeap_oops_do);
+  _process_strong_tasks.try_claim_task(G1RP_PS_Metaspace_oops_do);
+  process_image_heap_or_metaspace_regions(closures, 0, static_cast<uint>(SVMGlobalData::_metaspace_regions), &_next_metaspace_region, true);
+}
 
+void G1RootProcessor::process_image_heap_or_metaspace_regions(G1RootClosures* closures,
+                                                              uint first_region,
+                                                              uint region_count,
+                                                              volatile uint* next_region,
+                                                              bool metaspace) {
   OopClosure* closure = closures->strong_oops();
-  const uint open_image_heap_regions = static_cast<uint>(SVMGlobalData::_open_image_heap_regions);
-  const uint first_open_image_heap_region = static_cast<uint>(SVMGlobalData::_closed_image_heap_regions);
   while (true) {
-    uint claimed_region = Atomic::fetch_then_add(&_next_open_image_heap_region, 1u, memory_order_relaxed);
-    if (claimed_region >= open_image_heap_regions) {
+    uint claimed_region = Atomic::fetch_then_add(next_region, 1u, memory_order_relaxed);
+    if (claimed_region >= region_count) {
       return;
     }
 
-    uint region_index = first_open_image_heap_region + claimed_region;
-    G1HeapRegion* hr = _g1h->region_at(region_index);
-    assert(hr->is_open_image_heap(), "must be");
+    G1HeapRegion* hr = _g1h->region_at(first_region + claimed_region);
+    assert(metaspace ? hr->is_metaspace() : hr->is_open_image_heap(), "unexpected region type");
     if (hr->is_humongous()) {
       oop obj = cast_to_oop(hr->humongous_start_region()->bottom());
       obj->oop_iterate(closure, MemRegion(hr->bottom(), hr->top()));
@@ -265,6 +268,19 @@ void G1RootProcessor::process_image_heap(G1RootClosures* closures,
       hr->oop_iterate(closure);
     }
   }
+}
+
+void G1RootProcessor::process_image_heap(G1RootClosures* closures) {
+  // CDS does not need an equivalent scan because archived heap objects are reachable from regular
+  // GC roots. Native Image treats all open image heap objects as live, so their references must be
+  // scanned explicitly.
+  // Keep the image heap entry claimed for SubTasksDone verification. Regions are claimed
+  // separately so that all workers can participate.
+  _process_strong_tasks.try_claim_task(G1RP_PS_ImageHeap_oops_do);
+
+  const uint open_image_heap_regions = static_cast<uint>(SVMGlobalData::_open_image_heap_regions);
+  const uint first_open_image_heap_region = static_cast<uint>(SVMGlobalData::_metaspace_regions + SVMGlobalData::_closed_image_heap_regions);
+  process_image_heap_or_metaspace_regions(closures, first_open_image_heap_region, open_image_heap_regions, &_next_open_image_heap_region, false);
 }
 #endif // SVM
 

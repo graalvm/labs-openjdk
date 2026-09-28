@@ -35,6 +35,8 @@ char** SVMIsolateData::_argv = 0;
 size_t SVMIsolateData::_max_heap_address_space_size = 0;
 
 char* SVMIsolateData::_heap_base = nullptr;
+char* SVMIsolateData::_metaspace_start_addr = nullptr;
+char* SVMIsolateData::_metaspace_end_addr = nullptr;
 typeArrayOop SVMIsolateData::_image_heap_region_types = nullptr;
 typeArrayOop SVMIsolateData::_image_heap_region_free_spaces = nullptr;
 char* SVMIsolateData::_closed_image_heap_start_addr = nullptr;
@@ -52,6 +54,8 @@ bool SVMIsolateData::_during_teardown = false;
 
 size_t SVMGlobalData::_heap_base_alignment = 0;
 size_t SVMGlobalData::_null_regions_size = 0;
+size_t SVMGlobalData::_metaspace_size = 0;
+int SVMGlobalData::_metaspace_regions = 0;
 size_t SVMGlobalData::_image_heap_size = 0;
 size_t SVMGlobalData::_image_heap_used = 0;
 size_t SVMGlobalData::_image_heap_waste = 0;

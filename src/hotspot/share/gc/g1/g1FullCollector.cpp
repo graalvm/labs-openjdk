@@ -285,7 +285,7 @@ void G1FullCollector::complete_collection(size_t allocation_word_size) {
 void G1FullCollector::before_marking_update_attribute_table(G1HeapRegion* hr) {
   if (hr->is_free()) {
     _region_attr_table.set_free(hr->hrm_index());
-  } else if (hr->is_humongous() || hr->has_pinned_objects() SVM_ONLY(|| hr->is_image_heap())) {
+  } else if (hr->is_humongous() || hr->has_pinned_objects() SVM_ONLY(|| hr->is_image_heap_or_metaspace())) {
     // Humongous objects or pinned regions will never be moved in the "main"
     // compaction phase, but non-pinned regions might afterwards in a special phase.
     _region_attr_table.set_skip_compacting(hr->hrm_index());

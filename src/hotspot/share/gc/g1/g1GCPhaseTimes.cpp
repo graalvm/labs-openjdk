@@ -63,9 +63,6 @@ G1GCPhaseTimes::G1GCPhaseTimes(STWGCTimer* gc_timer, uint max_gc_threads) :
   _gc_par_phases[ThreadRoots] = new WorkerDataArray<double>("ThreadRoots", "Thread Roots (ms):", max_gc_threads);
   _gc_par_phases[CLDGRoots] = new WorkerDataArray<double>("CLDGRoots", "CLDG Roots (ms):", max_gc_threads);
   _gc_par_phases[CMRefRoots] = new WorkerDataArray<double>("CMRefRoots", "CM RefProcessor Roots (ms):", max_gc_threads);
-#ifdef SVM
-  _gc_par_phases[ImageHeap] = new WorkerDataArray<double>("ImageHeap", "Image heap (ms):", max_gc_threads);
-#endif // SVM
 
   for (auto id : EnumRange<OopStorageSet::StrongId>()) {
     GCParPhases phase = strong_oopstorage_phase(id);

@@ -226,8 +226,8 @@ public:
 
   bool do_heap_region(G1HeapRegion* r) {
 #ifdef SVM
-    if (r->is_image_heap()) {
-      assert(r->rem_set()->is_empty(), "remembered set of image heap regions must be empty");
+    if (r->is_image_heap_or_metaspace()) {
+      assert(r->rem_set()->is_empty(), "remembered set of image heap and metaspace regions must be empty");
       return false;
     }
 #endif // SVM

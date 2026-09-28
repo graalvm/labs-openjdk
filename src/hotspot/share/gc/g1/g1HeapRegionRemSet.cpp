@@ -117,8 +117,8 @@ void G1HeapRegionRemSet::print_static_mem_size(outputStream* out) {
 void G1HeapRegionRemSet::add_code_root(nmethod* nm) {
   assert(nm != nullptr, "sanity");
 #ifdef SVM
-  // There is no need to keep track of the strong code roots for image heap regions as all objects are alive anyways.
-  if (_hr->is_image_heap()) {
+  // There is no need to keep track of the strong code roots as all objects are alive anyways.
+  if (_hr->is_image_heap_or_metaspace()) {
     return;
   }
 #endif // SVM

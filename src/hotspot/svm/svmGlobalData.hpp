@@ -250,6 +250,9 @@ struct SVMGlobalData {
   // values that are set before we parse any arguments and before SVM maps the image heap
   static size_t _heap_base_alignment;
   static size_t _null_regions_size;
+  // metaspace size is a multiple of the region size
+  static size_t _metaspace_size;
+  static int _metaspace_regions;
   // image heap size is a multiple of the region size
   static size_t _image_heap_size;
   static size_t _image_heap_used;
@@ -305,6 +308,8 @@ struct SVMIsolateData {
 
   // values that are set after SVM mapped the image heap
   static char* _heap_base;
+  static char* _metaspace_start_addr;
+  static char* _metaspace_end_addr;
   static typeArrayOop _image_heap_region_types;
   static typeArrayOop _image_heap_region_free_spaces;
   static char* _closed_image_heap_start_addr;

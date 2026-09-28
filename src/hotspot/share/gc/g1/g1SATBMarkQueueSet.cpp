@@ -31,6 +31,9 @@
 #include "oops/oop.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
+#ifdef SVM
+#include "svmHeapAddressSpace.hpp"
+#endif // SVM
 
 
 namespace svm_gc {
@@ -94,8 +97,8 @@ static inline bool requires_marking(const void* entry, G1CollectedHeap* g1h) {
     return false;
   }
 #ifdef SVM
-  else if (SVMImageHeap::is_in_image_heap((HeapWord*)entry)) {
-    // image heap regions are never marked.
+  else if (SVMHeapAddressSpace::is_in_image_heap_or_metaspace(entry)) {
+    // Image heap and metaspace regions are never marked.
     return false;
   }
 #endif // SVM

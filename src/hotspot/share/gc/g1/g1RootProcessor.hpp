@@ -52,6 +52,7 @@ class G1RootProcessor : public StackObj {
   G1CollectedHeap* _g1h;
   SubTasksDone _process_strong_tasks;
 #ifdef SVM
+  volatile uint _next_metaspace_region;
   volatile uint _next_open_image_heap_region;
 #endif // SVM
   StrongRootsScope _srs;
@@ -60,6 +61,7 @@ class G1RootProcessor : public StackObj {
   enum G1H_process_roots_tasks {
     NOT_SVM(G1RP_PS_ClassLoaderDataGraph_oops_do COMMA)
     G1RP_PS_CodeCache_oops_do,
+    SVM_ONLY(G1RP_PS_Metaspace_oops_do COMMA)
     SVM_ONLY(G1RP_PS_ImageHeap_oops_do COMMA)
     G1RP_PS_refProcessor_oops_do,
     // Leave this one last.
@@ -71,9 +73,15 @@ class G1RootProcessor : public StackObj {
                           uint worker_id);
 
 #ifdef SVM
-  void process_image_heap(G1RootClosures* closures,
-                          G1GCPhaseTimes* phase_times,
-                          uint worker_id);
+  void process_metaspace(G1RootClosures* closures);
+
+  void process_image_heap_or_metaspace_regions(G1RootClosures* closures,
+                                               uint first_region,
+                                               uint region_count,
+                                               volatile uint* next_region,
+                                               bool metaspace);
+
+  void process_image_heap(G1RootClosures* closures);
 #endif // SVM
 
   void process_vm_roots(G1RootClosures* closures,
@@ -102,7 +110,7 @@ public:
   // Apply oops, clds and blobs to strongly and weakly reachable roots in the system
   void process_all_roots(OopClosure* oops,
 #ifdef SVM
-                         bool process_image_heap,
+                         bool process_image_heap_and_metaspace,
 #else
                          CLDClosure* clds,
 #endif // !SVM
