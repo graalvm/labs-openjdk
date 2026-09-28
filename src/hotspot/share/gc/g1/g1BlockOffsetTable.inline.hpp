@@ -33,6 +33,9 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 inline HeapWord* G1BlockOffsetTable::block_start_reaching_into_card(const void* addr) const {
   assert(_reserved.contains(addr), "invalid address");
 
@@ -70,5 +73,8 @@ inline HeapWord* G1BlockOffsetTable::addr_for_entry(const uint8_t* const p) cons
          "out of bounds accessor from block offset table");
   return result;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1BLOCKOFFSETTABLE_INLINE_HPP

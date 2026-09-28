@@ -27,6 +27,9 @@
 
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 enum class VerifyOption : uint {
   Default = 0,
 
@@ -37,5 +40,8 @@ enum class VerifyOption : uint {
   // use (or need) TAMS.
   G1UseFullMarking = G1UseConcMarking + 1,
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_VERIFYOPTION_HPP

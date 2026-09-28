@@ -52,6 +52,9 @@
 #include "utilities/bitMap.inline.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class G1PostEvacuateCollectionSetCleanupTask1::MergePssTask : public G1AbstractSubTask {
   G1ParScanThreadStateSet* _per_thread_states;
 
@@ -391,6 +394,8 @@ public:
     }
 
     G1HeapRegion* r = _g1h->region_at(region_index);
+    assert_svm_only(!r->is_image_heap(), "image heap regions must not be freed");
+    assert_svm_only(!r->has_pinned_objects(), "regions with pinned objects must not be freed");
 
     oop obj = cast_to_oop(r->bottom());
     guarantee(obj->is_typeArray(),
@@ -979,3 +984,6 @@ G1PostEvacuateCollectionSetCleanupTask2::G1PostEvacuateCollectionSetCleanupTask2
                                               per_thread_states->surviving_young_words(),
                                               evac_failure_regions));
 }
+
+} // namespace svm_gc
+

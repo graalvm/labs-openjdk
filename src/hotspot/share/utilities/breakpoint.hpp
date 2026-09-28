@@ -28,8 +28,18 @@
 // If no more specific definition provided, default to calling a
 // function that is defined per-platform.  See also os::breakpoint().
 #ifndef BREAKPOINT
+#ifdef SVM
+#define BREAKPOINT
+#else
+
+namespace svm_gc {
+
 extern "C" void breakpoint();
 #define BREAKPOINT ::breakpoint()
+
+} // namespace svm_gc
+
+#endif // !SVM
 #endif
 
 #endif // SHARE_UTILITIES_BREAKPOINT_HPP

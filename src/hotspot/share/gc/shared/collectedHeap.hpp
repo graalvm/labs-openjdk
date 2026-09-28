@@ -46,14 +46,29 @@
 // class defines the functions that a heap must implement, and contains
 // infrastructure common to all heaps.
 
+#ifndef SVM
+
+namespace svm_gc {
+
 class GCHeapLog;
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+namespace svm_gc {
+
 class GCHeapSummary;
 class GCMemoryManager;
+#ifndef SVM
 class GCMetaspaceLog;
+#endif // !SVM
 class GCTimer;
 class GCTracer;
 class MemoryPool;
+#ifndef SVM
 class MetaspaceSummary;
+#endif // !SVM
 class ReservedHeapSpace;
 class Thread;
 class ThreadClosure;
@@ -95,8 +110,10 @@ class CollectedHeap : public CHeapObj<mtGC> {
   friend class MemAllocator;
 
  private:
+#ifndef SVM
   GCHeapLog*      _heap_log;
   GCMetaspaceLog* _metaspace_log;
+#endif // !SVM
 
   // Historic gc information
   size_t _capacity_at_last_gc;
@@ -224,6 +241,12 @@ protected:
     _filler_object_klass = k;
   }
 
+#ifdef SVM
+  unsigned int* total_collections_address() {
+    return &_total_collections;
+  }
+#endif
+
   virtual Name kind() const = 0;
 
   virtual const char* name() const = 0;
@@ -277,9 +300,11 @@ protected:
   void set_gc_cause(GCCause::Cause v);
   GCCause::Cause gc_cause() { return _gc_cause; }
 
-  oop obj_allocate(Klass* klass, size_t size, TRAPS);
-  virtual oop array_allocate(Klass* klass, size_t size, int length, bool do_zero, TRAPS);
+  oop obj_allocate(Klass* klass, size_t size NOT_SVM(COMMA TRAPS));
+  virtual oop array_allocate(Klass* klass, size_t size, int length, bool do_zero NOT_SVM(COMMA TRAPS));
+#ifndef SVM
   oop class_allocate(Klass* klass, size_t size, TRAPS);
+#endif // !SVM
 
   // Utilities for turning raw memory into filler objects.
   //
@@ -350,6 +375,7 @@ protected:
   // Perform a full collection
   virtual void do_full_collection(bool clear_all_soft_refs) = 0;
 
+#ifndef SVM
   // This interface assumes that it's being called by the
   // vm thread. It collects the heap assuming that the
   // heap lock is already held and that we are executing in
@@ -359,6 +385,7 @@ protected:
   virtual MetaWord* satisfy_failed_metadata_allocation(ClassLoaderData* loader_data,
                                                        size_t size,
                                                        Metaspace::MetadataType mdtype);
+#endif // !SVM
 
   // Return true, if accesses to the object would require barriers.
   // This is used by continuations to copy chunks of a thread stack into StackChunk object or out of a StackChunk
@@ -387,9 +414,11 @@ protected:
   // Return the SoftRefPolicy for the heap;
   SoftRefPolicy* soft_ref_policy() { return &_soft_ref_policy; }
 
+#ifndef SVM
   virtual MemoryUsage memory_usage();
   virtual GrowableArray<GCMemoryManager*> memory_managers() = 0;
   virtual GrowableArray<MemoryPool*> memory_pools() = 0;
+#endif // !SVM
 
   // Iterate over all objects, calling "cl.do_object" on each.
   virtual void object_iterate(ObjectClosure* cl) = 0;
@@ -426,7 +455,9 @@ protected:
   virtual VirtualSpaceSummary create_heap_space_summary();
   GCHeapSummary create_heap_summary();
 
+#ifndef SVM
   MetaspaceSummary create_metaspace_summary();
+#endif // !SVM
 
   // GCs are free to represent the bit representation for null differently in memory,
   // which is typically not observable when using the Access API. However, if for
@@ -445,8 +476,10 @@ protected:
   // The default behavior is to call print_heap_on() and print_gc_on() on tty.
   virtual void print() const;
 
+#ifndef SVM
   // Used to print information about locations in the hs_err file.
   virtual bool print_location(outputStream* st, void* addr) const = 0;
+#endif // !SVM
 
   // Iterator for all GC threads (other than VM thread)
   virtual void gc_threads_do(ThreadClosure* tc) const = 0;
@@ -461,7 +494,9 @@ protected:
   // Registering and unregistering an nmethod (compiled code) with the heap.
   virtual void register_nmethod(nmethod* nm) = 0;
   virtual void unregister_nmethod(nmethod* nm) = 0;
+#ifndef SVM
   virtual void verify_nmethod(nmethod* nm) = 0;
+#endif // !SVM
 
   void trace_heap_before_gc(const GCTracer* gc_tracer);
   void trace_heap_after_gc(const GCTracer* gc_tracer);
@@ -491,11 +526,13 @@ protected:
   virtual void pin_object(JavaThread* thread, oop obj) = 0;
   virtual void unpin_object(JavaThread* thread, oop obj) = 0;
 
+#ifndef SVM
   // Support for loading objects from CDS archive into the heap
   // (usually as a snapshot of the old generation).
   virtual bool can_load_archived_objects() const { return false; }
   virtual HeapWord* allocate_loaded_archive_space(size_t size) { return nullptr; }
   virtual void complete_loaded_archive_space(MemRegion archive_space) { }
+#endif // !SVM
 
   virtual bool is_oop(oop object) const;
   // Non product verification and debugging.
@@ -529,5 +566,8 @@ class GCCauseSetter : StackObj {
     _heap->set_gc_cause(_previous_cause);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_COLLECTEDHEAP_HPP

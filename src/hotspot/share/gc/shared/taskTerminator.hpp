@@ -29,6 +29,9 @@
 #include "memory/padded.hpp"
 #include "runtime/mutex.hpp"
 
+
+namespace svm_gc {
+
 class TaskQueueSetSuper;
 class TerminatorTerminator;
 class Thread;
@@ -119,5 +122,8 @@ public:
   // given number.
   void reset_for_reuse(uint n_threads);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_TASKTERMINATOR_HPP

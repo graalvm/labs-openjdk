@@ -35,6 +35,9 @@
 // Compute mask to use for aligning to or testing alignment.
 // The alignment must be a power of 2. Returns alignment - 1, which is
 // a mask with all bits set below alignment's single bit.
+
+namespace svm_gc {
+
 template<typename T, ENABLE_IF(std::is_integral<T>::value)>
 static constexpr T alignment_mask(T alignment) {
   assert(is_power_of_2(alignment),
@@ -156,5 +159,8 @@ inline T* clamp_address_in_page(T* addr, T* page_address, size_t page_size) {
     return align_down(page_address, page_size);
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_ALIGN_HPP

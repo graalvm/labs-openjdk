@@ -47,6 +47,9 @@
 // GlobalCounter has measurably better performance and doesn't have
 // the single writer at a time restriction.  Use this only in
 // situations where GlobalCounter won't work for some reason.
+
+namespace svm_gc {
+
 class SingleWriterSynchronizer {
   volatile uint _enter;
   volatile uint _exit[2];
@@ -116,5 +119,8 @@ public:
     _synchronizer->exit(_enter_value);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_SINGLEWRITERSYNCHRONIZER_HPP

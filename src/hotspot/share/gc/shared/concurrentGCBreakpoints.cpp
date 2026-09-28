@@ -37,6 +37,9 @@
 // (2) Active run_to() running     non-null      false          false
 // (3) Active run_to() in at()      null         false          true
 // (4) Active run_to_idle()         null         true           false
+
+namespace svm_gc {
+
 const char* ConcurrentGCBreakpoints::_run_to = nullptr;
 bool ConcurrentGCBreakpoints::_want_idle = false;
 bool ConcurrentGCBreakpoints::_is_stopped = false;
@@ -44,11 +47,13 @@ bool ConcurrentGCBreakpoints::_is_stopped = false;
 // True if the collector is idle.
 bool ConcurrentGCBreakpoints::_is_idle = true;
 
+#ifndef SVM
 void ConcurrentGCBreakpoints::reset_request_state() {
   _run_to = nullptr;
   _want_idle = false;
   _is_stopped = false;
 }
+#endif // !SVM
 
 Monitor* ConcurrentGCBreakpoints::monitor() {
   return ConcurrentGCBreakpoints_lock;
@@ -62,6 +67,7 @@ bool ConcurrentGCBreakpoints::is_controlled() {
 #define assert_Java_thread() \
   assert(Thread::current()->is_Java_thread(), "precondition")
 
+#ifndef SVM
 void ConcurrentGCBreakpoints::run_to_idle_impl(bool acquiring_control) {
   assert_Java_thread();
   MonitorLocker ml(monitor());
@@ -128,6 +134,7 @@ bool ConcurrentGCBreakpoints::run_to(const char* breakpoint) {
     }
   }
 }
+#endif // !SVM
 
 void ConcurrentGCBreakpoints::at(const char* breakpoint) {
   assert(Thread::current()->is_ConcurrentGC_thread(), "precondition");
@@ -171,3 +178,6 @@ void ConcurrentGCBreakpoints::notify_idle_to_active() {
   assert_locked_or_safepoint(monitor());
   _is_idle = false;
 }
+
+} // namespace svm_gc
+

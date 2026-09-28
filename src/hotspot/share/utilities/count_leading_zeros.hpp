@@ -34,6 +34,9 @@
 // of the most significant set bit in x.  Undefined for 0.
 
 // We implement and support variants for 8, 16, 32 and 64 bit integral types.
+
+namespace svm_gc {
+
 template <typename T, size_t n> struct CountLeadingZerosImpl;
 
 template <typename T> unsigned count_leading_zeros(T v) {
@@ -44,7 +47,13 @@ template <typename T> unsigned count_leading_zeros(T v) {
 /*****************************************************************************
  * GCC and compatible (including Clang)
  *****************************************************************************/
+
+} // namespace svm_gc
+
 #if defined(TARGET_COMPILER_gcc)
+
+
+namespace svm_gc {
 
 template <typename T> struct CountLeadingZerosImpl<T, 1> {
   static unsigned doit(T v) {
@@ -73,6 +82,9 @@ template <typename T> struct CountLeadingZerosImpl<T, 8> {
 /*****************************************************************************
  * Microsoft Visual Studio
  *****************************************************************************/
+
+} // namespace svm_gc
+
 #elif defined(TARGET_COMPILER_visCPP)
 
 #include <intrin.h>
@@ -81,6 +93,9 @@ template <typename T> struct CountLeadingZerosImpl<T, 8> {
 #ifdef _LP64
 #pragma intrinsic(_BitScanReverse64)
 #endif
+
+
+namespace svm_gc {
 
 template <typename T> struct CountLeadingZerosImpl<T, 1> {
   static unsigned doit(T v) {
@@ -126,7 +141,13 @@ template <typename T> struct CountLeadingZerosImpl<T, 8> {
 /*****************************************************************************
  * Fallback
  *****************************************************************************/
+
+} // namespace svm_gc
+
 #else
+
+
+namespace svm_gc {
 
 inline uint32_t count_leading_zeros_32(uint32_t x) {
   assert(x != 0, "precondition");
@@ -179,6 +200,9 @@ template <typename T> struct CountLeadingZerosImpl<T, 8> {
     }
   }
 };
+
+
+} // namespace svm_gc
 
 #endif
 

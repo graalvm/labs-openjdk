@@ -30,6 +30,9 @@
 // This class provides a method for block structured setting of the
 // _is_stw_gc_active state without requiring accessors in CollectedHeap
 
+
+namespace svm_gc {
+
 IsSTWGCActiveMark::IsSTWGCActiveMark() {
   CollectedHeap* heap = Universe::heap();
   assert(!heap->is_stw_gc_active(), "Not reentrant");
@@ -41,3 +44,6 @@ IsSTWGCActiveMark::~IsSTWGCActiveMark() {
   assert(heap->is_stw_gc_active(), "Sanity");
   heap->_is_stw_gc_active = false;
 }
+
+} // namespace svm_gc
+

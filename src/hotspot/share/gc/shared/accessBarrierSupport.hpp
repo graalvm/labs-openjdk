@@ -28,6 +28,9 @@
 #include "memory/allStatic.hpp"
 #include "oops/access.hpp"
 
+
+namespace svm_gc {
+
 class AccessBarrierSupport: AllStatic {
 private:
   static DecoratorSet resolve_unknown_oop_ref_strength(DecoratorSet decorators, oop base, ptrdiff_t offset);
@@ -40,5 +43,8 @@ public:
   template<DecoratorSet decorators>
   static DecoratorSet resolve_possibly_unknown_oop_ref_strength(oop base, ptrdiff_t offset);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_ACCESSBARRIERSUPPORT_HPP

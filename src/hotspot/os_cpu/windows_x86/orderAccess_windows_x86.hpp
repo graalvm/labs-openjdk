@@ -28,13 +28,15 @@
 // Included in orderAccess.hpp header file.
 
 #include <intrin.h>
-
 // Compiler version last used for testing: Microsoft Visual Studio 2010
 // Please update this information when this file changes
 
 // Implementation of class OrderAccess.
 
 // A compiler barrier, forcing the C++ compiler to invalidate all memory assumptions
+
+namespace svm_gc {
+
 inline void compiler_barrier() {
   _ReadWriteBarrier();
 }
@@ -48,10 +50,20 @@ inline void OrderAccess::acquire()    { compiler_barrier(); }
 inline void OrderAccess::release()    { compiler_barrier(); }
 
 inline void OrderAccess::fence() {
+#ifdef SVM
+  // HotSpot calls StubRoutines_fence(), whose generated x86 code uses a
+  // locked instruction for the StoreLoad barrier. SVM does not build that stub, so
+  // use an MSVC interlocked intrinsic here to get the same kind of locked memory
+  // operation without relying on inline assembly.
+  volatile long dummy = 0;
+  _InterlockedExchangeAdd(&dummy, 0);
+#else
   StubRoutines_fence();
+#endif // SVM
   compiler_barrier();
 }
 
+#ifndef SVM
 inline void OrderAccess::cross_modify_fence_impl()
 #if _MSC_VER >= 1928
 {
@@ -69,5 +81,8 @@ inline void OrderAccess::cross_modify_fence_impl()
   __cpuid(regs, 0);
 }
 #endif
+#endif // !SVM
+
+} // namespace svm_gc
 
 #endif // OS_CPU_WINDOWS_X86_ORDERACCESS_WINDOWS_X86_HPP

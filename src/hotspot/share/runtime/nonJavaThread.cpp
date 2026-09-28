@@ -42,6 +42,9 @@
 
 // List of all NonJavaThreads and safe iteration over that list.
 
+
+namespace svm_gc {
+
 class NonJavaThread::List {
 public:
   NonJavaThread* volatile _head;
@@ -67,10 +70,18 @@ void NonJavaThread::Iterator::step() {
 }
 
 NonJavaThread::NonJavaThread() : Thread(), _next(nullptr) {
+#ifdef SVM
+  set_gc_data(&_gc_data_storage);
+  initialize_barrier_set_data();
+#endif // SVM
   assert(BarrierSet::barrier_set() != nullptr, "NonJavaThread created too soon!");
 }
 
-NonJavaThread::~NonJavaThread() { }
+NonJavaThread::~NonJavaThread() {
+#ifdef SVM
+  destroy_barrier_set_data();
+#endif // SVM
+}
 
 void NonJavaThread::add_to_the_list() {
   MutexLocker ml(NonJavaThreadsList_lock, Mutex::_no_safepoint_check_flag);
@@ -113,7 +124,7 @@ void NonJavaThread::pre_run() {
 void NonJavaThread::post_run() {
   JFR_ONLY(Jfr::on_thread_exit(this);)
   remove_from_the_list();
-  unregister_thread_stack_with_NMT();
+  NOT_SVM(unregister_thread_stack_with_NMT();)
   // Ensure thread-local-storage is cleared before termination.
   Thread::clear_thread_current();
   osthread()->set_state(ZOMBIE);
@@ -247,6 +258,7 @@ void WatcherThread::run() {
     // should be done, and sleep that amount of time.
     int time_waited = sleep();
 
+#ifndef SVM
     if (VMError::is_error_reported()) {
       // A fatal error has happened, the error handler(VMError::report_and_die)
       // should abort JVM after creating an error log file. However in some
@@ -278,6 +290,7 @@ void WatcherThread::run() {
         os::naked_short_sleep(250);
       }
     }
+#endif // !SVM
 
     if (_should_terminate) {
       // check for termination before posting the next tick
@@ -300,14 +313,14 @@ void WatcherThread::run() {
 }
 
 void WatcherThread::start() {
-  MonitorLocker ml(PeriodicTask_lock);
+  MonitorLocker ml(PeriodicTask_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
   _should_terminate = false;
   // Create the single instance of WatcherThread
   new WatcherThread();
 }
 
 void WatcherThread::run_all_tasks() {
-  MonitorLocker ml(PeriodicTask_lock);
+  MonitorLocker ml(PeriodicTask_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
   _run_all_tasks = true;
   ml.notify();
 }
@@ -316,7 +329,7 @@ void WatcherThread::stop() {
   {
     // Follow normal safepoint aware lock enter protocol since the
     // WatcherThread is stopped by another JavaThread.
-    MutexLocker ml(PeriodicTask_lock);
+    MutexLocker ml(PeriodicTask_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
     _should_terminate = true;
 
     WatcherThread* watcher = watcher_thread();
@@ -326,7 +339,7 @@ void WatcherThread::stop() {
     }
   }
 
-  MonitorLocker mu(Terminator_lock);
+  MonitorLocker mu(Terminator_lock SVM_ONLY(COMMA Mutex::_no_safepoint_check_flag));
 
   while (watcher_thread() != nullptr) {
     // This wait should make safepoint checks and wait without a timeout.
@@ -344,4 +357,7 @@ void WatcherThread::print_on(outputStream* st) const {
   Thread::print_on(st);
   st->cr();
 }
+
+
+} // namespace svm_gc
 

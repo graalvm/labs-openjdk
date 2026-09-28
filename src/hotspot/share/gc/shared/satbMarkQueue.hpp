@@ -30,6 +30,9 @@
 #include "memory/padded.hpp"
 #include "oops/oopsHierarchy.hpp"
 
+
+namespace svm_gc {
+
 class Thread;
 class Monitor;
 class SATBMarkQueueSet;
@@ -201,5 +204,8 @@ inline void SATBMarkQueueSet::apply_filter(Filter filter_out, SATBMarkQueue& que
   // if all the entries were filtered out.
   queue.set_index(dst - buf);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_SATBMARKQUEUE_HPP

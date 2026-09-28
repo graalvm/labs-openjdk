@@ -29,6 +29,9 @@
 #include "runtime/nonJavaThread.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 class ConcurrentGCThread: public NamedThread {
 private:
   volatile bool _should_terminate;
@@ -59,5 +62,8 @@ public:
   // Printing
   const char* type_name() const { return "ConcurrentGCThread"; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_CONCURRENTGCTHREAD_HPP

@@ -35,7 +35,13 @@
 #define LOG_TAG_SET_DESCRIPTION(tags, descr) \
   { &LogTagSetMapping<tags>::tagset(), descr },
 
+
+namespace svm_gc {
+
 struct LogTagSetDescription tagset_descriptions[] = {
   LOG_TAG_SET_DESCRIPTION_LIST
   { nullptr, nullptr }
 };
+
+} // namespace svm_gc
+

@@ -24,6 +24,9 @@
 
 #include "gc/g1/g1ConcurrentRefineStats.hpp"
 
+
+namespace svm_gc {
+
 G1ConcurrentRefineStats::G1ConcurrentRefineStats() :
   _refinement_time(),
   _refined_cards(0),
@@ -63,3 +66,6 @@ G1ConcurrentRefineStats::operator-=(const G1ConcurrentRefineStats& other) {
 void G1ConcurrentRefineStats::reset() {
   *this = G1ConcurrentRefineStats();
 }
+
+} // namespace svm_gc
+

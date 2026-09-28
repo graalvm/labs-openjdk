@@ -35,9 +35,15 @@
 #define JFR_JVM_THREAD_ID(thread) (JfrThreadLocal::jvm_thread_id(thread))
 #else
 #include "runtime/osThread.hpp"
+
+namespace svm_gc {
+
 typedef u8 traceid;
 #define JFR_THREAD_ID(thread) ((traceid)(thread)->osthread()->thread_id())
 #define JFR_JVM_THREAD_ID(thread) ((traceid)(thread)->osthread()->thread_id())
+
+} // namespace svm_gc
+
 #endif
 
 #endif // SHARE_JFR_SUPPORT_JFRTHREADID_HPP

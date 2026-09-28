@@ -27,9 +27,15 @@
 
 #include "runtime/thread.hpp"
 
+
+namespace svm_gc {
+
 class NonJavaThread: public Thread {
   friend class VMStructs;
 
+#ifdef SVM
+  GCThreadLocalData _gc_data_storage;
+#endif // SVM
   NonJavaThread* volatile _next;
 
   class List;
@@ -143,5 +149,8 @@ class WatcherThread: public NonJavaThread {
  private:
   int sleep() const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_NONJAVATHREAD_HPP

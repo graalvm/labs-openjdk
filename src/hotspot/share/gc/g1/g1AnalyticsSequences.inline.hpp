@@ -29,6 +29,9 @@
 
 #include "gc/g1/g1Predictions.hpp"
 
+
+namespace svm_gc {
+
 bool G1PhaseDependentSeq::enough_samples_to_use_mixed_seq() const {
   return G1Analytics::enough_samples_available(&_mixed_seq);
 }
@@ -62,5 +65,8 @@ double G1PhaseDependentSeq::predict(const G1Predictions* predictor, bool use_you
     return predictor->predict(&_mixed_seq);
   }
 }
+
+
+} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1ANALYTICSSEQUENCES_INLINE_HPP */

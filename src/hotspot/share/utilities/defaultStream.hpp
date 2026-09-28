@@ -26,37 +26,51 @@
 #define SHARE_UTILITIES_DEFAULTSTREAM_HPP
 
 #include "utilities/xmlstream.hpp"
+#ifdef SVM
+#include "utilities/ostream.hpp"
+#endif // SVM
 
-class defaultStream : public xmlTextStream {
+
+namespace svm_gc {
+
+class defaultStream : public SVM_ONLY(outputStream) NOT_SVM(xmlTextStream) {
   friend void ostream_abort();
  public:
   enum { NO_WRITER = -1 };
  private:
   bool         _inited;
+#ifndef SVM
   fileStream*  _log_file;  // XML-formatted file shared by all threads
+#endif // !SVM
   static int   _output_fd;
   static int   _error_fd;
   static FILE* _output_stream;
   static FILE* _error_stream;
 
   void init();
+#ifndef SVM
   void init_log();
   fileStream* open_file(const char* log_name);
   void start_log();
   void finish_log();
   void finish_log_on_error(char *buf, int buflen);
+#endif // !SVM
  public:
   // must defer time stamp due to the fact that os::init() hasn't
   // yet been called and os::elapsed_counter() may not be valid
   defaultStream() {
+#ifndef SVM
     _log_file = nullptr;
+#endif // !SVM
     _inited = false;
     _writer = -1;
     _last_writer = -1;
   }
 
   ~defaultStream() {
+#ifndef SVM
     if (has_log_file())  finish_log();
+#endif // !SVM
   }
 
   static inline FILE* output_stream() {
@@ -78,9 +92,13 @@ class defaultStream : public xmlTextStream {
     // once we can determine whether we are in a signal handler, we
     // should add the following assert here:
     // assert(xxxxxx, "can not flush buffer inside signal handler");
+#ifndef SVM
     xmlTextStream::flush();
+#endif // !SVM
     fflush(output_stream());
+#ifndef SVM
     if (has_log_file()) _log_file->flush();
+#endif // !SVM
   }
 
   // advisory lock/unlock of _writer field:
@@ -95,5 +113,8 @@ class defaultStream : public xmlTextStream {
 
   static defaultStream* instance;  // sole instance
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_DEFAULTSTREAM_HPP

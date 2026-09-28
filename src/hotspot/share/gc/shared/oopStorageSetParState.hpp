@@ -32,6 +32,9 @@
 #include "utilities/valueObjArray.hpp"
 
 // Base class for OopStorageSet{Strong,Weak}ParState.
+
+namespace svm_gc {
+
 template<typename StorageId, bool concurrent, bool is_const>
 class OopStorageSetParState {
 public:
@@ -72,5 +75,8 @@ public:
 
   void report_num_dead();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGESETPARSTATE_HPP

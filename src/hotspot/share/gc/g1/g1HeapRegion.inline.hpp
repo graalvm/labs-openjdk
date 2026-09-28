@@ -42,6 +42,9 @@
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 inline HeapWord* G1HeapRegion::block_start(const void* addr) const {
   return block_start(addr, parsable_bottom_acquire());
 }
@@ -89,6 +92,8 @@ inline bool G1HeapRegion::block_is_obj(const HeapWord* const p, HeapWord* const 
     return true;
   }
 
+  assert_svm_only(!SVMImageHeap::is_in_image_heap(p), "image heap regions are always fully parsable");
+
   // When class unloading is enabled it is not safe to only consider top() to conclude if the
   // given pointer is a valid object. The situation can occur both for class unloading in a
   // Full GC and during a concurrent cycle.
@@ -128,6 +133,12 @@ inline size_t G1HeapRegion::block_size(const HeapWord* p, HeapWord* const pb) co
 }
 
 inline void G1HeapRegion::prepare_for_full_gc() {
+#ifdef SVM
+  if (is_image_heap()) {
+    // Image heap regions are always fully parsable.
+    return;
+  }
+#endif // SVM
   // After marking and class unloading the heap temporarily contains dead objects
   // with unloaded klasses. Moving parsable_bottom makes some (debug) code correctly
   // skip dead objects.
@@ -166,6 +177,7 @@ inline void G1HeapRegion::reset_after_full_gc_common() {
 
 template<typename ApplyToMarkedClosure>
 inline void G1HeapRegion::apply_to_marked_objects(G1CMBitMap* bitmap, ApplyToMarkedClosure* closure) {
+  assert_svm_only(!is_image_heap(), "must not be called for image heap regions because image heap objects are never marked");
   HeapWord* limit = top();
   HeapWord* next_addr = bottom();
 
@@ -267,11 +279,13 @@ inline void G1HeapRegion::reset_parsable_bottom() {
 
 inline void G1HeapRegion::note_end_of_marking(HeapWord* top_at_mark_start, size_t marked_bytes, size_t incoming_refs) {
   assert_at_safepoint();
+  assert_svm_only(!is_image_heap() || marked_bytes == 0, "marked bytes must be 0 for image heap regions");
 
-  if (top_at_mark_start != bottom()) {
+  if (top_at_mark_start != bottom() SVM_ONLY(&& !is_image_heap())) {
     _garbage_bytes = byte_size(bottom(), top_at_mark_start) - marked_bytes;
     _incoming_refs = incoming_refs;
   }
+  assert_svm_only(_garbage_bytes == 0 || !is_image_heap(), "image heap regions must not contain any garbage");
 
   if (needs_scrubbing()) {
     _parsable_bottom = top_at_mark_start;
@@ -444,13 +458,14 @@ inline HeapWord* G1HeapRegion::oops_on_memregion_iterate(MemRegion mr, Closure* 
 template <bool in_gc_pause, class Closure>
 HeapWord* G1HeapRegion::oops_on_memregion_seq_iterate_careful(MemRegion mr,
                                                             Closure* cl) {
+  assert_svm_only(!is_closed_image_heap(), "no need to visit the closed image heap");
   assert(MemRegion(bottom(), top()).contains(mr), "Card region not in heap region");
 
   // Special handling for humongous regions.
   if (is_humongous()) {
     return do_oops_on_memregion_in_humongous<Closure, in_gc_pause>(mr, cl);
   }
-  assert(is_old(), "Wrongly trying to iterate over region %u type %s", _hrm_index, get_type_str());
+  assert(is_old() SVM_ONLY(|| is_open_image_heap()), "Wrongly trying to iterate over region %u type %s", _hrm_index, get_type_str());
 
   // Because mr has been trimmed to what's been allocated in this
   // region, the objects in these parts of the heap have non-null
@@ -521,5 +536,8 @@ inline void G1HeapRegion::install_cset_group(G1CSetCandidateGroup* cset_group) {
 inline void G1HeapRegion::uninstall_cset_group() {
   _rem_set->uninstall_cset_group();
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGION_INLINE_HPP

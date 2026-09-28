@@ -29,6 +29,9 @@
 #include "gc/shared/workerThread.hpp"
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 template <typename E, MemTag MT>
 class GrowableArrayCHeap;
 
@@ -148,5 +151,8 @@ public:
 
   ~G1BatchedTask();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1BATCHEDTASK_HPP

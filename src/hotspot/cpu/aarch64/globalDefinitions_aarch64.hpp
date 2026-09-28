@@ -26,6 +26,9 @@
 #ifndef CPU_AARCH64_GLOBALDEFINITIONS_AARCH64_HPP
 #define CPU_AARCH64_GLOBALDEFINITIONS_AARCH64_HPP
 
+
+namespace svm_gc {
+
 const int StackAlignmentInBytes  = 16;
 const size_t pd_segfault_address = 1024;
 
@@ -77,5 +80,8 @@ const bool CCallingConventionRequiresIntsAsLongs = false;
 #define USE_POINTERS_TO_REGISTER_IMPL_ARRAY
 
 #define USE_TRAMPOLINE_STUB_FIX_OWNER
+
+
+} // namespace svm_gc
 
 #endif // CPU_AARCH64_GLOBALDEFINITIONS_AARCH64_HPP

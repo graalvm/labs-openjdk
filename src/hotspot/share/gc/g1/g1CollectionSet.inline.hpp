@@ -29,6 +29,9 @@
 
 #include "gc/g1/g1HeapRegionRemSet.hpp"
 
+
+namespace svm_gc {
+
 template <class CardOrRangeVisitor>
 inline void G1CollectionSet::merge_cardsets_for_collection_groups(CardOrRangeVisitor& cl, uint worker_id, uint num_workers) {
   uint length = collection_groups_increment_length();
@@ -49,4 +52,7 @@ inline void G1CollectionSet::merge_cardsets_for_collection_groups(CardOrRangeVis
     }
   } while (cur_pos != start_pos);
 }
+
+} // namespace svm_gc
+
 #endif /* SHARE_GC_G1_G1COLLECTIONSET_INLINE_HPP */

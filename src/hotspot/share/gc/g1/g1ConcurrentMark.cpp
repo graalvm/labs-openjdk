@@ -78,6 +78,9 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 G1CMIsAliveClosure::G1CMIsAliveClosure() : _cm(nullptr) { }
 
 G1CMIsAliveClosure::G1CMIsAliveClosure(G1ConcurrentMark* cm) : _cm(cm) {
@@ -724,6 +727,13 @@ private:
       if (has_aborted()) {
         return true;
       }
+#ifdef SVM
+      // image heap regions are never marked.
+      else if (r->is_image_heap()) {
+        _cm->reset_top_at_mark_start(r);
+        return false;
+      }
+#endif // SVM
 
       HeapWord* cur = r->bottom();
       HeapWord* const end = region_clear_limit(r);
@@ -869,7 +879,7 @@ public:
   NoteStartOfMarkHRClosure() : G1HeapRegionClosure(), _cm(G1CollectedHeap::heap()->concurrent_mark()) { }
 
   bool do_heap_region(G1HeapRegion* r) override {
-    if (r->is_old_or_humongous() && !r->is_collection_set_candidate() && !r->in_collection_set()) {
+    if (SVM_ONLY(r->is_old_or_humongous_or_open_image_heap()) NOT_SVM(r->is_old_or_humongous()) && !r->is_collection_set_candidate() && !r->in_collection_set()) {
       _cm->update_top_at_mark_start(r);
     }
     return false;
@@ -896,7 +906,9 @@ void G1ConcurrentMark::pre_concurrent_start(GCCause::Cause cause) {
 
   G1CollectedHeap::start_codecache_marking_cycle_if_inactive(true /* concurrent_mark_start */);
 
+#ifndef SVM
   ClassLoaderDataGraph::verify_claimed_marks_cleared(ClassLoaderData::_claim_strong);
+#endif // !SVM
 
   G1PreConcurrentStartTask cl(cause, this);
   G1CollectedHeap::heap()->run_batch_task(&cl);
@@ -1119,9 +1131,11 @@ void G1ConcurrentMark::concurrent_cycle_start() {
   _g1h->trace_heap_before_gc(_gc_tracer_cm);
 }
 
+#ifndef SVM
 uint G1ConcurrentMark::completed_mark_cycles() const {
   return Atomic::load(&_completed_mark_cycles);
 }
+#endif // !SVM
 
 void G1ConcurrentMark::concurrent_cycle_end(bool mark_cycle_completed) {
   _g1h->collector_state()->set_clearing_bitmap(false);
@@ -1233,11 +1247,13 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
       _local_cleanup_list(local_cleanup_list) {}
 
     void reclaim_empty_humongous_region(G1HeapRegion* hr) {
+      assert_svm_only(!hr->is_image_heap(), "precondition");
       assert(!hr->has_pinned_objects(), "precondition");
       assert(hr->is_starts_humongous(), "precondition");
 
       auto on_humongous_region = [&] (G1HeapRegion* hr) {
         assert(hr->used() > 0, "precondition");
+        assert_svm_only(!hr->is_image_heap(), "precondition");
         assert(!hr->has_pinned_objects(), "precondition");
         assert(hr->is_humongous(), "precondition");
 
@@ -1255,6 +1271,7 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
 
     void reclaim_empty_old_region(G1HeapRegion* hr) {
       assert(hr->used() > 0, "precondition");
+      assert_svm_only(!hr->is_image_heap(), "precondition");
       assert(!hr->has_pinned_objects(), "precondition");
       assert(hr->is_old(), "precondition");
 
@@ -1268,12 +1285,19 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
     }
 
     bool do_heap_region(G1HeapRegion* hr) override {
+#ifdef SVM
+      if (hr->is_closed_image_heap()) {
+        /* Nothing to do for closed image heap regions. */
+        return false;
+      }
+#endif // SVM
+
       G1RemSetTrackingPolicy* tracker = _g1h->policy()->remset_tracker();
       if (hr->is_starts_humongous()) {
         // The liveness of this humongous obj decided by either its allocation
         // time (allocated after conc-mark-start, i.e. live) or conc-marking.
         const bool is_live = _cm->top_at_mark_start(hr) == hr->bottom()
-                          || _cm->contains_live_object(hr->hrm_index())
+                          || _cm->contains_live_object(hr->hrm_index()) SVM_ONLY(|| hr->is_image_heap())
                           || hr->has_pinned_objects();
         if (is_live) {
           const bool selected_for_rebuild = tracker->update_humongous_before_rebuild(hr);
@@ -1288,7 +1312,7 @@ class G1UpdateRegionLivenessAndSelectForRebuildTask : public WorkerTask {
         } else {
           reclaim_empty_humongous_region(hr);
         }
-      } else if (hr->is_old()) {
+      } else if (hr->is_old() SVM_ONLY(|| (hr->is_open_image_heap() && !hr->is_humongous()))) {
         uint region_idx = hr->hrm_index();
         hr->note_end_of_marking(_cm->top_at_mark_start(hr), _cm->live_bytes(region_idx), _cm->incoming_refs(region_idx));
 
@@ -1408,11 +1432,13 @@ void G1ConcurrentMark::remark() {
   if (mark_finished) {
     weak_refs_work();
 
+#ifndef SVM
     // Unload Klasses, String, Code Cache, etc.
     if (ClassUnloadingWithConcurrentMark) {
       G1CMIsAliveClosure is_alive(this);
       _g1h->unload_classes_and_code("Class Unloading", &is_alive, _gc_timer_cm);
     }
+#endif // !SVM
 
     SATBMarkQueueSet& satb_mq_set = G1BarrierSet::satb_mark_queue_set();
     // We're done with marking.
@@ -1490,6 +1516,16 @@ void G1ConcurrentMark::remark() {
     reset_marking_for_restart();
   }
 
+#ifdef SVM
+  if (SVMGlobalData::_clean_runtime_code_cache != nullptr) {
+    // Clean the code cache now that the GC work has finished. We can't do this any earlier as this calls Java code, which can have
+    // side-effects on the GC (e.g., the Java code may modify the card table). This is necessary, even if a marking overflow happened
+    // earlier as we must not leave any nmethods around with state unreachable or ready_for_invalidation (oops in such nmethods
+    // wouldn't be updated correctly, see nmethod::oops_do).
+    SVMGlobalData::_clean_runtime_code_cache(CompressedOops::base(), IsolateThread::current());
+  }
+#endif // SVM
+
   // Statistics
   double now = os::elapsedTime();
   _remark_mark_times.add((mark_work_end - start) * 1000.0);
@@ -1502,7 +1538,9 @@ void G1ConcurrentMark::remark() {
 }
 
 void G1ConcurrentMark::compute_new_sizes() {
+#ifndef SVM
   MetaspaceGC::compute_new_size();
+#endif // !SVM
 
   // Cleanup will have freed any regions completely full of garbage.
   // Update the soft reference policy with the new heap occupancy.
@@ -1817,18 +1855,79 @@ public:
   }
 };
 
+#ifdef SVM
+// NOTE (chaeubl): similar to G1CMSATBBufferClosure
+class MarkNMethodTether : public NMethodClosure {
+ private:
+  G1CMTask* _task;
+
+ public:
+  MarkNMethodTether(G1CMTask* task) : _task(task) {}
+
+  void do_nmethod(nmethod* nm) {
+    _task->make_reference_grey(nm->tether());
+  }
+};
+#endif // SVM
+
 class G1RemarkThreadsClosure : public ThreadClosure {
+#ifdef SVM
+  MarkNMethodTether _markNMethodTether;
+#endif // SVM
   G1SATBMarkQueueSet& _qset;
 
  public:
   G1RemarkThreadsClosure(G1CollectedHeap* g1h, G1CMTask* task) :
+    SVM_ONLY(_markNMethodTether(task) COMMA)
     _qset(G1BarrierSet::satb_mark_queue_set()) {}
 
   void do_thread(Thread* thread) {
     // Transfer any partial buffer to the qset for completed buffer processing.
     _qset.flush_queue(G1ThreadLocalData::satb_mark_queue(thread));
+
+#ifdef SVM
+    if (thread->is_Java_thread()) {
+      // For nmethods that are currently on the stack, it is sufficient to mark the tether. All other
+      // nmethods oops are then handled when remarking the code cache (see G1CMRemarkCodeCacheTask).
+      JavaThread::cast(thread)->nmethods_do(&_markNMethodTether);
+    }
+#endif // SVM
   }
 };
+
+#ifdef SVM
+// NOTE (chaeubl): similar to G1CMRemarkTask
+class G1CMRemarkCodeCacheTask : public WorkerTask {
+  NMethodMarkScope  _mark_scope;
+  G1ConcurrentMark* _cm;
+public:
+  void work(uint worker_id) {
+    G1CMTask* task = _cm->task(worker_id);
+    task->record_start_time();
+    {
+      G1CMOopClosure cm_cl(G1CollectedHeap::heap(), task);
+      G1CMIsAliveClosure is_alive(_cm);
+
+      G1ConditionalMarkCodeCacheClosure remark_code_cache(&cm_cl, &is_alive, true);
+      CodeCache::nmethods_do(&remark_code_cache);
+    }
+
+    do {
+      task->do_marking_step(1000000000.0 /* something very large */,
+                            true         /* do_termination       */,
+                            false        /* is_serial            */);
+    } while (task->has_aborted() && !_cm->has_overflown());
+    // If we overflow, then we do not want to restart. We instead
+    // want to abort remark and do concurrent marking again.
+    task->record_end_time();
+  }
+
+  G1CMRemarkCodeCacheTask(G1ConcurrentMark* cm, uint active_workers) :
+    WorkerTask("Par Remark CodeCache"), _cm(cm) {
+    _cm->terminator()->reset_for_reuse(active_workers);
+  }
+};
+#endif // SVM
 
 class G1CMRemarkTask : public WorkerTask {
   G1ConcurrentMark* _cm;
@@ -1873,6 +1972,10 @@ void G1ConcurrentMark::finalize_marking() {
   // through the task.
 
   {
+#ifdef SVM
+    CodeInfosPerThread* code_infos = Threads::set_java_code_infos();
+#endif // SVM
+
     StrongRootsScope srs(active_workers);
 
     G1CMRemarkTask remarkTask(this, active_workers);
@@ -1880,7 +1983,18 @@ void G1ConcurrentMark::finalize_marking() {
     // active_workers will be fewer. The extra ones will just bail out
     // immediately.
     _g1h->workers()->run_task(&remarkTask);
+
+#ifdef SVM
+    Threads::free_java_code_infos(code_infos);
+#endif // SVM
   }
+
+#ifdef SVM
+  if (!has_overflown()) {
+    G1CMRemarkCodeCacheTask remark_code_cache_task(this, active_workers);
+    _g1h->workers()->run_task(&remark_code_cache_task);
+  }
+#endif // SVM
 
   SATBMarkQueueSet& satb_mq_set = G1BarrierSet::satb_mark_queue_set();
   guarantee(has_overflown() ||
@@ -1907,6 +2021,7 @@ void G1ConcurrentMark::flush_all_task_caches() {
 
 void G1ConcurrentMark::clear_bitmap_for_region(G1HeapRegion* hr) {
   assert_at_safepoint();
+  assert_svm_only(!hr->is_image_heap(), "image heap regions are never marked");
   _mark_bitmap.clear_range(MemRegion(hr->bottom(), hr->end()));
 }
 
@@ -1937,6 +2052,7 @@ G1HeapRegion* G1ConcurrentMark::claim_region(uint worker_id) {
       assert(_finger >= end, "the finger should have moved forward");
 
       if (limit > bottom) {
+        assert_svm_only(!curr_region->is_closed_image_heap(), "CA regions should be skipped");
         return curr_region;
       } else {
         assert(limit == bottom,
@@ -2139,7 +2255,7 @@ static ReferenceProcessor* get_cm_oop_closure_ref_processor(G1CollectedHeap* g1h
 
 G1CMOopClosure::G1CMOopClosure(G1CollectedHeap* g1h,
                                G1CMTask* task)
-  : ClaimMetadataVisitingOopIterateClosure(ClassLoaderData::_claim_strong, get_cm_oop_closure_ref_processor(g1h)),
+  : ClaimMetadataVisitingOopIterateClosure(NOT_SVM(ClassLoaderData::_claim_strong COMMA) get_cm_oop_closure_ref_processor(g1h)),
     _g1h(g1h), _task(task)
 { }
 
@@ -2520,11 +2636,11 @@ void G1CMTask::process_current_region(G1CMBitMapClosure& bitmap_closure) {
   // Otherwise, let's iterate over the bitmap of the part of the region
   // that is left.
   // If the iteration is successful, give up the region.
-  if (mr.is_empty()) {
+  if (mr.is_empty() SVM_ONLY(|| _curr_region->is_closed_image_heap())) {
     giveup_current_region();
     abort_marking_if_regular_check_fail();
   } else if (_curr_region->is_humongous() && mr.start() == _curr_region->bottom()) {
-    if (_mark_bitmap->is_marked(mr.start())) {
+    if (_mark_bitmap->is_marked(mr.start()) SVM_ONLY(|| (_curr_region->is_starts_humongous() && _curr_region->is_open_image_heap()))) {
       // The object is marked - apply the closure
       bitmap_closure.do_addr(mr.start());
     }
@@ -2532,7 +2648,7 @@ void G1CMTask::process_current_region(G1CMBitMapClosure& bitmap_closure) {
     // we can (and should) give up the current region.
     giveup_current_region();
     abort_marking_if_regular_check_fail();
-  } else if (_mark_bitmap->iterate(&bitmap_closure, mr)) {
+  } else if (SVM_ONLY(_curr_region->is_open_image_heap() && iterate_open_image_heap_region(&bitmap_closure) || !_curr_region->is_open_image_heap() &&) _mark_bitmap->iterate(&bitmap_closure, mr)) {
     giveup_current_region();
     abort_marking_if_regular_check_fail();
   } else {
@@ -2919,6 +3035,27 @@ void G1CMTask::do_marking_step(double time_target_ms,
   }
 }
 
+#ifdef SVM
+// This method tries to iterate a whole open image heap region. This works because the concurrent marking claims every heap region
+// exactly once (originally for the bitmap-based marking).
+bool G1CMTask::iterate_open_image_heap_region(G1CMBitMapClosure* cl) {
+  assert(_curr_region->is_open_image_heap(), "must be");
+
+  // If the iteration takes too much time, the operation is aborted and continued later on. To support that properly,
+  // we use the task's local finger.
+  HeapWord* pos = _finger;
+  HeapWord* top = _region_limit;
+  assert(top == _curr_region->top(), "we don't allocate in image heap regions, so they must always be visited as a whole");
+  while (pos < top) {
+    if (!cl->do_addr(pos)) {
+      return false;
+    }
+    pos = pos + (size_t)((oop)pos)->size();
+  }
+  return true;
+}
+#endif // SVM
+
 G1CMTask::G1CMTask(uint worker_id,
                    G1ConcurrentMark* cm,
                    G1CMTaskQueue* task_queue,
@@ -3190,3 +3327,6 @@ void G1PrintRegionLivenessInfoClosure::do_cset_groups() {
                             "R");
   }
 }
+
+} // namespace svm_gc
+

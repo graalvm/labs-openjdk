@@ -27,6 +27,9 @@
 
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 class G1Analytics;
 class G1CollectedHeap;
 
@@ -64,5 +67,8 @@ public:
 
   static G1HeapSizingPolicy* create(const G1CollectedHeap* g1h, const G1Analytics* analytics);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPSIZINGPOLICY_HPP

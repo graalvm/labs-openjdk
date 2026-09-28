@@ -30,6 +30,9 @@
 #include "runtime/java.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 size_t G1BlockOffsetTable::compute_size(size_t mem_region_words) {
   size_t number_of_slots = (mem_region_words / CardTable::card_size_in_words());
   return os::align_up_vm_allocation_granularity(number_of_slots);
@@ -46,6 +49,14 @@ G1BlockOffsetTable::G1BlockOffsetTable(MemRegion heap, G1RegionToSpaceMapper* st
   log_trace(gc, bot)("    rs.base(): " PTR_FORMAT "  rs.size(): %zu  rs end(): " PTR_FORMAT,
                      p2i(bot_reserved.start()), bot_reserved.byte_size(), p2i(bot_reserved.end()));
 }
+
+#ifdef SVM
+G1BlockOffsetTable::G1BlockOffsetTable(MemRegion heap, const uint8_t* bot_entries) :
+  _reserved(heap),
+  _offset_base(const_cast<uint8_t*>(bot_entries) - (uintptr_t(_reserved.start()) >> CardTable::card_shift())) {
+  guarantee(bot_entries != nullptr, "prebuilt block offset table must be present");
+}
+#endif // SVM
 
 void G1BlockOffsetTable::set_offset_array(uint8_t* addr, uint8_t offset) {
   check_address(addr, "Block offset table address out of range");
@@ -271,3 +282,6 @@ void G1BlockOffsetTable::verify_for_block(HeapWord* blk_start, HeapWord* blk_end
   }
 }
 #endif // ASSERT
+
+} // namespace svm_gc
+

@@ -31,6 +31,9 @@
 #include "utilities/globalDefinitions.hpp"
 
 // Forward Decl.
+
+namespace svm_gc {
+
 class G1ConcurrentRefine;
 
 // One or more G1 Concurrent Refinement Threads may be active if concurrent
@@ -116,5 +119,8 @@ public:
   // Total virtual time so far.
   double vtime_accum() { return _vtime_accum; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTREFINETHREAD_HPP

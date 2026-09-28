@@ -27,4 +27,10 @@
 #include "utilities/globalDefinitions.hpp"
 
 // The only limitation is from the G1CardSetArray.
+
+namespace svm_gc {
+
 uint G1CardSetContainer::LogCardsPerRegionLimit = sizeof(G1CardSetArray::EntryDataType) * BitsPerByte;
+
+} // namespace svm_gc
+

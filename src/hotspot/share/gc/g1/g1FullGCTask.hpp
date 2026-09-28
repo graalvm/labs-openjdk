@@ -28,6 +28,9 @@
 #include "gc/shared/workerThread.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class G1FullCollector;
 
 class G1FullGCTask : public WorkerTask {
@@ -41,5 +44,8 @@ protected:
   G1FullCollector* collector() { return _collector; }
   void log_task(const char* name, uint worker_id, const Ticks& start, const Ticks& stop = Ticks::now());
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCTASK_HPP

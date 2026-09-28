@@ -30,6 +30,9 @@
 #include "gc/shared/workerThread.hpp"
 #include "memory/allStatic.hpp"
 
+
+namespace svm_gc {
+
 class WeakProcessorTimes;
 class WorkerThreads;
 
@@ -100,5 +103,8 @@ public:
 
   void report_num_dead();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WEAKPROCESSOR_HPP

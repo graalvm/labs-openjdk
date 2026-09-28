@@ -27,6 +27,9 @@
 
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class ReferenceProcessor;
 
 // ReferenceProcessorStats contains statistics about how many references that
@@ -70,4 +73,7 @@ class ReferenceProcessorStats {
     return _phantom_count;
   }
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_SHARED_REFERENCEPROCESSORSTATS_HPP

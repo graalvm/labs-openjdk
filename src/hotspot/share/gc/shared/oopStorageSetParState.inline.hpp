@@ -34,6 +34,9 @@
 #include "runtime/atomic.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 template <bool concurrent, bool is_const>
 template <typename Closure>
 void OopStorageSetStrongParState<concurrent, is_const>::oops_do(Closure* cl) {
@@ -91,5 +94,8 @@ void OopStorageSetWeakParState<concurrent, is_const>::report_num_dead() {
     state->storage()->report_num_dead(state->num_dead());
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGESETPARSTATE_INLINE_HPP

@@ -38,6 +38,9 @@
 
 // This metafunction returns either oop or narrowOop depending on whether
 // an access needs to use compressed oops or not.
+
+namespace svm_gc {
+
 template <DecoratorSet decorators>
 struct HeapOopType: AllStatic {
   static const bool needs_oop_compress = HasDecorator<decorators, INTERNAL_CONVERT_COMPRESSED_OOP>::value &&
@@ -59,10 +62,19 @@ namespace AccessInternal {
     BARRIER_CLONE
   };
 
+  // NOTE (chaeubl): oops on the stack may be uncompressed in Native Image. The major difference to HotSpot is that null values
+  // are not represented as zero but point to the heap base instead. To hide this difference from all the other C++ code, we call
+  // CompressedOops::decode(...) after loading an uncompressed oop. This change is not behind an #ifdef because macros don't seem
+  // to interact well with C++ templates.
   template <DecoratorSet decorators, typename T>
-  struct MustConvertCompressedOop: public std::integral_constant<bool,
+  struct MustEncodeCompressedOop: public std::integral_constant<bool,
     HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value &&
     std::is_same<typename HeapOopType<decorators>::type, narrowOop>::value &&
+    std::is_same<T, oop>::value> {};
+
+  template <DecoratorSet decorators, typename T>
+  struct MustDecodeOop: public std::integral_constant<bool,
+    HasDecorator<decorators, INTERNAL_VALUE_IS_OOP>::value &&
     std::is_same<T, oop>::value> {};
 
   // This metafunction returns an appropriate oop type if the value is oop-like
@@ -170,13 +182,13 @@ protected:
   // Only encode if INTERNAL_VALUE_IS_OOP
   template <DecoratorSet idecorators, typename T>
   static inline typename EnableIf<
-    AccessInternal::MustConvertCompressedOop<idecorators, T>::value,
+    AccessInternal::MustEncodeCompressedOop<idecorators, T>::value,
     typename HeapOopType<idecorators>::type>::type
   encode_internal(T value);
 
   template <DecoratorSet idecorators, typename T>
   static inline typename EnableIf<
-    !AccessInternal::MustConvertCompressedOop<idecorators, T>::value, T>::type
+    !AccessInternal::MustEncodeCompressedOop<idecorators, T>::value, T>::type
   encode_internal(T value) {
     return value;
   }
@@ -190,12 +202,12 @@ protected:
   // Only decode if INTERNAL_VALUE_IS_OOP
   template <DecoratorSet idecorators, typename T>
   static inline typename EnableIf<
-    AccessInternal::MustConvertCompressedOop<idecorators, T>::value, T>::type
+    AccessInternal::MustDecodeOop<idecorators, T>::value, T>::type
   decode_internal(typename HeapOopType<idecorators>::type value);
 
   template <DecoratorSet idecorators, typename T>
   static inline typename EnableIf<
-    !AccessInternal::MustConvertCompressedOop<idecorators, T>::value, T>::type
+    !AccessInternal::MustDecodeOop<idecorators, T>::value, T>::type
   decode_internal(T value) {
     return value;
   }
@@ -1264,5 +1276,8 @@ namespace AccessInternal {
     }
   };
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ACCESSBACKEND_HPP

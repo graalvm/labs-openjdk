@@ -28,6 +28,9 @@
 #include "gc/shared/gcArguments.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 extern size_t MinNewSize;
 
 extern size_t MinOldSize;
@@ -37,6 +40,7 @@ extern size_t OldSize;
 
 extern size_t GenAlignment;
 
+#ifndef SVM
 class GenArguments : public GCArguments {
   friend class TestGenCollectorPolicy; // Testing
 private:
@@ -54,5 +58,9 @@ private:
 protected:
   virtual void initialize_heap_flags_and_sizes();
 };
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GENARGUMENTS_HPP

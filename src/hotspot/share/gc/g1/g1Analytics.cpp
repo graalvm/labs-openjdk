@@ -36,6 +36,9 @@
 // They were chosen by running GCOld and SPECjbb on debris with different
 //   numbers of GC threads and choosing them based on the results
 
+
+namespace svm_gc {
+
 static double cost_per_logged_card_ms_defaults[] = {
   0.01, 0.005, 0.005, 0.003, 0.003, 0.002, 0.002, 0.0015
 };
@@ -121,9 +124,11 @@ bool G1Analytics::enough_samples_available(TruncatedSeq const* seq) {
   return seq->num() >= 3;
 }
 
+#ifndef SVM
 double G1Analytics::predict_in_unit_interval(TruncatedSeq const* seq) const {
   return _predictor->predict_in_unit_interval(seq);
 }
+#endif // !SVM
 
 size_t G1Analytics::predict_size(TruncatedSeq const* seq) const {
   return (size_t)predict_zero_bounded(seq);
@@ -145,9 +150,11 @@ double G1Analytics::predict_zero_bounded(G1PhaseDependentSeq const* seq, bool fo
   return MAX2(seq->predict(_predictor, for_young_only_phase), 0.0);
 }
 
+#ifndef SVM
 int G1Analytics::num_alloc_rate_ms() const {
   return _alloc_rate_ms_seq.num();
 }
+#endif // !SVM
 
 void G1Analytics::report_concurrent_mark_remark_times_ms(double ms) {
   _concurrent_mark_remark_times_ms.add(ms);
@@ -313,3 +320,6 @@ void G1Analytics::update_recent_gc_times(double end_time_sec,
 void G1Analytics::report_concurrent_mark_cleanup_times_ms(double ms) {
   _concurrent_mark_cleanup_times_ms.add(ms);
 }
+
+} // namespace svm_gc
+

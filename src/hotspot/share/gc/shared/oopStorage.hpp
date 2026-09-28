@@ -31,6 +31,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/singleWriterSynchronizer.hpp"
 
+
+namespace svm_gc {
+
 class Mutex;
 class outputStream;
 
@@ -188,6 +191,7 @@ public:
   // Used by the GC to test whether a callback function has been registered.
   bool should_report_num_dead() const;
 
+#ifndef SVM
   // Service thread cleanup support.
 
   // Called by the service thread to process any pending cleanups for this
@@ -209,11 +213,14 @@ public:
   // recognition of new requests.  Returns true if there was a pending
   // request.
   static bool has_cleanup_work_and_reset();
+#endif // !SVM
 
   // Debugging and logging support.
   const char* name() const;
   void print_on(outputStream* st) const PRODUCT_RETURN;
+#ifndef SVM
   bool print_containing(const oop* addr, outputStream* st);
+#endif // !SVM
 
   // Provides access to storage internals, for unit testing.
   // Declare, but not define, the public class OopStorage::TestAccess.
@@ -288,7 +295,9 @@ private:
   Block* block_for_allocation();
   void  log_block_transition(Block* block, const char* new_state) const;
 
+#ifndef SVM
   Block* block_for_ptr(const oop* ptr) const;
+#endif // !SVM
   void delete_empty_block(const Block& block);
   bool reduce_deferred_updates();
   void record_needs_cleanup();
@@ -322,5 +331,8 @@ private:
   template<typename F> class SkipNullFn;
   template<typename F> static SkipNullFn<F> skip_null_fn(F f);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGE_HPP

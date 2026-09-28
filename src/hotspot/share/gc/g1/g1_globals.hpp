@@ -39,7 +39,11 @@
 #endif
 
 #if ALLOCATION_FAILURE_INJECTOR
-#define GC_G1_EVACUATION_FAILURE_FLAGS(develop,                             \
+#define GC_G1_EVACUATION_FAILURE_FLAGS(ni_hosted,                           \
+                                       ni_hosted_pd,                        \
+                                       ni_runtime,                          \
+                                       ni_runtime_pd,                       \
+                                       develop,                             \
                                        develop_pd,                          \
                                        product,                             \
                                        product_pd,                          \
@@ -80,7 +84,11 @@
           "injected.")                                                      \
           range(1, 100)
 #else
-#define GC_G1_EVACUATION_FAILURE_FLAGS(develop,                             \
+#define GC_G1_EVACUATION_FAILURE_FLAGS(ni_hosted,                           \
+                                       ni_hosted_pd,                        \
+                                       ni_runtime,                          \
+                                       ni_runtime_pd,                       \
+                                       develop,                             \
                                        develop_pd,                          \
                                        product,                             \
                                        product_pd,                          \
@@ -91,14 +99,18 @@
 // Defines all globals flags used by the garbage-first compiler.
 //
 
-#define GC_G1_FLAGS(develop,                                                \
+#define GC_G1_FLAGS(ni_hosted,                                              \
+                    ni_hosted_pd,                                           \
+                    ni_runtime,                                             \
+                    ni_runtime_pd,                                          \
+                    develop,                                                \
                     develop_pd,                                             \
                     product,                                                \
                     product_pd,                                             \
                     range,                                                  \
                     constraint)                                             \
                                                                             \
-  product(bool, G1UseAdaptiveIHOP, true,                                    \
+  ni_runtime(bool, G1UseAdaptiveIHOP, true,                                 \
           "Adaptively adjust the initiating heap occupancy from the "       \
           "initial value of InitiatingHeapOccupancyPercent. The policy "    \
           "attempts to start marking in time based on application "         \
@@ -110,7 +122,7 @@
           "of the optimal occupancy to start marking.")                     \
           range(1, max_intx)                                                \
                                                                             \
-  product(uint, G1ConfidencePercent, 50,                                    \
+  ni_runtime(uint, G1ConfidencePercent, 50,                                 \
           "Confidence level for MMU/pause predictions. A higher value "     \
           "means that G1 will use less safety margin for its predictions.") \
           range(1, 100)                                                     \
@@ -123,12 +135,12 @@
           "level for gc+remset")                                            \
           range(0, max_intx)                                                \
                                                                             \
-  product(double, G1ConcMarkStepDurationMillis, 10.0,                       \
+  ni_runtime(double, G1ConcMarkStepDurationMillis, 10.0,                    \
           "Target duration of individual concurrent marking steps "         \
           "in milliseconds.")                                               \
           range(1.0, DBL_MAX)                                               \
                                                                             \
-  product(uint, G1RefProcDrainInterval, 1000,                               \
+  ni_runtime(uint, G1RefProcDrainInterval, 1000,                            \
           "The number of discovered reference objects to process before "   \
           "draining concurrent marking work queues.")                       \
           range(1, INT_MAX)                                                 \
@@ -142,7 +154,7 @@
                "percent.")                                                  \
                range(0.001, 100.0)                                          \
                                                                             \
-  product(size_t, G1SATBBufferSize, 1*K,                                    \
+  ni_runtime(size_t, G1SATBBufferSize, 1*K,                                 \
           "Number of entries in an SATB log buffer.")                       \
           constraint(G1SATBBufferSizeConstraintFunc, AtParse)               \
                                                                             \
@@ -150,7 +162,7 @@
           "Number of completed buffers that triggers log processing.")      \
           range(0, max_jint)                                                \
                                                                             \
-  product(uint, G1SATBBufferEnqueueingThresholdPercent, 60,                 \
+  ni_runtime(uint, G1SATBBufferEnqueueingThresholdPercent, 60,              \
           "Before enqueueing them, each mutator thread tries to do some "   \
           "filtering on the SATB buffers it generates. If post-filtering "  \
           "the percentage of retained entries is over this threshold "      \
@@ -161,17 +173,17 @@
           "When expanding, % of uncommitted space to claim.")               \
           range(0, 100)                                                     \
                                                                             \
-  product(size_t, G1UpdateBufferSize, 256,                                  \
+  ni_runtime(size_t, G1UpdateBufferSize, 256,                               \
           "Size of an update buffer")                                       \
           constraint(G1UpdateBufferSizeConstraintFunc, AtParse)             \
                                                                             \
-  product(uint, G1RSetUpdatingPauseTimePercent, 10,                         \
+  ni_runtime(uint, G1RSetUpdatingPauseTimePercent, 10,                      \
           "A target percentage of time that is allowed to be spend on "     \
           "processing remembered set update buffers during the collection " \
           "pause.")                                                         \
           range(0, 100)                                                     \
                                                                             \
-  product(bool, G1UseConcRefinement, true, DIAGNOSTIC,                      \
+  ni_runtime(bool, G1UseConcRefinement, true, DIAGNOSTIC,                   \
           "Control whether concurrent refinement is performed. "            \
           "Disabling effectively ignores G1RSetUpdatingPauseTimePercent")   \
                                                                             \
@@ -180,13 +192,13 @@
           "card set container per MB of a heap region.")                    \
           range(1, 65536)                                                   \
                                                                             \
-  product(uint, G1RemSetArrayOfCardsEntries, 0,  EXPERIMENTAL,              \
+  ni_runtime(uint, G1RemSetArrayOfCardsEntries, 0,  INTERNAL,               \
           "Maximum number of entries per Array of Cards card set "          \
           "container. Will be set ergonomically by default.")               \
           range(0, 65536)                                                   \
           constraint(G1RemSetArrayOfCardsEntriesConstraintFunc,AfterErgo)   \
                                                                             \
-  product(uint, G1RemSetHowlMaxNumBuckets, 8, EXPERIMENTAL,                 \
+  ni_runtime(uint, G1RemSetHowlMaxNumBuckets, 8, INTERNAL,                  \
           "Maximum number of buckets per Howl card set container. The "     \
           "default gives at worst bitmaps of size 8k. This showed to be a " \
           "good tradeoff between bitmap size (waste) and cacheability of "  \
@@ -194,7 +206,7 @@
           range(1, 1024)                                                    \
           constraint(G1RemSetHowlMaxNumBucketsConstraintFunc,AfterErgo)     \
                                                                             \
-  product(uint, G1RemSetHowlNumBuckets, 0, EXPERIMENTAL,                    \
+  ni_runtime(uint, G1RemSetHowlNumBuckets, 0, INTERNAL,                     \
           "Number of buckets per Howl card set container. Must be a power " \
           "of two. Will be set ergonomically by default.")                  \
           range(0, 1024)                                                    \
@@ -215,17 +227,17 @@
           "failures to print per thread.")                                  \
           range(1, SIZE_MAX)                                                \
                                                                             \
-  product(uint, G1ReservePercent, 10,                                      \
+  ni_runtime(uint, G1ReservePercent, 10,                                   \
           "It determines the minimum reserve we should have in the heap "   \
           "to minimize the probability of promotion failure.")              \
           range(0, 50)                                                      \
                                                                             \
-  product(size_t, G1HeapRegionSize, 0,                                      \
+  ni_hosted(size_t, G1HeapRegionSize, 0,                                    \
           "Size of the G1 regions.")                                        \
           range(0, NOT_LP64(32*M) LP64_ONLY(512*M))                         \
           constraint(G1HeapRegionSizeConstraintFunc,AfterMemoryInit)        \
                                                                             \
-  product(uint, G1ConcRefinementThreads, 0,                                 \
+  ni_runtime(uint, G1ConcRefinementThreads, 0,                              \
           "The number of parallel remembered set update threads. "          \
           "Will be set ergonomically by default.")                          \
           range(0, (max_jint-1)/wordSize)                                   \
@@ -254,16 +266,16 @@
           "Regions with live bytes exceeding this will not be retained.")   \
           range(0, 100)                                                     \
                                                                             \
-  product(uint, G1HeapWastePercent, 5,                                     \
+  ni_runtime(uint, G1HeapWastePercent, 5,                                  \
           "Amount of space, expressed as a percentage of the heap size, "   \
           "that G1 is willing not to collect to avoid expensive GCs.")      \
           range(0, 100)                                                     \
                                                                             \
-  product(uintx, G1MixedGCCountTarget, 8,                                   \
+  ni_runtime(uintx, G1MixedGCCountTarget, 8,                                \
           "The target number of mixed GCs after a marking cycle.")          \
           range(0, max_uintx)                                               \
                                                                             \
-  product(uint, G1EagerReclaimRemSetThreshold, 0, EXPERIMENTAL,             \
+  ni_runtime(uint, G1EagerReclaimRemSetThreshold, 0, INTERNAL,              \
           "Maximum number of remembered set entries a humongous region "    \
           "otherwise eligible for eager reclaim may have to be a candidate "\
           "for eager reclaim. Will be selected ergonomically by default.")  \
@@ -285,23 +297,23 @@
           "G1MixedGCCountTarget.")                                          \
           range(1, 256)                                                     \
                                                                             \
-  product(bool, G1VerifyHeapRegionCodeRoots, false, DIAGNOSTIC,             \
+  ni_runtime(bool, G1VerifyHeapRegionCodeRoots, false, DIAGNOSTIC,          \
           "Verify the code root lists attached to each heap region.")       \
                                                                             \
   develop(bool, G1VerifyBitmaps, false,                                     \
           "Verifies the consistency of the marking bitmaps")                \
                                                                             \
-  product(uintx, G1PeriodicGCInterval, 0, MANAGEABLE,                       \
+  ni_runtime(uintx, G1PeriodicGCInterval, 0, MANAGEABLE,                    \
           "Number of milliseconds after a previous GC to wait before "      \
           "triggering a periodic gc. A value of zero disables periodically "\
           "enforced gc cycles.")                                            \
                                                                             \
-  product(bool, G1PeriodicGCInvokesConcurrent, true,                        \
+  ni_runtime(bool, G1PeriodicGCInvokesConcurrent, true,                     \
           "Determines the kind of periodic GC. Set to true to have G1 "     \
           "perform a concurrent GC as periodic GC, otherwise use a STW "    \
           "Full GC.")                                                       \
                                                                             \
-  product(double, G1PeriodicGCSystemLoadThreshold, 0.0, MANAGEABLE,         \
+  ni_runtime(double, G1PeriodicGCSystemLoadThreshold, 0.0, MANAGEABLE,      \
           "Maximum recent system wide load as returned by the 1m value "    \
           "of getloadavg() at which G1 triggers a periodic GC. A load "     \
           "above this value cancels a given periodic GC. A value of zero "  \
@@ -343,7 +355,11 @@
           "scan cost related prediction samples. A sample must involve "    \
           "the same or more than this number of code roots to be used.")    \
                                                                             \
-  GC_G1_EVACUATION_FAILURE_FLAGS(develop,                                   \
+  GC_G1_EVACUATION_FAILURE_FLAGS(ni_hosted,                                 \
+                    ni_hosted_pd,                                           \
+                    ni_runtime,                                             \
+                    ni_runtime_pd,                                          \
+                    develop,                                                \
                     develop_pd,                                             \
                     product,                                                \
                     product_pd,                                             \

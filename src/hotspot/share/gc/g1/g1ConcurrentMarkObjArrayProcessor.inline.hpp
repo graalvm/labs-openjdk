@@ -31,8 +31,14 @@
 #include "oops/oop.inline.hpp"
 #include "oops/oopsHierarchy.hpp"
 
+
+namespace svm_gc {
+
 inline bool G1CMObjArrayProcessor::should_be_sliced(oop obj) {
   return obj->is_objArray() && ((objArrayOop)obj)->size() >= 2 * ObjArrayMarkingStride;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTMARKOBJARRAYPROCESSOR_INLINE_HPP

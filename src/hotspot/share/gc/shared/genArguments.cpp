@@ -31,6 +31,9 @@
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 size_t MinNewSize = 0;
 
 size_t MinOldSize = 0;
@@ -44,6 +47,7 @@ size_t OldSize = ScaleForWordSize(4*M);
 
 size_t GenAlignment = 0;
 
+#ifndef SVM
 size_t GenArguments::conservative_max_heap_alignment() { return (size_t)Generation::GenGrain; }
 
 static size_t young_gen_size_lower_bound() {
@@ -346,3 +350,7 @@ void GenArguments::assert_size_info() {
   assert(MaxNewSize + MaxOldSize == MaxHeapSize, "Maximum generation sizes should match maximum heap size");
 }
 #endif // ASSERT
+#endif // !SVM
+
+} // namespace svm_gc
+

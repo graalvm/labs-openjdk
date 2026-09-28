@@ -30,6 +30,9 @@
 #include "memory/allocation.hpp"
 #include "runtime/mutex.hpp"
 
+
+namespace svm_gc {
+
 class CLDClosure;
 class G1CollectedHeap;
 class G1EvacuationRootClosures;
@@ -48,12 +51,16 @@ class SubTasksDone;
 class G1RootProcessor : public StackObj {
   G1CollectedHeap* _g1h;
   SubTasksDone _process_strong_tasks;
+#ifdef SVM
+  volatile uint _next_open_image_heap_region;
+#endif // SVM
   StrongRootsScope _srs;
   OopStorageSetStrongParState<false, false> _oop_storage_set_strong_par_state;
 
   enum G1H_process_roots_tasks {
-    G1RP_PS_ClassLoaderDataGraph_oops_do,
+    NOT_SVM(G1RP_PS_ClassLoaderDataGraph_oops_do COMMA)
     G1RP_PS_CodeCache_oops_do,
+    SVM_ONLY(G1RP_PS_ImageHeap_oops_do COMMA)
     G1RP_PS_refProcessor_oops_do,
     // Leave this one last.
     G1RP_PS_NumElements
@@ -62,6 +69,12 @@ class G1RootProcessor : public StackObj {
   void process_java_roots(G1RootClosures* closures,
                           G1GCPhaseTimes* phase_times,
                           uint worker_id);
+
+#ifdef SVM
+  void process_image_heap(G1RootClosures* closures,
+                          G1GCPhaseTimes* phase_times,
+                          uint worker_id);
+#endif // SVM
 
   void process_vm_roots(G1RootClosures* closures,
                         G1GCPhaseTimes* phase_times,
@@ -81,16 +94,25 @@ public:
 
   // Apply oops, clds and blobs to all strongly reachable roots in the system
   void process_strong_roots(OopClosure* oops,
+#ifndef SVM
                             CLDClosure* clds,
+#endif // !SVM
                             NMethodClosure* nmethods);
 
   // Apply oops, clds and blobs to strongly and weakly reachable roots in the system
   void process_all_roots(OopClosure* oops,
+#ifdef SVM
+                         bool process_image_heap,
+#else
                          CLDClosure* clds,
+#endif // !SVM
                          NMethodClosure* nmethods);
 
   // Number of worker threads used by the root processor.
   uint n_workers() const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ROOTPROCESSOR_HPP

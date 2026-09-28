@@ -29,6 +29,9 @@
 #include "runtime/safepoint.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 G1HeapRegionRange::G1HeapRegionRange(uint start, uint end) :
     _start(start),
     _end(end) {
@@ -246,3 +249,6 @@ void G1CommittedRegionMap::verify_inactive_count(uint start, uint end, uint expe
 }
 
 #endif //ASSERT
+
+} // namespace svm_gc
+

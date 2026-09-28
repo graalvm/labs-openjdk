@@ -35,6 +35,9 @@
 #include "utilities/stack.hpp"
 
 #if TASKQUEUE_STATS
+
+namespace svm_gc {
+
 class TaskQueueStats {
 public:
   enum StatId {
@@ -98,9 +101,15 @@ void TaskQueueStats::record_overflow(size_t new_len) {
 void TaskQueueStats::reset() {
   memset(_stats, 0, sizeof(_stats));
 }
+
+} // namespace svm_gc
+
 #endif // TASKQUEUE_STATS
 
 // TaskQueueSuper collects functionality common to all GenericTaskQueue instances.
+
+
+namespace svm_gc {
 
 template <unsigned int N, MemTag MT>
 class TaskQueueSuper: public CHeapObj<MT> {
@@ -638,5 +647,8 @@ public:
     return static_cast<PartialArrayState*>(decode(PartialArrayTag));
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_TASKQUEUE_HPP

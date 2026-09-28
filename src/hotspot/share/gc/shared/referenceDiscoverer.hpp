@@ -29,9 +29,15 @@
 #include "memory/referenceType.hpp"
 #include "oops/oopsHierarchy.hpp"
 
+
+namespace svm_gc {
+
 class ReferenceDiscoverer : public CHeapObj<mtGC> {
 public:
   virtual bool discover_reference(oop obj, ReferenceType type) = 0;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_REFERENCEDISCOVERER_HPP

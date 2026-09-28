@@ -30,6 +30,9 @@
 #include "oops/access.inline.hpp"
 #include "gc/shared/oopStorage.inline.hpp"
 
+
+namespace svm_gc {
+
 inline oop OopHandle::resolve() const {
   if (_obj == nullptr) {
     return (oop) nullptr;
@@ -90,5 +93,8 @@ inline oop OopHandle::cmpxchg(oop old_value, oop new_value) {
   assert(oopDesc::is_oop_or_null(obj), "Should be oop: " PTR_FORMAT, p2i(obj));
   return obj;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_OOPHANDLE_INLINE_HPP

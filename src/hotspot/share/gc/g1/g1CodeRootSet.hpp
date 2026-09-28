@@ -28,6 +28,9 @@
 #include "code/codeCache.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class G1CodeRootSetHashTable;
 class G1HeapRegion;
 class nmethod;
@@ -44,7 +47,9 @@ class G1CodeRootSet {
 
   void add(nmethod* method);
   bool remove(nmethod* method);
+#ifndef SVM
   void bulk_remove();
+#endif // !SVM
   bool contains(nmethod* method);
   void clear();
 
@@ -63,5 +68,8 @@ class G1CodeRootSet {
   // Memory size in bytes taken by this set.
   size_t mem_size();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CODEROOTSET_HPP

@@ -29,6 +29,9 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class BOTConstants : public AllStatic {
 public:
   // entries "e" of at least N_words mean "go back by Base^(e-N_words)."
@@ -46,5 +49,8 @@ public:
     return power_to_cards_back(entry - CardTable::card_size_in_words());
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_BLOCKOFFSETTABLE_HPP

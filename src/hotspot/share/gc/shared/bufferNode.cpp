@@ -28,6 +28,9 @@
 
 #include <new>
 
+
+namespace svm_gc {
+
 BufferNode::AllocatorConfig::AllocatorConfig(size_t size)
   : _buffer_capacity(size)
 {
@@ -50,9 +53,11 @@ BufferNode::Allocator::Allocator(const char* name, size_t buffer_capacity) :
   _free_list(name, &_config)
 {}
 
+#ifndef SVM
 size_t BufferNode::Allocator::free_count() const {
   return _free_list.free_count();
 }
+#endif // !SVM
 
 BufferNode* BufferNode::Allocator::allocate() {
   auto internal_capacity = static_cast<InternalSizeType>(buffer_capacity());
@@ -67,3 +72,6 @@ void BufferNode::Allocator::release(BufferNode* node) {
   node->~BufferNode();
   _free_list.release(node);
 }
+
+} // namespace svm_gc
+

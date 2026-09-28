@@ -31,6 +31,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "services/memoryPool.hpp"
 
+
+namespace svm_gc {
+
 class G1GenerationCounters : public GenerationCounters {
 protected:
   G1MonitoringSupport* _monitoring_support;
@@ -89,12 +92,14 @@ public:
 
 G1MonitoringSupport::G1MonitoringSupport(G1CollectedHeap* g1h) :
   _g1h(g1h),
+#ifndef SVM
   _young_gc_memory_manager("G1 Young Generation"),
   _full_gc_memory_manager("G1 Old Generation"),
   _conc_gc_memory_manager("G1 Concurrent GC"),
   _eden_space_pool(nullptr),
   _survivor_space_pool(nullptr),
   _old_gen_pool(nullptr),
+#endif // !SVM
   _young_collection_counters(nullptr),
   _full_collection_counters(nullptr),
   _conc_collection_counters(nullptr),
@@ -144,7 +149,7 @@ G1MonitoringSupport::G1MonitoringSupport(G1CollectedHeap* g1h) :
   //  name  "generation.1.space.0"
   // Counters are created from maxCapacity, capacity, initCapacity,
   // and used.
-  _old_space_counters = new HSpaceCounters(_old_gen_counters->name_space(),
+  _old_space_counters = new HSpaceCounters(SVM_ONLY(1) NOT_SVM(_old_gen_counters->name_space()),
                                            "space", 0 /* ordinal */,
                                            g1h->max_capacity() /* max_capacity */,
                                            _old_gen_committed /* init_capacity */);
@@ -155,11 +160,13 @@ G1MonitoringSupport::G1MonitoringSupport(G1CollectedHeap* g1h) :
   // See  _old_collection_counters for additional counters
   _young_gen_counters = new G1YoungGenerationCounters(this, "young", _g1h->max_capacity());
 
+#ifndef SVM
   const char* young_collection_name_space = _young_gen_counters->name_space();
+#endif // !SVM
 
   //  name "generation.0.space.0"
   // See _old_space_counters for additional counters
-  _eden_space_counters = new HSpaceCounters(young_collection_name_space,
+  _eden_space_counters = new HSpaceCounters(SVM_ONLY(0) NOT_SVM(young_collection_name_space),
                                             "eden", 0 /* ordinal */,
                                             g1h->max_capacity() /* max_capacity */,
                                             _eden_space_committed /* init_capacity */);
@@ -167,7 +174,7 @@ G1MonitoringSupport::G1MonitoringSupport(G1CollectedHeap* g1h) :
   //  name "generation.0.space.1"
   // See _old_space_counters for additional counters
   // Set the arguments to indicate that this survivor space is not used.
-  _from_space_counters = new HSpaceCounters(young_collection_name_space,
+  _from_space_counters = new HSpaceCounters(SVM_ONLY(0) NOT_SVM(young_collection_name_space),
                                             "s0", 1 /* ordinal */,
                                             0 /* max_capacity */,
                                             0 /* init_capacity */);
@@ -180,19 +187,22 @@ G1MonitoringSupport::G1MonitoringSupport(G1CollectedHeap* g1h) :
 
   //  name "generation.0.space.2"
   // See _old_space_counters for additional counters
-  _to_space_counters = new HSpaceCounters(young_collection_name_space,
+  _to_space_counters = new HSpaceCounters(SVM_ONLY(0) NOT_SVM(young_collection_name_space),
                                           "s1", 2 /* ordinal */,
                                           g1h->max_capacity() /* max_capacity */,
                                           _survivor_space_committed /* init_capacity */);
 }
 
 G1MonitoringSupport::~G1MonitoringSupport() {
+#ifndef SVM
   delete _eden_space_pool;
   delete _survivor_space_pool;
   delete _old_gen_pool;
+#endif // !SVM
 }
 
 void G1MonitoringSupport::initialize_serviceability() {
+#ifndef SVM
   _eden_space_pool = new G1EdenPool(_g1h, _eden_space_committed);
   _survivor_space_pool = new G1SurvivorPool(_g1h, _survivor_space_committed);
   _old_gen_pool = new G1OldGenPool(_g1h, _old_gen_committed, _g1h->max_capacity());
@@ -206,8 +216,10 @@ void G1MonitoringSupport::initialize_serviceability() {
   _young_gc_memory_manager.add_pool(_eden_space_pool);
   _young_gc_memory_manager.add_pool(_survivor_space_pool);
   _young_gc_memory_manager.add_pool(_old_gen_pool, false /* always_affected_by_gc */);
+#endif // !SVM
 }
 
+#ifndef SVM
 MemoryUsage G1MonitoringSupport::memory_usage() {
   MutexLocker x(MonitoringSupport_lock, Mutex::_no_safepoint_check_flag);
   return MemoryUsage(InitialHeapSize, _overall_used, _overall_committed, _g1h->max_capacity());
@@ -228,6 +240,7 @@ GrowableArray<MemoryPool*> G1MonitoringSupport::memory_pools() {
   memory_pools.append(_old_gen_pool);
   return memory_pools;
 }
+#endif // !SVM
 
 void G1MonitoringSupport::recalculate_sizes() {
   assert_heap_locked_or_at_safepoint(true);
@@ -308,7 +321,9 @@ void G1MonitoringSupport::update_sizes() {
     _young_gen_counters->update_all();
     _old_gen_counters->update_all();
 
+#ifndef SVM
     MetaspaceCounters::update_performance_counters();
+#endif // !SVM
   }
 }
 
@@ -321,6 +336,7 @@ void G1MonitoringSupport::update_eden_size() {
   }
 }
 
+#ifndef SVM
 MemoryUsage G1MonitoringSupport::eden_space_memory_usage(size_t initial_size, size_t max_size) {
   MutexLocker x(MonitoringSupport_lock, Mutex::_no_safepoint_check_flag);
 
@@ -347,31 +363,37 @@ MemoryUsage G1MonitoringSupport::old_gen_memory_usage(size_t initial_size, size_
                      _old_gen_committed,
                      max_size);
 }
+#endif // !SVM
 
 G1MonitoringScope::G1MonitoringScope(G1MonitoringSupport* monitoring_support,
                                      CollectorCounters* collection_counters,
-                                     GCMemoryManager* gc_memory_manager,
+                                     NOT_SVM(GCMemoryManager* gc_memory_manager COMMA)
                                      const char* end_message,
                                      bool all_memory_pools_affected) :
-  _monitoring_support(monitoring_support),
-  _tcs(collection_counters),
-  _tms(gc_memory_manager,
+  _monitoring_support(monitoring_support)
+#ifndef SVM
+  , _tcs(collection_counters)
+  , _tms(gc_memory_manager,
        G1CollectedHeap::heap()->gc_cause(),
        end_message,
-       all_memory_pools_affected) {
+       all_memory_pools_affected)
+#endif // !SVM
+{
 }
 
 G1MonitoringScope::~G1MonitoringScope() {
   _monitoring_support->update_sizes();
+#ifndef SVM
   // Needs to be called after updating pool sizes.
   MemoryService::track_memory_usage();
+#endif // !SVM
 }
 
 G1YoungGCMonitoringScope::G1YoungGCMonitoringScope(G1MonitoringSupport* monitoring_support,
                                                    bool all_memory_pools_affected) :
   G1MonitoringScope(monitoring_support,
                     monitoring_support->_young_collection_counters,
-                    &monitoring_support->_young_gc_memory_manager,
+                    NOT_SVM(&monitoring_support->_young_gc_memory_manager COMMA)
                     "end of minor GC",
                     all_memory_pools_affected) {
 }
@@ -379,13 +401,16 @@ G1YoungGCMonitoringScope::G1YoungGCMonitoringScope(G1MonitoringSupport* monitori
 G1FullGCMonitoringScope::G1FullGCMonitoringScope(G1MonitoringSupport* monitoring_support) :
   G1MonitoringScope(monitoring_support,
                     monitoring_support->_full_collection_counters,
-                    &monitoring_support->_full_gc_memory_manager,
+                    NOT_SVM(&monitoring_support->_full_gc_memory_manager COMMA)
                     "end of major GC") {
 }
 
 G1ConcGCMonitoringScope::G1ConcGCMonitoringScope(G1MonitoringSupport* monitoring_support) :
   G1MonitoringScope(monitoring_support,
                     monitoring_support->_conc_collection_counters,
-                    &monitoring_support->_conc_gc_memory_manager,
+                    NOT_SVM(&monitoring_support->_conc_gc_memory_manager COMMA)
                     "end of concurrent GC pause") {
 }
+
+} // namespace svm_gc
+

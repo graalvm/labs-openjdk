@@ -40,9 +40,12 @@
 #include "runtime/globals_extension.hpp"
 #include "runtime/java.hpp"
 
+
+namespace svm_gc {
+
 static size_t calculate_heap_alignment(size_t space_alignment) {
   size_t card_table_alignment = CardTable::ct_max_alignment_constraint();
-  size_t page_size = UseLargePages ? os::large_page_size() : os::vm_page_size();
+  size_t page_size = NOT_SVM(UseLargePages ? os::large_page_size() :) os::vm_page_size();
   return MAX3(card_table_alignment, space_alignment, page_size);
 }
 
@@ -59,6 +62,9 @@ void G1Arguments::initialize_alignments() {
 
   SpaceAlignment = G1HeapRegion::GrainBytes;
   HeapAlignment = calculate_heap_alignment(SpaceAlignment);
+#ifdef SVM
+  guarantee(is_aligned(SVMGlobalData::_heap_base_alignment, HeapAlignment), "heap alignment must be compatible");
+#endif // SVM
 
   // We need to initialize card set configuration as soon as heap region size is
   // known as it depends on it and is used really early.
@@ -169,12 +175,14 @@ void G1Arguments::initialize() {
     vm_exit_during_initialization("The flag -XX:+UseG1GC can not be combined with -XX:ParallelGCThreads=0", nullptr);
   }
 
+#ifndef SVM
   // When dumping the CDS heap we want to reduce fragmentation by
   // triggering a full collection. To get as low fragmentation as
   // possible we only use one worker thread.
   if (CDSConfig::is_dumping_heap()) {
     FLAG_SET_ERGO(ParallelGCThreads, 1);
   }
+#endif // !SVM
 
   if (!G1UseConcRefinement) {
     if (!FLAG_IS_DEFAULT(G1ConcRefinementThreads)) {
@@ -257,3 +265,6 @@ CollectedHeap* G1Arguments::create_heap() {
 size_t G1Arguments::heap_reserved_size_bytes() {
   return MaxHeapSize;
 }
+
+} // namespace svm_gc
+

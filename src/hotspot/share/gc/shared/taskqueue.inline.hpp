@@ -38,6 +38,9 @@
 #include "utilities/ostream.hpp"
 #include "utilities/stack.inline.hpp"
 
+
+namespace svm_gc {
+
 template <class T, MemTag MT>
 inline GenericTaskQueueSet<T, MT>::GenericTaskQueueSet(uint n) : _n(n) {
   typedef T* GenericTaskQueuePtr;
@@ -404,5 +407,8 @@ inline void GenericTaskQueue<E, MT, N>::iterate(Fn fn) {
   }
 }
 
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_TASKQUEUE_INLINE_HPP

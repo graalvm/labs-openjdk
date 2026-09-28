@@ -33,6 +33,10 @@
 #include "utilities/bitMap.hpp"
 #include "utilities/defaultStream.hpp"
 #include "utilities/stringUtils.hpp"
+#ifndef SVM
+
+
+namespace svm_gc {
 
 static bool is_product_build() {
 #ifdef PRODUCT
@@ -41,6 +45,14 @@ static bool is_product_build() {
   return false;
 #endif
 }
+
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+
+namespace svm_gc {
 
 void JVMFlag::set_origin(JVMFlagOrigin new_origin) {
   int old_flags = _flags;
@@ -53,6 +65,7 @@ void JVMFlag::set_origin(JVMFlagOrigin new_origin) {
   }
 }
 
+#ifndef SVM
 /**
  * Returns if this flag is a constant in the binary.  Right now this is
  * true for develop flags in product builds.
@@ -442,6 +455,7 @@ void JVMFlag::print_as_flag(outputStream* st) const {
     ShouldNotReachHere();
   }
 }
+#endif // !SVM
 
 //----------------------------------------------------------------------
 // Build flagTable[]
@@ -452,12 +466,12 @@ void JVMFlag::print_as_flag(outputStream* st) const {
 #define ENUM_F(type, name, ...)  enum_##name,
 #define IGNORE_F(...)
 
-//                                                  dev     dev-pd  pro     pro-pd  range     constraint
-enum FlagCounter_LP64  { LP64_RUNTIME_FLAGS(        ENUM_F, ENUM_F, ENUM_F, ENUM_F, IGNORE_F, IGNORE_F)  num_flags_LP64   };
-enum FlagCounter_ARCH  { ARCH_FLAGS(                ENUM_F,         ENUM_F,         IGNORE_F, IGNORE_F)  num_flags_ARCH   };
-enum FlagCounter_JVMCI { JVMCI_ONLY(JVMCI_FLAGS(    ENUM_F, ENUM_F, ENUM_F, ENUM_F, IGNORE_F, IGNORE_F)) num_flags_JVMCI  };
-enum FlagCounter_C1    { COMPILER1_PRESENT(C1_FLAGS(ENUM_F, ENUM_F, ENUM_F, ENUM_F, IGNORE_F, IGNORE_F)) num_flags_C1     };
-enum FlagCounter_C2    { COMPILER2_PRESENT(C2_FLAGS(ENUM_F, ENUM_F, ENUM_F, ENUM_F, IGNORE_F, IGNORE_F)) num_flags_C2     };
+//                                                  ni-h    ni-h-pd ni-rt   ni-rt-pd dev       dev-pd    pro       pro-pd    range     constraint
+enum FlagCounter_LP64  { LP64_RUNTIME_FLAGS(        ENUM_F, ENUM_F, ENUM_F, ENUM_F,  IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F)  num_flags_LP64   };
+enum FlagCounter_ARCH  { ARCH_FLAGS(                ENUM_F, ENUM_F, ENUM_F, ENUM_F,  IGNORE_F,           IGNORE_F,           IGNORE_F, IGNORE_F)  num_flags_ARCH   };
+enum FlagCounter_JVMCI { JVMCI_ONLY(JVMCI_FLAGS(    ENUM_F, ENUM_F, ENUM_F, ENUM_F,  IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F)) num_flags_JVMCI  };
+enum FlagCounter_C1    { COMPILER1_PRESENT(C1_FLAGS(ENUM_F, ENUM_F, ENUM_F, ENUM_F,  IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F)) num_flags_C1     };
+enum FlagCounter_C2    { COMPILER2_PRESENT(C2_FLAGS(ENUM_F, ENUM_F, ENUM_F, ENUM_F,  IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F, IGNORE_F)) num_flags_C2     };
 
 const int first_flag_enum_LP64   = 0;
 const int first_flag_enum_ARCH   = first_flag_enum_LP64  + num_flags_LP64;
@@ -466,6 +480,7 @@ const int first_flag_enum_C1     = first_flag_enum_JVMCI + num_flags_JVMCI;
 const int first_flag_enum_C2     = first_flag_enum_C1    + num_flags_C1;
 const int first_flag_enum_other  = first_flag_enum_C2    + num_flags_C2;
 
+#ifndef SVM
 static constexpr int flag_group(int flag_enum) {
   if (flag_enum < first_flag_enum_ARCH)  return JVMFlag::KIND_LP64_PRODUCT;
   if (flag_enum < first_flag_enum_JVMCI) return JVMFlag::KIND_ARCH;
@@ -475,17 +490,20 @@ static constexpr int flag_group(int flag_enum) {
 
   return 0;
 }
+#endif // !SVM
 
 constexpr JVMFlag::JVMFlag(int flag_enum, FlagType type, const char* name,
                            void* addr, int flags, int extra_flags, const char* doc) :
   _addr(addr), _name(name), _flags(), _type(type) NOT_PRODUCT(COMMA _doc(doc)) {
-  flags = flags | extra_flags | static_cast<int>(JVMFlagOrigin::DEFAULT) | flag_group(flag_enum);
+  flags = flags | extra_flags | static_cast<int>(JVMFlagOrigin::DEFAULT) NOT_SVM(| flag_group(flag_enum));
+#ifndef SVM
   if ((flags & JVMFlag::KIND_PRODUCT) != 0) {
     if (flags & (JVMFlag::KIND_DIAGNOSTIC | JVMFlag::KIND_MANAGEABLE | JVMFlag::KIND_EXPERIMENTAL)) {
       // Backwards compatibility. This will be relaxed in JDK-7123237.
       flags &= ~(JVMFlag::KIND_PRODUCT);
     }
   }
+#endif // !SVM
   _flags = static_cast<Flags>(flags);
 }
 
@@ -493,24 +511,45 @@ constexpr JVMFlag::JVMFlag(int flag_enum,  FlagType type, const char* name,
                            void* addr, int flags, const char* doc) :
   JVMFlag(flag_enum, type, name, addr, flags, /*extra_flags*/0, doc) {}
 
+#ifdef SVM
+const int HOSTED_KIND      = JVMFlag::KIND_HOSTED;
+const int RUNTIME_KIND     = JVMFlag::KIND_RUNTIME;
+#else
 const int PRODUCT_KIND     = JVMFlag::KIND_PRODUCT;
 const int PRODUCT_KIND_PD  = JVMFlag::KIND_PRODUCT | JVMFlag::KIND_PLATFORM_DEPENDENT;
 const int DEVELOP_KIND     = JVMFlag::KIND_DEVELOP;
 const int DEVELOP_KIND_PD  = JVMFlag::KIND_DEVELOP | JVMFlag::KIND_PLATFORM_DEPENDENT;
+#endif // !SVM
 
+// NOTE (chaeubl): ideally, we would completely remove all the JVM flags that we don't need. However, this is only possible to a certain degree
+// as JVM flags can specify constraints. The macros used for constraints are defined in a way that there is no real connection between the JVM flag and
+// the constraint on source code level, besides the order of definition. Therefore, we need to make sure that every JVM flag (in any *globals.hpp file)
+// has its own value in the JVMFlagsEnum and a separate JVMFlag data structure. So, we create dummy entries for all flags that we don't need.
 #define FLAG_TYPE(type) (JVMFlag::TYPE_ ## type)
-#define INITIALIZE_DEVELOP_FLAG(   type, name, value, ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, DEVELOP_KIND,    __VA_ARGS__),
-#define INITIALIZE_DEVELOP_FLAG_PD(type, name,        ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, DEVELOP_KIND_PD, __VA_ARGS__),
-#define INITIALIZE_PRODUCT_FLAG(   type, name, value, ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, PRODUCT_KIND,    __VA_ARGS__),
-#define INITIALIZE_PRODUCT_FLAG_PD(type, name,        ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, PRODUCT_KIND_PD, __VA_ARGS__),
+#define INITIALIZE_NI_HOSTED_FLAG(    type, name, value, ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, HOSTED_KIND,  __VA_ARGS__),
+#define INITIALIZE_NI_HOSTED_PD_FLAG( type, name,        ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, HOSTED_KIND,  __VA_ARGS__),
+#define INITIALIZE_NI_RUNTIME_FLAG(   type, name, value, ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, RUNTIME_KIND, __VA_ARGS__),
+#define INITIALIZE_NI_RUNTIME_PD_FLAG(type, name,        ...) JVMFlag(FLAG_MEMBER_ENUM(name), FLAG_TYPE(type), XSTR(name), (void*)&name, RUNTIME_KIND, __VA_ARGS__),
+#define INITIALIZE_DEVELOP_FLAG(   type, name, value, ...) JVMFlag(),
+#define INITIALIZE_DEVELOP_FLAG_PD(type, name,        ...) JVMFlag(),
+#define INITIALIZE_PRODUCT_FLAG(   type, name, value, ...) JVMFlag(),
+#define INITIALIZE_PRODUCT_FLAG_PD(type, name,        ...) JVMFlag(),
 
 // Handy aliases to match the symbols used in the flag specification macros.
-const int DIAGNOSTIC   = JVMFlag::KIND_DIAGNOSTIC;
-const int MANAGEABLE   = JVMFlag::KIND_MANAGEABLE;
-const int EXPERIMENTAL = JVMFlag::KIND_EXPERIMENTAL;
+#ifdef SVM
+const int INTERNAL     = JVMFlag::KIND_INTERNAL;
+#endif // SVM
+// NOTE (chaeubl): for Native Image, we only want to query the experimental flag, so the other flags are set to 0 (avoids changes in the *_globals.hpp files)
+const int DIAGNOSTIC   = SVM_ONLY(0) NOT_SVM(JVMFlag::KIND_DIAGNOSTIC);
+const int MANAGEABLE   = SVM_ONLY(0) NOT_SVM(JVMFlag::KIND_MANAGEABLE);
+const int EXPERIMENTAL = SVM_ONLY(0) NOT_SVM(JVMFlag::KIND_EXPERIMENTAL);
 
 #define MATERIALIZE_ALL_FLAGS      \
-  ALL_FLAGS(INITIALIZE_DEVELOP_FLAG,     \
+  ALL_FLAGS(INITIALIZE_NI_HOSTED_FLAG,   \
+            INITIALIZE_NI_HOSTED_PD_FLAG,\
+            INITIALIZE_NI_RUNTIME_FLAG,  \
+            INITIALIZE_NI_RUNTIME_PD_FLAG,\
+            INITIALIZE_DEVELOP_FLAG,     \
             INITIALIZE_DEVELOP_FLAG_PD,  \
             INITIALIZE_PRODUCT_FLAG,     \
             INITIALIZE_PRODUCT_FLAG_PD,  \
@@ -545,6 +584,17 @@ const int JVMFlag::type_signatures[] = {
   JVMFlag::type_signature<ccstr>()
 };
 
+#ifdef SVM
+JVMFlag* JVMFlag::find_flag(const char* name, size_t length, bool allow_hosted) {
+  JVMFlag* flag = JVMFlagLookup::find(name, length);
+  if (flag == nullptr || (flag->is_hosted() && !allow_hosted) || flag->is_internal()) {
+    // Hosted flags may only be changed by certain code.
+    // Internal flags are not visible to Native Image and cannot be set on the command line.
+    return nullptr;
+  }
+  return flag;
+}
+#else
 // Search the flag table for a named flag
 JVMFlag* JVMFlag::find_flag(const char* name, size_t length, bool allow_locked, bool return_flag) {
   JVMFlag* flag = JVMFlagLookup::find(name, length);
@@ -598,6 +648,7 @@ JVMFlag* JVMFlag::fuzzy_match(const char* name, size_t length, bool allow_locked
 
   return match;
 }
+#endif // SVM
 
 bool JVMFlag::is_default(JVMFlagsEnum flag) {
   return flag_from_enum(flag)->is_default();
@@ -611,14 +662,17 @@ bool JVMFlag::is_cmdline(JVMFlagsEnum flag) {
   return flag_from_enum(flag)->is_command_line();
 }
 
+#ifndef SVM
 bool JVMFlag::is_jimage_resource(JVMFlagsEnum flag) {
   return flag_from_enum(flag)->is_jimage_resource();
 }
+#endif // !SVM
 
 void JVMFlag::setOnCmdLine(JVMFlagsEnum flag) {
   flag_from_enum(flag)->set_command_line();
 }
 
+#ifndef SVM
 extern "C" {
   static int compare_flags(const void* void_a, const void* void_b) {
     return strcmp((*((JVMFlag**) void_a))->name(), (*((JVMFlag**) void_b))->name());
@@ -650,12 +704,15 @@ void JVMFlag::printSetFlags(outputStream* out) {
   out->cr();
   FREE_C_HEAP_ARRAY(JVMFlag*, array);
 }
+#endif // !SVM
 
 #ifndef PRODUCT
 
+#ifndef SVM
 void JVMFlag::verify() {
   assert(Arguments::check_vm_args_consistency(), "Some flag settings conflict");
 }
+#endif // !SVM
 
 #endif // PRODUCT
 
@@ -665,6 +722,7 @@ void JVMFlag::assert_valid_flag_enum(JVMFlagsEnum i) {
   assert(0 <= int(i) && int(i) < NUM_JVMFlagsEnum, "must be");
 }
 
+#ifndef SVM
 void JVMFlag::check_all_flag_declarations() {
   for (JVMFlag* current = &flagTable[0]; current->_name != nullptr; current++) {
     int flags = static_cast<int>(current->_flags);
@@ -682,9 +740,11 @@ void JVMFlag::check_all_flag_declarations() {
     }
   }
 }
+#endif // !SVM
 
 #endif // ASSERT
 
+#ifndef SVM
 void JVMFlag::printFlags(outputStream* out, bool withComments, bool printRanges, bool skipDefaults) {
   // Print the flags sorted by name
   // Note: This method may be called before the thread structure is in place
@@ -724,6 +784,7 @@ void JVMFlag::printFlags(outputStream* out, bool withComments, bool printRanges,
     }
   }
 }
+#endif // !SVM
 
 void JVMFlag::printError(bool verbose, const char* msg, ...) {
   if (verbose) {
@@ -733,3 +794,6 @@ void JVMFlag::printError(bool verbose, const char* msg, ...) {
     va_end(listPointer);
   }
 }
+
+} // namespace svm_gc
+

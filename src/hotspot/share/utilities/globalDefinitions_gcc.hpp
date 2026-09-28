@@ -46,7 +46,13 @@
 #if (defined(__VEC__) || defined(__AIXVEC)) && defined(AIX) \
     && defined(__open_xl_version__) && __open_xl_version__ >= 17
   #undef malloc
+
+namespace svm_gc {
+
   extern void *malloc(size_t) asm("vec_malloc");
+
+} // namespace svm_gc
+
 #endif
 #include <wchar.h>
 
@@ -62,7 +68,9 @@
 #if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(_AIX)
 #include <signal.h>
 #ifndef __OpenBSD__
+#ifndef SVM
 #include <ucontext.h>
+#endif // !SVM
 #endif
 #ifdef __APPLE__
   #include <AvailabilityMacros.h>
@@ -73,15 +81,30 @@
 
 // checking for nanness
 #if defined(__APPLE__)
+
+namespace svm_gc {
+
 inline int g_isnan(double f) { return isnan(f); }
+
+} // namespace svm_gc
+
 #elif defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(_AIX)
+
+namespace svm_gc {
+
 inline int g_isnan(float  f) { return isnan(f); }
 inline int g_isnan(double f) { return isnan(f); }
+
+} // namespace svm_gc
+
 #else
 #error "missing platform-specific definition here"
 #endif
 
 // Checking for finiteness
+
+
+namespace svm_gc {
 
 inline int g_isfinite(jfloat  f)                 { return isfinite(f); }
 inline int g_isfinite(jdouble f)                 { return isfinite(f); }
@@ -115,5 +138,8 @@ inline int g_isfinite(jdouble f)                 { return isfinite(f); }
 #define NOINLINE     __attribute__ ((noinline))
 #define ALWAYSINLINE inline __attribute__ ((always_inline))
 #define ATTRIBUTE_FLATTEN __attribute__ ((flatten))
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_GLOBALDEFINITIONS_GCC_HPP

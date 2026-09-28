@@ -33,6 +33,9 @@
 // contiguous range from 'start' to 'start + size'.  Used to obtain a
 // distinct worker_id value for a mutator thread that doesn't normally
 // have such an id.
+
+namespace svm_gc {
+
 class G1FreeIdSet {
   Semaphore _sem;
   uint* _next;
@@ -58,5 +61,8 @@ public:
 
   struct TestSupport;           // For unit test access.
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FREEIDSET_HPP

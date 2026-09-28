@@ -28,6 +28,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 static uint compute_task_limit(uint n_workers) {
   // Don't need more than n_workers tasks at a time.  But allowing up to
   // that maximizes available parallelism.
@@ -53,3 +56,6 @@ PartialArrayTaskStepper::PartialArrayTaskStepper(uint n_workers, size_t chunk_si
   _task_limit(compute_task_limit(n_workers)),
   _task_fanout(compute_task_fanout(_task_limit))
 {}
+
+} // namespace svm_gc
+

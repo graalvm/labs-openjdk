@@ -51,6 +51,9 @@
 #include "jvmci/jvmci_globals.hpp"
 #endif
 
+
+namespace svm_gc {
+
 static_assert(sizeof(oop) == sizeof(intptr_t), "Derived pointer sanity check");
 
 static inline intptr_t derived_pointer_value(derived_pointer p) {
@@ -69,6 +72,7 @@ static inline derived_pointer operator+(derived_pointer p, intptr_t offset) {
   return static_cast<derived_pointer>(derived_pointer_value(p) + offset);
 }
 
+#ifndef SVM
 // OopMapStream
 
 OopMapStream::OopMapStream(const OopMap* oop_map)
@@ -865,6 +869,7 @@ ImmutableOopMapSet* ImmutableOopMapSet::build_from(const OopMapSet* oopmap_set) 
 void ImmutableOopMapSet::operator delete(void* p) {
   FREE_C_HEAP_ARRAY(unsigned char, p);
 }
+#endif // !SVM
 
 //------------------------------DerivedPointerTable---------------------------
 
@@ -968,3 +973,6 @@ void DerivedPointerTable::update_pointers() {
 }
 
 #endif // COMPILER2_OR_JVMCI
+
+} // namespace svm_gc
+

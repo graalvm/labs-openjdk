@@ -32,6 +32,9 @@
 #include "memory/allocation.hpp"
 #include "services/memoryUsage.hpp"
 
+
+namespace svm_gc {
+
 class G1HeapRegion;
 class G1HeapRegionClaimer;
 class G1HeapRegionClosure;
@@ -241,9 +244,20 @@ public:
 
   uint num_available_regions() const { return num_free_regions() + num_inactive_regions(); }
 
+#ifndef SVM
   MemoryUsage get_auxiliary_data_memory_usage() const;
+#endif // !SVM
 
   MemRegion reserved() const { return MemRegion(heap_bottom(), heap_end()); }
+
+#ifdef SVM
+  void create_image_heap_regions(uint num_regions, WorkerThreads* pretouch_workers);
+  void mark_image_heap_regions_as_committed(size_t num_regions, WorkerThreads* pretouch_workers);
+#ifdef ASSERT
+  void commit_image_heap_bot(G1HeapRegion* region, WorkerThreads* pretouch_workers);
+  void uncommit_image_heap_bot(G1HeapRegion* region);
+#endif // ASSERT
+#endif // SVM
 
   // Expand the sequence to reflect that the heap has grown. Either create new
   // G1HeapRegions, or re-use existing ones. Returns the number of regions the
@@ -256,10 +270,12 @@ public:
 
   G1HeapRegion* next_region_in_heap(const G1HeapRegion* r) const;
 
+#ifndef SVM
   // Allocate the regions that contain the address range specified, committing the
   // regions if necessary. Return false if any of the regions is already committed
   // and not free, and return the number of regions newly committed in commit_count.
   bool allocate_containing_regions(MemRegion range, size_t* commit_count, WorkerThreads* pretouch_workers);
+#endif // !SVM
 
   // Apply blk->do_heap_region() on all committed regions in address order,
   // terminating the iteration early if do_heap_region() returns true.
@@ -321,4 +337,7 @@ class G1HeapRegionClaimer : public StackObj {
   // Claim the given region, returns true if successfully claimed.
   bool claim_region(uint region_index);
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_G1_G1HEAPREGIONMANAGER_HPP

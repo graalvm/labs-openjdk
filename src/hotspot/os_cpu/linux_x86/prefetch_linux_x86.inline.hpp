@@ -28,6 +28,9 @@
 #include "runtime/prefetch.hpp"
 
 
+
+namespace svm_gc {
+
 inline void Prefetch::read (const void *loc, intx interval) {
 #ifdef AMD64
   __asm__ ("prefetcht0 (%0,%1,1)" : : "r" (loc), "r" (interval));
@@ -43,5 +46,8 @@ inline void Prefetch::write(void *loc, intx interval) {
 
 #endif // AMD64
 }
+
+
+} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_X86_PREFETCH_LINUX_X86_INLINE_HPP

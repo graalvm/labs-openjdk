@@ -29,6 +29,9 @@
 
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 inline void G1EvacStats::add_direct_allocated(size_t value) {
   Atomic::add(&_direct_allocated, value, memory_order_relaxed);
 }
@@ -50,5 +53,8 @@ inline void G1EvacStats::add_failure_used_and_waste(size_t used, size_t waste) {
   Atomic::add(&_failure_used, used, memory_order_relaxed);
   Atomic::add(&_failure_waste, waste, memory_order_relaxed);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1EVACSTATS_INLINE_HPP

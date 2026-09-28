@@ -36,6 +36,9 @@
 #include "memory/iterator.hpp"
 #include "runtime/javaThread.hpp"
 
+
+namespace svm_gc {
+
 void G1RemSetSummary::update() {
   class CollectData : public ThreadClosure {
     G1RemSetSummary* _summary;
@@ -222,6 +225,13 @@ public:
   {}
 
   bool do_heap_region(G1HeapRegion* r) {
+#ifdef SVM
+    if (r->is_image_heap()) {
+      assert(r->rem_set()->is_empty(), "remembered set of image heap regions must be empty");
+      return false;
+    }
+#endif // SVM
+
     G1HeapRegionRemSet* hrrs = r->rem_set();
     size_t rs_mem_sz = 0;
     size_t rs_unused_mem_sz = 0;
@@ -393,3 +403,6 @@ void G1RemSetSummary::print_on(outputStream* out, bool show_thread_times) {
   blk.do_cset_groups();
   blk.print_summary_on(out);
 }
+
+} // namespace svm_gc
+

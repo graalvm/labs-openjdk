@@ -30,6 +30,9 @@
 #include "gc/shared/gcCause.hpp"
 #include "gc/shared/taskqueue.hpp"
 
+
+namespace svm_gc {
+
 class WorkerTask;
 class G1Allocator;
 class G1BatchedTask;
@@ -142,5 +145,8 @@ public:
 
   bool concurrent_operation_is_full_mark() const { return _concurrent_operation_is_full_mark; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1YOUNGCOLLECTOR_HPP

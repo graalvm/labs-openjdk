@@ -37,6 +37,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "utilities/align.hpp"
 
+
+namespace svm_gc {
+
 G1Allocator::G1Allocator(G1CollectedHeap* heap) :
   _g1h(heap),
   _numa(heap->numa()),
@@ -97,6 +100,8 @@ void G1Allocator::reuse_retained_old_region(G1EvacInfo* evacuation_info,
                                             G1HeapRegion** retained_old) {
   G1HeapRegion* retained_region = *retained_old;
   *retained_old = nullptr;
+  assert_svm_only(retained_region == nullptr || !retained_region->is_image_heap(),
+                        "image heap region must not be an alloc region (index %u)", retained_region->hrm_index());
 
   // We will discard the current GC alloc region if:
   // a) it's in the collection set (it can happen!),
@@ -486,3 +491,6 @@ size_t G1PLABAllocator::undo_waste() const {
   }
   return result;
 }
+
+} // namespace svm_gc
+

@@ -29,6 +29,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 class G1RemSet;
 
 // A G1RemSetSummary manages statistical information about the G1RemSet
@@ -56,5 +59,8 @@ public:
 
   double rs_thread_vtime(uint thread) const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1REMSETSUMMARY_HPP

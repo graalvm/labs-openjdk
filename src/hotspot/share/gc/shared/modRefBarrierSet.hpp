@@ -28,19 +28,28 @@
 #include "gc/shared/barrierSet.hpp"
 #include "memory/memRegion.hpp"
 
+
+namespace svm_gc {
+
 class Klass;
 
 class ModRefBarrierSet: public BarrierSet {
 protected:
-  ModRefBarrierSet(BarrierSetAssembler* barrier_set_assembler,
+  ModRefBarrierSet(
+#ifndef SVM
+                   BarrierSetAssembler* barrier_set_assembler,
                    BarrierSetC1* barrier_set_c1,
                    BarrierSetC2* barrier_set_c2,
+#endif // !SVM
                    const BarrierSet::FakeRtti& fake_rtti)
-    : BarrierSet(barrier_set_assembler,
+    : BarrierSet(
+#ifndef SVM
+                 barrier_set_assembler,
                  barrier_set_c1,
                  barrier_set_c2,
                  nullptr /* barrier_set_nmethod */,
                  nullptr /* barrier_set_stack_chunk */,
+#endif // !SVM
                  fake_rtti.add_tag(BarrierSet::ModRef)) { }
   ~ModRefBarrierSet() { }
 
@@ -106,5 +115,8 @@ template<>
 struct BarrierSet::GetName<ModRefBarrierSet> {
   static const BarrierSet::Name value = BarrierSet::ModRef;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MODREFBARRIERSET_HPP

@@ -30,6 +30,9 @@
 
 #include <semaphore.h>
 
+
+namespace svm_gc {
+
 class PosixSemaphore : public CHeapObj<mtInternal> {
   sem_t _semaphore;
 
@@ -51,5 +54,8 @@ class PosixSemaphore : public CHeapObj<mtInternal> {
 };
 
 typedef PosixSemaphore SemaphoreImpl;
+
+
+} // namespace svm_gc
 
 #endif // OS_POSIX_SEMAPHORE_POSIX_HPP

@@ -33,11 +33,22 @@
 #include "utilities/fakeRttiSupport.hpp"
 #include "utilities/macros.hpp"
 
+#ifndef SVM
+
+namespace svm_gc {
+
 class BarrierSetAssembler;
 class BarrierSetC1;
 class BarrierSetC2;
 class BarrierSetNMethod;
 class BarrierSetStackChunk;
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+namespace svm_gc {
+
 class JavaThread;
 
 // This class provides the interface between a barrier implementation and
@@ -71,11 +82,13 @@ protected:
 
 private:
   FakeRtti _fake_rtti;
+#ifndef SVM
   BarrierSetAssembler* _barrier_set_assembler;
   BarrierSetC1* _barrier_set_c1;
   BarrierSetC2* _barrier_set_c2;
   BarrierSetNMethod* _barrier_set_nmethod;
   BarrierSetStackChunk* _barrier_set_stack_chunk;
+#endif // !SVM
 
 public:
   // Metafunction mapping a class derived from BarrierSet to the
@@ -96,14 +109,18 @@ public:
   // End of fake RTTI support.
 
 protected:
-  BarrierSet(BarrierSetAssembler* barrier_set_assembler,
+  BarrierSet(
+#ifndef SVM
+             BarrierSetAssembler* barrier_set_assembler,
              BarrierSetC1* barrier_set_c1,
              BarrierSetC2* barrier_set_c2,
              BarrierSetNMethod* barrier_set_nmethod,
              BarrierSetStackChunk* barrier_set_stack_chunk,
+#endif // !SVM
              const FakeRtti& fake_rtti);
   ~BarrierSet() { }
 
+#ifndef SVM
   template <class BarrierSetAssemblerT>
   static BarrierSetAssembler* make_barrier_set_assembler() {
     return NOT_ZERO(new BarrierSetAssemblerT()) ZERO_ONLY(nullptr);
@@ -118,6 +135,7 @@ protected:
   static BarrierSetC2* make_barrier_set_c2() {
     return COMPILER2_PRESENT(new BarrierSetC2T()) NOT_COMPILER2(nullptr);
   }
+#endif // !SVM
 
 public:
   // Support for optimizing compilers to call the barrier set on slow path allocations
@@ -148,6 +166,7 @@ public:
   static BarrierSet* barrier_set() { return _barrier_set; }
   static void set_barrier_set(BarrierSet* barrier_set);
 
+#ifndef SVM
   BarrierSetAssembler* barrier_set_assembler() {
     assert(_barrier_set_assembler != nullptr, "should be set");
     return _barrier_set_assembler;
@@ -171,6 +190,7 @@ public:
     assert(_barrier_set_stack_chunk != nullptr, "should be set");
     return _barrier_set_stack_chunk;
   }
+#endif // !SVM
 
   // The AccessBarrier of a BarrierSet subclass is called by the Access API
   // (cf. oops/access.hpp) to perform decorated accesses. GC implementations
@@ -320,5 +340,8 @@ inline T* barrier_set_cast(BarrierSet* bs) {
   assert(bs->is_a(BarrierSet::GetName<T>::value), "wrong type of barrier set");
   return static_cast<T*>(bs);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_BARRIERSET_HPP

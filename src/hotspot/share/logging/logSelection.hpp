@@ -28,6 +28,9 @@
 #include "logging/logTag.hpp"
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 class LogTagSet;
 
 // Class representing a selection of tags with for a given level.
@@ -72,5 +75,8 @@ class LogSelection : public StackObj {
   // Compute a similarity measure in the range [0, 1], where higher means more similar
   double similarity(const LogSelection& other) const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGSELECTION_HPP

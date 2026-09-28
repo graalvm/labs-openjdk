@@ -105,7 +105,6 @@
   #include <mach/task_info.h>
   #include <mach-o/dyld.h>
 #endif
-
 #ifndef MAP_ANONYMOUS
   #define MAP_ANONYMOUS MAP_ANON
 #endif
@@ -114,6 +113,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // global variables
+
+namespace svm_gc {
+
 physical_memory_size_type os::Bsd::_physical_memory = 0;
 
 #ifdef __APPLE__
@@ -122,6 +124,7 @@ volatile uint64_t         os::Bsd::_max_abstime   = 0;
 #endif
 pthread_t os::Bsd::_main_thread;
 
+#ifndef SVM
 #if defined(__APPLE__) && defined(__x86_64__)
 static const int processor_id_unassigned = -1;
 static const int processor_id_assigning = -2;
@@ -207,11 +210,13 @@ bool os::free_swap_space(physical_memory_size_type& value) {
   return false;
 #endif
 }
+#endif // !SVM
 
 physical_memory_size_type os::physical_memory() {
   return Bsd::physical_memory();
 }
 
+#ifndef SVM
 size_t os::rss() {
   size_t rss = 0;
 #ifdef __APPLE__
@@ -244,6 +249,7 @@ static char cpu_arch[] = "ppc";
 #else
   #error Add appropriate cpu_arch setting
 #endif
+#endif // !SVM
 
 void os::Bsd::initialize_system_info() {
   int mib[2];
@@ -302,6 +308,7 @@ void os::Bsd::initialize_system_info() {
 #endif
 }
 
+#ifndef SVM
 #ifdef __APPLE__
 static const char *get_home() {
   const char *home_dir = ::getenv("HOME");
@@ -553,11 +560,14 @@ typedef void (*objc_registerThreadWithCollector_t)();
 extern "C" objc_registerThreadWithCollector_t objc_registerThreadWithCollectorFunction;
 objc_registerThreadWithCollector_t objc_registerThreadWithCollectorFunction = nullptr;
 #endif
+#endif // !SVM
 
 // Thread start routine for all newly created threads
 static void *thread_native_entry(Thread *thread) {
 
+#ifndef SVM
   thread->record_stack_base_and_size();
+#endif // !SVM
   thread->initialize_thread_current();
 
   OSThread* osthread = thread->osthread();
@@ -565,6 +575,7 @@ static void *thread_native_entry(Thread *thread) {
 
   osthread->set_thread_id(os::Bsd::gettid());
 
+#ifndef SVM
 #ifdef __APPLE__
   // Store unique OS X thread id used by SA
   osthread->set_unique_thread_id();
@@ -582,6 +593,7 @@ static void *thread_native_entry(Thread *thread) {
     objc_registerThreadWithCollectorFunction();
   }
 #endif
+#endif // !SVM
 
   // handshaking with parent thread
   {
@@ -597,8 +609,10 @@ static void *thread_native_entry(Thread *thread) {
     }
   }
 
+#ifndef SVM
   log_info(os, thread)("Thread is alive (tid: %zu, pthread id: %zu).",
     os::current_thread_id(), (uintx) pthread_self());
+#endif // !SVM
 
   // call one more level start routine
   thread->call_run();
@@ -607,8 +621,10 @@ static void *thread_native_entry(Thread *thread) {
   // Prevent dereferencing it from here on out.
   thread = nullptr;
 
+#ifndef SVM
   log_info(os, thread)("Thread finished (tid: %zu, pthread id: %zu).",
     os::current_thread_id(), (uintx) pthread_self());
+#endif // !SVM
 
   return 0;
 }
@@ -663,11 +679,14 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
         break;
       }
 
+#ifndef SVM
       log_debug(os, thread)("Failed to start native thread (%s), retrying after %dus.", os::errno_name(ret), next_delay);
+#endif // !SVM
       ::usleep(next_delay);
       next_delay *= 2;
     }
 
+#ifndef SVM
     char buf[64];
     if (ret == 0) {
       log_info(os, thread)("Thread \"%s\" started (pthread id: %zu, attributes: %s). ",
@@ -681,6 +700,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
       os::Posix::print_rlimit_info(&st);
       os::print_memory_info(&st);
     }
+#endif // !SVM
 
     pthread_attr_destroy(&attr);
 
@@ -721,9 +741,11 @@ bool os::create_main_thread(JavaThread* thread) {
 }
 
 bool os::create_attached_thread(JavaThread* thread) {
+#ifndef SVM
 #ifdef ASSERT
   thread->verify_not_published();
 #endif
+#endif // !SVM
 
   // Allocate the OSThread object
   OSThread* osthread = new (std::nothrow) OSThread();
@@ -734,22 +756,27 @@ bool os::create_attached_thread(JavaThread* thread) {
 
   osthread->set_thread_id(os::Bsd::gettid());
 
+#ifndef SVM
 #ifdef __APPLE__
   // Store unique OS X thread id used by SA
   osthread->set_unique_thread_id();
 #endif
+#endif // !SVM
 
   // Store pthread info into the OSThread
   osthread->set_pthread_id(::pthread_self());
 
+#ifndef SVM
   // initialize floating point control register
   os::Bsd::init_thread_fpu_state();
+#endif // !SVM
 
   // Initial thread state is RUNNABLE
   osthread->set_state(RUNNABLE);
 
   thread->set_osthread(osthread);
 
+#ifndef SVM
   // initialize signal mask for this thread
   // and save the caller's signal mask
   PosixSignals::hotspot_sigmask(thread);
@@ -758,6 +785,7 @@ bool os::create_attached_thread(JavaThread* thread) {
                        ", stack: " PTR_FORMAT " - " PTR_FORMAT " (%zuK) ).",
                        os::current_thread_id(), (uintx) pthread_self(),
                        p2i(thread->stack_base()), p2i(thread->stack_end()), thread->stack_size() / K);
+#endif // !SVM
   return true;
 }
 
@@ -773,6 +801,7 @@ void os::pd_start_thread(Thread* thread) {
 void os::free_thread(OSThread* osthread) {
   assert(osthread != nullptr, "osthread not set");
 
+#ifndef SVM
   // We are told to free resources of the argument thread, but we can only really operate
   // on the current thread. The current thread may be already detached at this point.
   assert(Thread::current_or_null() == nullptr || Thread::current()->osthread() == osthread,
@@ -781,6 +810,7 @@ void os::free_thread(OSThread* osthread) {
   // Restore caller's signal mask
   sigset_t sigmask = osthread->caller_sigmask();
   pthread_sigmask(SIG_SETMASK, &sigmask, nullptr);
+#endif // !SVM
 
   delete osthread;
 }
@@ -830,12 +860,14 @@ jlong os::javaTimeNanos() {
   return (prev == obsv) ? now : obsv;
 }
 
+#ifndef SVM
 void os::javaTimeNanos_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->max_value = all_bits_jlong;
   info_ptr->may_skip_backward = false;      // not subject to resetting or drifting
   info_ptr->may_skip_forward = false;       // not subject to resetting or drifting
   info_ptr->kind = JVMTI_TIMER_ELAPSED;     // elapsed not CPU time
 }
+#endif // !SVM
 #endif // __APPLE__
 
 // Information of current thread in variety of formats
@@ -879,6 +911,7 @@ int os::current_process_id() {
   return (int)(getpid());
 }
 
+#ifndef SVM
 // DLL functions
 static int local_dladdr(const void* addr, Dl_info* info) {
 #ifdef __APPLE__
@@ -1568,6 +1601,7 @@ void os::jvm_path(char *buf, jint buflen) {
   strncpy(saved_jvm_path, buf, MAXPATHLEN);
   saved_jvm_path[MAXPATHLEN - 1] = '\0';
 }
+#endif // !SVM
 
 ////////////////////////////////////////////////////////////////////////////////
 // Virtual Memory
@@ -1639,11 +1673,13 @@ bool os::pd_commit_memory(char* addr, size_t size, bool exec) {
   return false;
 }
 
+#ifndef SVM
 bool os::pd_commit_memory(char* addr, size_t size, size_t alignment_hint,
                           bool exec) {
   // alignment_hint is ignored on this OS
   return pd_commit_memory(addr, size, exec);
 }
+#endif // !SVM
 
 void os::pd_commit_memory_or_exit(char* addr, size_t size, bool exec,
                                   const char* mesg) {
@@ -1665,14 +1701,17 @@ void os::pd_commit_memory_or_exit(char* addr, size_t size,
 void os::pd_realign_memory(char *addr, size_t bytes, size_t alignment_hint) {
 }
 
+#ifndef SVM
 void os::pd_disclaim_memory(char *addr, size_t bytes) {
   ::madvise(addr, bytes, MADV_DONTNEED);
 }
+#endif // !SVM
 
 size_t os::pd_pretouch_memory(void* first, void* last, size_t page_size) {
   return page_size;
 }
 
+#ifndef SVM
 void os::numa_make_global(char *addr, size_t bytes) {
 }
 
@@ -1704,6 +1743,7 @@ int os::numa_get_group_id_for_address(const void* address) {
 bool os::numa_get_group_ids_for_range(const void** addresses, int* lgrp_ids, size_t count) {
   return false;
 }
+#endif // !SVM
 
 bool os::pd_uncommit_memory(char* addr, size_t size, bool exec) {
 #if defined(__OpenBSD__)
@@ -1762,6 +1802,7 @@ bool os::pd_uncommit_memory(char* addr, size_t size, bool exec) {
 #endif
 }
 
+#ifndef SVM
 bool os::pd_create_stack_guard_pages(char* addr, size_t size) {
   return os::commit_memory(addr, size, !ExecMem);
 }
@@ -1771,6 +1812,7 @@ bool os::pd_create_stack_guard_pages(char* addr, size_t size) {
 bool os::remove_stack_guard_pages(char* addr, size_t size) {
   return os::uncommit_memory(addr, size);
 }
+#endif // !SVM
 
 // 'requested_addr' is only treated as a hint, the return value may or
 // may not start from the requested address. Unlike Bsd mmap(), this
@@ -1814,6 +1856,7 @@ bool os::pd_release_memory(char* addr, size_t size) {
   return anon_munmap(addr, size);
 }
 
+#ifndef SVM
 static bool bsd_mprotect(char* addr, size_t size, int prot) {
   // Bsd wants the mprotect address argument to be page aligned.
   char* bottom = (char*)align_down((intptr_t)addr, os::vm_page_size());
@@ -1895,6 +1938,7 @@ char* os::pd_attempt_map_memory_to_file_at(char* requested_addr, size_t bytes, i
   }
   return result;
 }
+#endif // !SVM
 
 // Reserve memory at an arbitrary address, only if that area is
 // available (and not reserved for something else).
@@ -1922,6 +1966,7 @@ char* os::pd_attempt_reserve_memory_at(char* requested_addr, size_t bytes, bool 
   return nullptr;
 }
 
+#ifndef SVM
 size_t os::vm_min_address() {
 #ifdef __APPLE__
   // On MacOS, the lowest 4G are denied to the application (see "PAGEZERO" resp.
@@ -1932,6 +1977,7 @@ size_t os::vm_min_address() {
   return _vm_min_address_default;
 #endif
 }
+#endif // !SVM
 
 ////////////////////////////////////////////////////////////////////////////////
 // thread priority support
@@ -2092,11 +2138,13 @@ void os::init(void) {
 }
 
 // To install functions for atexit system call
+#ifndef SVM
 extern "C" {
   static void perfMemory_exit_helper() {
     perfMemory_exit();
   }
 }
+#endif // !SVM
 
 // this is called _after_ the global arguments have been parsed
 jint os::init_2(void) {
@@ -2107,6 +2155,7 @@ jint os::init_2(void) {
 
   os::Posix::init_2();
 
+#ifndef SVM
   if (PosixSignals::init() == JNI_ERR) {
     return JNI_ERR;
   }
@@ -2119,6 +2168,7 @@ jint os::init_2(void) {
   // Not supported.
   FLAG_SET_ERGO(UseNUMA, false);
   FLAG_SET_ERGO(UseNUMAInterleaving, false);
+#endif // !SVM
 
   if (MaxFDLimit) {
     // set the number of file descriptors to max. print out error
@@ -2157,6 +2207,7 @@ jint os::init_2(void) {
   // call to exit(3C). There can be only 32 of these functions registered
   // and atexit() does not set errno.
 
+#ifndef SVM
   if (PerfAllowAtExitRegistration) {
     // only register atexit functions if PerfAllowAtExitRegistration is set.
     // atexit functions can be delayed until process exit time, which
@@ -2170,16 +2221,19 @@ jint os::init_2(void) {
       warning("os::init_2 atexit(perfMemory_exit_helper) failed");
     }
   }
+#endif // !SVM
 
   // initialize thread priority policy
   prio_init();
 
 #ifdef __APPLE__
+#ifndef SVM
   // dynamically link to objective c gc registration
   void *handleLibObjc = dlopen(OBJC_LIB, RTLD_LAZY);
   if (handleLibObjc != nullptr) {
     objc_registerThreadWithCollectorFunction = (objc_registerThreadWithCollector_t) dlsym(handleLibObjc, OBJC_GCREGISTER);
   }
+#endif // !SVM
 #endif
 
   return JNI_OK;
@@ -2197,6 +2251,7 @@ int os::active_processor_count() {
   return _processor_count;
 }
 
+#ifndef SVM
 uint os::processor_id() {
 #if defined(__APPLE__) && defined(__x86_64__)
   // Get the initial APIC id and return the associated processor id. The initial APIC
@@ -2236,6 +2291,7 @@ uint os::processor_id() {
   return 0;
 #endif
 }
+#endif // !SVM
 
 void os::set_native_thread_name(const char *name) {
 #if defined(__APPLE__) && MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
@@ -2252,6 +2308,7 @@ void os::set_native_thread_name(const char *name) {
 ////////////////////////////////////////////////////////////////////////////////
 // debug support
 
+#ifndef SVM
 bool os::find(address addr, outputStream* st) {
   Dl_info dlinfo;
   memset(&dlinfo, 0, sizeof(dlinfo));
@@ -2395,6 +2452,7 @@ jlong os::current_thread_cpu_time() {
   return 0;
 #endif
 }
+#endif // SVM
 
 jlong os::thread_cpu_time(Thread* thread) {
 #ifdef __APPLE__
@@ -2405,6 +2463,7 @@ jlong os::thread_cpu_time(Thread* thread) {
 #endif
 }
 
+#ifndef SVM
 jlong os::current_thread_cpu_time(bool user_sys_cpu_time) {
 #ifdef __APPLE__
   return os::thread_cpu_time(Thread::current(), user_sys_cpu_time);
@@ -2413,6 +2472,7 @@ jlong os::current_thread_cpu_time(bool user_sys_cpu_time) {
   return 0;
 #endif
 }
+#endif // !SVM
 
 jlong os::thread_cpu_time(Thread *thread, bool user_sys_cpu_time) {
 #ifdef __APPLE__
@@ -2442,6 +2502,7 @@ jlong os::thread_cpu_time(Thread *thread, bool user_sys_cpu_time) {
 }
 
 
+#ifndef SVM
 void os::current_thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->max_value = all_bits_jlong;    // will not wrap in less than 64 bits
   info_ptr->may_skip_backward = false;     // elapsed time not wall time
@@ -2455,6 +2516,7 @@ void os::thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->may_skip_forward = false;      // elapsed time not wall time
   info_ptr->kind = JVMTI_TIMER_TOTAL_CPU;  // user+system time is returned
 }
+#endif // !SVM
 
 bool os::is_thread_cpu_time_supported() {
 #ifdef __APPLE__
@@ -2471,6 +2533,7 @@ int os::loadavg(double loadavg[], int nelem) {
   return ::getloadavg(loadavg, nelem);
 }
 
+#ifndef SVM
 // Get the kern.corefile setting, or otherwise the default path to the core file
 // Returns the length of the string
 int os::get_core_path(char* buffer, size_t bufferSize) {
@@ -2584,3 +2647,7 @@ bool os::pd_dll_unload(void* libhandle, char* ebuf, int ebuflen) {
 
   return res;
 } // end: os::pd_dll_unload()
+#endif // !SVM
+
+} // namespace svm_gc
+

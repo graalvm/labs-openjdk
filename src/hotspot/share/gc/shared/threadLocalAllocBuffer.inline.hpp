@@ -35,6 +35,9 @@
 #include "runtime/osThread.hpp"
 #include "utilities/copy.hpp"
 
+
+namespace svm_gc {
+
 inline HeapWord* ThreadLocalAllocBuffer::allocate(size_t size) {
   invariants();
   HeapWord* obj = top();
@@ -92,5 +95,8 @@ void ThreadLocalAllocBuffer::record_slow_allocation(size_t obj_size) {
                               "slow", p2i(thread()), thread()->osthread()->thread_id(),
                               obj_size, free(), refill_waste_limit());
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_THREADLOCALALLOCBUFFER_INLINE_HPP

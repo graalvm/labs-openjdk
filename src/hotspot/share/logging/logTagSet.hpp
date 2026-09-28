@@ -31,6 +31,9 @@
 #include "logging/logTag.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class LogMessageBuffer;
 
 class outputStream;
@@ -172,4 +175,7 @@ template <LogTagType T0, LogTagType T1, LogTagType T2, LogTagType T3, LogTagType
 LogTagSet LogTagSetMapping<T0, T1, T2, T3, T4, GuardTag>::_tagset{&LogPrefix<T0, T1, T2, T3, T4>::prefix, T0, T1, T2, T3, T4};
 
 extern const size_t vwrite_buffer_size;
+
+} // namespace svm_gc
+
 #endif // SHARE_LOGGING_LOGTAGSET_HPP

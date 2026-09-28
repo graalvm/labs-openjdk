@@ -34,6 +34,9 @@
 
 // Creates an aligned padded array.
 // The memory can't be deleted since the raw memory chunk is not returned.
+
+namespace svm_gc {
+
 template <class T, MemTag MT, size_t alignment>
 PaddedEnd<T>* PaddedArray<T, MT, alignment>::create_unfreeable(uint length) {
   // Check that the PaddedEnd class works as intended.
@@ -97,5 +100,8 @@ T* PaddedPrimitiveArray<T, MT, alignment>::create(size_t length, void** alloc_ba
   *alloc_base = chunk;
   return (T*)align_up(chunk, alignment);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_PADDED_INLINE_HPP

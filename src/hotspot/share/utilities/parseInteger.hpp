@@ -42,6 +42,9 @@
 // *************************************************************************
 
 
+
+namespace svm_gc {
+
 template <typename T, ENABLE_IF(std::is_signed<T>::value), ENABLE_IF(sizeof(T) == 4)> // signed 32-bit
 inline bool parse_integer_impl(const char *s, char **endptr, int base, T* result) {
   // Don't use strtol -- on 64-bit builds, "long" could be either 32- or 64-bits
@@ -169,5 +172,8 @@ static bool parse_integer(const char *s, T* result) {
   rc = rc && (*remainder == '\0');
   return rc;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_PARSE_INTEGER_HPP
