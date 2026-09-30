@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 #ifndef SHARE_JVMCI_JVMCI_GLOBALS_HPP
 #define SHARE_JVMCI_JVMCI_GLOBALS_HPP
 
+#include "oops/oopsHierarchy.hpp"
 #include "runtime/globals_shared.hpp"
 #include "utilities/vmEnums.hpp"
 
@@ -147,6 +148,15 @@ class fileStream;
           "Dumps to the given file a description of the classes, fields "   \
           "and methods the JVMCI shared library must provide")              \
                                                                             \
+  /* See initialize_class_identity_hash_codes() in jvmci_globals.cpp. */      \
+  product(ccstr, JVMCIClassIdentityHashCodeFile, nullptr, EXPERIMENTAL,     \
+          "File containing identity hash codes to install in newly created "\
+          "Class mirrors")                                                  \
+                                                                            \
+  product(bool, JVMCIUseStableGeneratedClassIdentityHashCodes, false,       \
+          EXPERIMENTAL, "Use stable identity hash codes for generated "     \
+          "Class mirrors with unstable names")                              \
+                                                                            \
   product(bool, UseJVMCINativeLibrary, false, EXPERIMENTAL,                 \
           "Execute JVMCI Java code from a shared library (\"libjvmci\") "   \
           "instead of loading it from class files and executing it "        \
@@ -224,5 +234,9 @@ class JVMCIGlobals {
   static void check_jvmci_supported_gc();
 
   static fileStream* get_jni_config_file() { return _jni_config_file; }
+
+  // Installs a requested identity hash code before the newly allocated mirror is published.
+  // primitive_name must be provided for primitive mirrors, which have no Klass.
+  static void initialize_class_identity_hash_code(oop mirror, const char* primitive_name = nullptr);
 };
 #endif // SHARE_JVMCI_JVMCI_GLOBALS_HPP

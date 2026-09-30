@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -45,6 +45,9 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreter/linkResolver.hpp"
+#if INCLUDE_JVMCI
+#include "jvmci/jvmci_globals.hpp"
+#endif
 #include "jvm.h"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
@@ -1129,6 +1132,11 @@ void java_lang_Class::create_mirror(Klass* k, Handle class_loader,
   // Class_klass has to be loaded because it is used to allocate
   // the mirror.
   if (vmClasses::Class_klass_loaded()) {
+#if INCLUDE_JVMCI
+    // A sampling agent may hash the mirror. Defer callbacks until its hash is
+    // installed and the mirror is fully initialized and published.
+    JvmtiSampledObjectAllocEventCollector collector(JVMCIClassIdentityHashCodeFile != nullptr || JVMCIUseStableGeneratedClassIdentityHashCodes);
+#endif
     Handle mirror;
     Handle comp_mirror;
 
@@ -1137,6 +1145,10 @@ void java_lang_Class::create_mirror(Klass* k, Handle class_loader,
     // set the classLoader field in the java_lang_Class instance
     assert(class_loader() == k->class_loader(), "should be same");
     set_class_loader(mirror(), class_loader());
+
+#if INCLUDE_JVMCI
+    JVMCIGlobals::initialize_class_identity_hash_code(mirror());
+#endif
 
     // Setup indirection from klass->mirror
     // after any exceptions can happen during allocations.
@@ -1379,6 +1391,9 @@ oop java_lang_Class::create_basic_type_mirror(const char* basic_type_name, Basic
 #endif
   set_modifiers(java_class, JVM_ACC_ABSTRACT | JVM_ACC_FINAL | JVM_ACC_PUBLIC);
   set_is_primitive(java_class);
+#if INCLUDE_JVMCI
+  JVMCIGlobals::initialize_class_identity_hash_code(java_class, basic_type_name);
+#endif
   return java_class;
 }
 
