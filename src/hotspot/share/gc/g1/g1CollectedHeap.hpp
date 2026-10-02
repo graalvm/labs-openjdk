@@ -59,6 +59,7 @@
 #include "runtime/threadSMR.hpp"
 #include "utilities/bitMap.hpp"
 #ifdef SVM
+#include "gc/g1/g1Metaspace.hpp"
 #include "svmGlobalData.hpp"
 #endif // SVM
 
@@ -164,6 +165,9 @@ public:
 };
 
 class G1CollectedHeap : public CollectedHeap {
+#ifdef SVM
+  friend class G1Metaspace;
+#endif // SVM
   friend class VM_G1CollectForAllocation;
   friend class VM_G1CollectFull;
   friend class VM_G1TryInitiateConcMark;
@@ -249,6 +253,10 @@ private:
 
   // Manages all allocations with regions except humongous object allocations.
   G1Allocator* _allocator;
+
+#ifdef SVM
+  G1Metaspace _metaspace;
+#endif // SVM
 
   G1YoungGCAllocationFailureInjector _allocation_failure_injector;
 
@@ -758,6 +766,8 @@ public:
 
 private:
 #ifdef SVM
+  void initialize_image_heap_and_metaspace();
+  void claim_metaspace();
   void claim_image_heap();
 #endif // SVM
 
@@ -1051,7 +1061,7 @@ public:
   inline void old_set_remove(G1HeapRegion* hr);
 
   size_t non_young_capacity_bytes() {
-    return (old_regions_count() + humongous_regions_count()) * G1HeapRegion::GrainBytes SVM_ONLY(+ SVMGlobalData::_image_heap_size);
+    return (old_regions_count() + humongous_regions_count()) * G1HeapRegion::GrainBytes SVM_ONLY(+ SVMGlobalData::_image_heap_size + SVMGlobalData::_metaspace_size);
   }
 
   // Determine whether the given region is one that we are using as an

@@ -251,6 +251,7 @@ G1HeapRegionAttr G1CollectedHeap::region_attr(uint idx) const {
 
 void G1CollectedHeap::register_humongous_candidate_region_with_region_attr(uint index) {
   assert_svm_only(!region_at(index)->is_image_heap(), "must be");
+  assert_svm_only(!region_at(index)->is_metaspace(), "must be");
   assert(!region_at(index)->has_pinned_objects(), "must be");
   assert(region_at(index)->rem_set()->is_complete(), "must be");
   _region_attr.set_humongous_candidate(index);
@@ -267,6 +268,7 @@ void G1CollectedHeap::register_region_with_region_attr(G1HeapRegion* r) {
 
 void G1CollectedHeap::register_old_region_with_region_attr(G1HeapRegion* r) {
   assert_svm_only(!r->is_image_heap(), "must be");
+  assert_svm_only(!r->is_metaspace(), "must be");
   assert(r->rem_set()->is_complete(), "must be");
   _region_attr.set_in_old(r->hrm_index(), true /* is_remset_tracked */, r->has_pinned_objects());
   _rem_set->exclude_region_from_scan(r->hrm_index());
@@ -296,8 +298,8 @@ inline bool G1CollectedHeap::is_obj_filler(const oop obj) {
 inline bool G1CollectedHeap::is_obj_dead(const oop obj, const G1HeapRegion* hr) const {
   assert(!hr->is_free(), "looking up obj " PTR_FORMAT " in Free region %u", p2i(obj), hr->hrm_index());
 #ifdef SVM
-  if (hr->is_image_heap()) {
-    // Objects in image heap regions are always alive.
+  if (hr->is_image_heap_or_metaspace()) {
+    // Image heap and metaspace objects are always alive.
     return false;
   } else
 #endif // !SVM
@@ -335,7 +337,7 @@ inline bool G1CollectedHeap::is_obj_dead(const oop obj) const {
 }
 
 inline bool G1CollectedHeap::is_obj_dead_full(const oop obj, const G1HeapRegion* hr) const {
-   return !is_marked(obj) SVM_ONLY(&& !hr->is_image_heap());
+   return !is_marked(obj) SVM_ONLY(&& !hr->is_image_heap_or_metaspace());
 }
 
 inline bool G1CollectedHeap::is_obj_dead_full(const oop obj) const {

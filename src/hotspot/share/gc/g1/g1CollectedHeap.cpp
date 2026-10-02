@@ -491,8 +491,29 @@ HeapWord* G1CollectedHeap::attempt_allocation_slow(uint node_index, size_t word_
 }
 
 #ifdef SVM
+void G1CollectedHeap::initialize_image_heap_and_metaspace() {
+  int region_count = SVMGlobalData::_metaspace_regions + SVMGlobalData::_closed_image_heap_regions + SVMGlobalData::_open_image_heap_regions;
+  // GR-79974: commit metaspace auxiliary memory on demand instead of committing the full reservation.
+  _hrm.commit_image_heap_and_metaspace_auxiliary_data(region_count, _workers);
+  claim_metaspace();
+  claim_image_heap();
+}
+
+void G1CollectedHeap::claim_metaspace() {
+  int metaspace_region_count = SVMGlobalData::_metaspace_regions;
+  // Only create the region descriptors here. Metaspace heap and BOT memory are committed when allocated.
+  _hrm.create_metaspace_regions(metaspace_region_count);
+
+  for (int i = 0; i < metaspace_region_count; i++) {
+    G1HeapRegion* region = _hrm.at(i);
+    assert(region != nullptr, "must be");
+    assert(region->bottom() == (HeapWord*)(CompressedOops::base() + SVMGlobalData::_null_regions_size + G1HeapRegionSize * i), "must be");
+    region->set_metaspace();
+  }
+  _metaspace.initialize();
+}
+
 void G1CollectedHeap::claim_image_heap() {
-  /* Create the image heap regions. */
   int image_heap_region_count = SVMGlobalData::_closed_image_heap_regions + SVMGlobalData::_open_image_heap_regions;
   typeArrayOop region_types = SVMIsolateData::_image_heap_region_types;
   typeArrayOop free_spaces = SVMIsolateData::_image_heap_region_free_spaces;
@@ -500,7 +521,12 @@ void G1CollectedHeap::claim_image_heap() {
   guarantee(image_heap_region_count <= region_types->length(), "must be");
   guarantee(image_heap_region_count <= free_spaces->length(), "must be");
 
-  _hrm.create_image_heap_regions(image_heap_region_count, _workers);
+  /* Create image heap regions. */
+  int image_heap_region_start = SVMGlobalData::_metaspace_regions;
+  int image_heap_region_end = image_heap_region_start + image_heap_region_count;
+  int first_open_image_heap_region = image_heap_region_start + SVMGlobalData::_closed_image_heap_regions;
+  // The image heap is already mapped and its BOT is managed separately.
+  _hrm.create_image_heap_regions(image_heap_region_start, image_heap_region_count);
 
   /* Create the BOT for the image heap. */
   HeapWord* open_image_heap_start = (HeapWord*)SVMIsolateData::_open_image_heap_start_addr;
@@ -512,9 +538,9 @@ void G1CollectedHeap::claim_image_heap() {
 
   int bot_region_count = (int)(image_heap_bot_size / G1HeapRegion::CardsPerRegion);
   assert(bot_region_count <= SVMGlobalData::_open_image_heap_regions, "prebuilt image heap BOT covers too many regions");
-  int first_image_heap_region_with_bot = image_heap_region_count - bot_region_count;
+  int first_image_heap_region_with_bot = image_heap_region_end - bot_region_count;
   if (bot_region_count > 0) {
-    HeapWord* bot_heap_start = open_image_heap_start + (first_image_heap_region_with_bot - SVMGlobalData::_closed_image_heap_regions) * G1HeapRegion::GrainWords;
+    HeapWord* bot_heap_start = open_image_heap_start + (first_image_heap_region_with_bot - first_open_image_heap_region) * G1HeapRegion::GrainWords;
     HeapWord* bot_heap_end = bot_heap_start + bot_region_count * G1HeapRegion::GrainWords;
     guarantee(bot_heap_end == open_image_heap_end, "prebuilt image heap BOT must cover the suffix of the open image heap");
     _image_heap_bot = new G1BlockOffsetTable(MemRegion(bot_heap_start, bot_heap_end), SVMGlobalData::_image_heap_block_offset_table);
@@ -524,25 +550,26 @@ void G1CollectedHeap::claim_image_heap() {
 
   // Set the heap region information.
   G1HeapRegion* humongous_start = nullptr;
-  for (int i = 0; i < image_heap_region_count; i++) {
+  for (int i = image_heap_region_start; i < image_heap_region_end; i++) {
+    int image_heap_region_index = i - image_heap_region_start;
     G1HeapRegion* region = _hrm.at(i);
     assert(region != nullptr, "must be");
     assert(region->bottom() == (HeapWord*)(CompressedOops::base() + SVMGlobalData::_null_regions_size + G1HeapRegionSize * i), "the region address must match the address where the image heap was mapped");
 
-    region->set_type(region_types->byte_at(i));
+    region->set_type(region_types->byte_at(image_heap_region_index));
     assert(region->is_image_heap(), "must be");
 
     // Set the region boundaries.
-    HeapWord* top = (HeapWord*)(((address)region->end()) - free_spaces->int_at(i));
+    HeapWord* top = (HeapWord*)(((address)region->end()) - free_spaces->int_at(image_heap_region_index));
     region->set_top(top);
     assert(region->top() <= region->end(), "must be");
 
     if (region->is_starts_humongous()) {
-      region->set_starts_humongous_in_image_heap();
+      region->initialize_starts_humongous_for_image_heap_or_metaspace();
       humongous_start = region;
     } else if (region->is_continues_humongous()) {
       assert(humongous_start != nullptr, "humongous_start heap regions must be layed out sequentially");
-      region->set_continues_humongous_in_image_heap(humongous_start);
+      region->initialize_continues_humongous_for_image_heap_or_metaspace(humongous_start);
     } else {
       humongous_start = nullptr;
     }
@@ -551,7 +578,7 @@ void G1CollectedHeap::claim_image_heap() {
   }
 
   /* Set the BOT for the open image heap regions. */
-  for (int i = SVMGlobalData::_closed_image_heap_regions; i < image_heap_region_count; i++) {
+  for (int i = first_open_image_heap_region; i < image_heap_region_end; i++) {
     G1HeapRegion* region = _hrm.at(i);
     if (i < first_image_heap_region_with_bot) {
       assert(region->is_humongous(), "humongous image heap regions must precede non-humongous regions");
@@ -1288,7 +1315,7 @@ public:
                 "master humongous set MT safety protocol outside a safepoint");
     }
   }
-  bool is_correct_type(G1HeapRegion* hr) { return hr->is_humongous() SVM_ONLY(&& !hr->is_image_heap()); }
+  bool is_correct_type(G1HeapRegion* hr) { return hr->is_humongous() SVM_ONLY(&& !hr->is_image_heap_or_metaspace()); }
   const char* get_description() { return "Humongous Regions"; }
 };
 
@@ -1580,9 +1607,9 @@ jint G1CollectedHeap::initialize() {
   _cm_thread = _cm->cm_thread();
 
 #ifdef SVM
-  claim_image_heap();
-  // InitialHeapSize includes the claimed image heap. Expanding by the full value would make the
-  // initial heap too large by the image heap capacity.
+  initialize_image_heap_and_metaspace();
+  // InitialHeapSize includes the claimed image heap and metaspace. Expanding by the full value
+  // would make the initial heap too large by their capacity.
   guarantee(init_byte_size > capacity(), "initial heap must contain collected regions");
   init_byte_size -= capacity();
 #endif // SVM
@@ -2901,6 +2928,7 @@ void G1CollectedHeap::free_region(G1HeapRegion* hr, G1FreeRegionList* free_list)
   assert(!hr->is_empty(), "the region should not be empty");
   assert(_hrm.is_available(hr->hrm_index()), "region should be committed");
   assert_svm_only(!hr->is_image_heap(), "must not free image heap regions");
+  assert_svm_only(!hr->is_metaspace(), "must not free metaspace regions");
   assert(!hr->has_pinned_objects(),
          "must not free a region which contains pinned objects");
 
@@ -3022,8 +3050,8 @@ bool G1CollectedHeap::check_young_list_empty() {
 // Remove the given G1HeapRegion from the appropriate region set.
 void G1CollectedHeap::prepare_region_for_full_compaction(G1HeapRegion* hr) {
 #ifdef SVM
-  if (hr->is_image_heap()) {
-      // Nothing to do - image heap regions are not compacted.
+  if (hr->is_image_heap_or_metaspace()) {
+      // Nothing to do. Image heap and metaspace regions are not compacted.
   } else
 #endif // SVM
   if (hr->is_humongous()) {
@@ -3083,6 +3111,18 @@ public:
   }
 
   bool do_heap_region(G1HeapRegion* r) {
+#ifdef SVM
+    if (r->is_image_heap_or_metaspace()) {
+      // Image heap regions and all metaspace regions, including empty reserved regions, must not
+      // be added to the G1 free list.
+      if (!_free_list_only) {
+        assert(r->rem_set()->is_empty(), "Image heap and metaspace regions must have empty remembered sets.");
+        _total_used += r->used();
+      }
+      return false;
+    }
+#endif // SVM
+
     if (r->is_empty()) {
       assert(r->rem_set()->is_empty(), "Empty regions should have empty remembered sets.");
       // Add free regions to the free list
@@ -3091,11 +3131,6 @@ public:
     } else if (!_free_list_only) {
       assert(r->rem_set()->is_empty(), "At this point remembered sets must have been cleared.");
 
-#ifdef SVM
-      if (r->is_image_heap()) {
-        // image heap regions are not part of any region set.
-      } else
-#endif // !SVM
       if (r->is_humongous()) {
         _humongous_set->add(r);
       } else {

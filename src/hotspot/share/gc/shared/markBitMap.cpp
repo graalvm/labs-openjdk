@@ -26,6 +26,7 @@
 #include "memory/universe.hpp"
 #ifdef SVM
 #include "svmImageHeap.hpp"
+#include "svmMetaspace.hpp"
 #endif // SVM
 
 
@@ -59,6 +60,7 @@ void MarkBitMap::do_clear(MemRegion mr, bool large) {
     HeapWord *pos = intersection.start();
     while (pos < intersection.end()) {
       assert(!SVMImageHeap::is_in_image_heap(pos), "image heap regions are never marked");
+      assert(!SVMMetaspace::is_in_address_space(pos), "metaspace regions are never marked");
       pos++;
     }
   }
@@ -80,6 +82,7 @@ void MarkBitMap::check_mark(HeapWord* addr) {
          "Trying to access bitmap " PTR_FORMAT " for address " PTR_FORMAT " not in the heap.",
          p2i(this), p2i(addr));
   assert_svm_only(!SVMImageHeap::is_in_image_heap(addr), "image heap regions are never marked");
+  assert_svm_only(!SVMMetaspace::is_in_address_space(addr), "metaspace regions are never marked");
 }
 #endif
 

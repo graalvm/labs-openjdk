@@ -167,6 +167,7 @@ class G1RebuildRSAndScrubTask : public WorkerTask {
     // Scan or scrub depending on if addr is marked.
     HeapWord* scan_or_scrub(G1HeapRegion* hr, HeapWord* addr, HeapWord* limit) {
       assert_svm_only(!hr->is_image_heap(), "must not scrub image heap regions");
+      assert_svm_only(!hr->is_metaspace(), "must not scrub metaspace regions");
       if (_bitmap->is_marked(addr)) {
         //  Live object, need to scan to rebuild remembered sets for this object.
         return addr + scan_object(hr, addr);
@@ -181,7 +182,8 @@ class G1RebuildRSAndScrubTask : public WorkerTask {
 
     // Scan and scrub the given region to tars.
     void scan_and_scrub_region(G1HeapRegion* hr, HeapWord* const pb) {
-      assert_svm_only(!hr->is_closed_image_heap(), "closed image heap regions must be skipped");
+      assert_svm_only(!hr->is_image_heap(), "image heap regions must not be scrubbed");
+      assert_svm_only(!hr->is_metaspace(), "metaspace regions must not be scrubbed");
       assert(should_rebuild_or_scrub(hr), "must be");
 
       log_trace(gc, marking)("Scrub and rebuild region: " HR_FORMAT " pb: " PTR_FORMAT " TARS: " PTR_FORMAT " TAMS: " PTR_FORMAT,
@@ -192,7 +194,6 @@ class G1RebuildRSAndScrubTask : public WorkerTask {
         HeapWord* start = hr->bottom();
         HeapWord* limit = pb;
         while (start < limit) {
-          assert_svm_only(!hr->is_image_heap(), "for image heap regions, parsable_bottom must be equal to bottom");
           start = scan_or_scrub(hr, start, limit);
 
           if (yield_if_necessary(hr)) {
@@ -218,6 +219,26 @@ class G1RebuildRSAndScrubTask : public WorkerTask {
         }
       }
     }
+
+#ifdef SVM
+    // Rebuild stable references that may no longer have dirty cards after a full GC. Stores after
+    // TARS are covered by the normal card barrier.
+    void scan_region_without_scrubbing(G1HeapRegion* hr) {
+      assert(hr->is_open_image_heap_or_metaspace(), "must be");
+      assert(!hr->is_humongous(), "must be");
+      assert(should_rebuild_or_scrub(hr), "must be");
+
+      HeapWord* start = hr->bottom();
+      HeapWord* limit = _cm->top_at_rebuild_start(hr);
+      while (start < limit) {
+        start += scan_object(hr, start);
+
+        if (yield_if_necessary(hr)) {
+          return;
+        }
+      }
+    }
+#endif // SVM
 
     // Scan a humongous region for remembered set updates. Scans in chunks to avoid
     // stalling safepoints.
@@ -280,12 +301,20 @@ class G1RebuildRSAndScrubTask : public WorkerTask {
         return false;
       }
 
-      // NOTE (chaeubl): open image heap regions need to be scanned as a whole (i.e., from PB to TARS). Scrubbing is never needed though.
-      if (hr->needs_scrubbing() SVM_ONLY(|| (hr->is_open_image_heap() && !hr->is_humongous()))) {
+#ifdef SVM
+      if (hr->is_open_image_heap_or_metaspace() && !hr->is_humongous()) {
+        if (_should_rebuild_remset) {
+          scan_region_without_scrubbing(hr);
+        }
+        return _cm->has_aborted();
+      }
+#endif // SVM
+
+      if (hr->needs_scrubbing()) {
         // This is a region with potentially unparsable (dead) objects.
         scan_and_scrub_region(hr, pb);
       } else {
-        // NOTE (chaeubl): this branch also handles humongous open image heap regions.
+        // NOTE (chaeubl): this branch also handles humongous open image heap and metaspace regions.
         assert(hr->is_humongous(), "must be, but %u is %s", hr->hrm_index(), hr->get_short_type_str());
         // No need to scrub humongous, but we should scan it to rebuild remsets.
         scan_humongous_region(hr, pb);

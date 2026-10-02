@@ -88,8 +88,8 @@ public:
   DetailedUsage _usage;
   bool do_heap_region(G1HeapRegion* r) {
 #ifdef SVM
-    if (r->is_image_heap()) {
-      // Nothing to do - values are computed once and don't change.
+    if (r->is_image_heap_or_metaspace()) {
+      // Image heap and metaspace regions are excluded from collected-generation transition statistics.
     } else
 #endif // SVM
     if (r->is_old()) {

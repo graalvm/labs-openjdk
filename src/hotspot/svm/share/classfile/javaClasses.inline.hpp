@@ -130,7 +130,7 @@ oop java_lang_ref_Reference::unknown_referent_no_keepalive(oop ref) {
 }
 
 void java_lang_ref_Reference::clear_referent_raw(oop ref) {
-  assert(!SVMImageHeap::is_image_heap_object(ref), "referent field must not be cleared if it points to an object in the image heap");
+  assert(!SVMImageHeap::is_image_heap_object(ref), "referent field must not be cleared if the Reference object resides in the image heap");
   ref->obj_field_put_raw(SVMGlobalData::_offsets._reference._referent, nullptr);
 }
 

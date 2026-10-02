@@ -142,6 +142,10 @@ class G1HeapRegionManager: public CHeapObj<mtGC> {
   // Allocate a new G1HeapRegion for the given index.
   G1HeapRegion* new_heap_region(uint hrm_index);
 
+#ifdef SVM
+  void create_image_heap_or_metaspace_regions(uint start, uint num_regions);
+#endif // SVM
+
   // Humongous allocation helpers
   G1HeapRegion* allocate_humongous_from_free_list(uint num_regions);
   G1HeapRegion* allocate_humongous_allow_expand(uint num_regions);
@@ -251,8 +255,10 @@ public:
   MemRegion reserved() const { return MemRegion(heap_bottom(), heap_end()); }
 
 #ifdef SVM
-  void create_image_heap_regions(uint num_regions, WorkerThreads* pretouch_workers);
-  void mark_image_heap_regions_as_committed(size_t num_regions, WorkerThreads* pretouch_workers);
+  void commit_image_heap_and_metaspace_auxiliary_data(uint num_regions, WorkerThreads* pretouch_workers);
+  void create_metaspace_regions(uint num_regions);
+  void create_image_heap_regions(uint start, uint num_regions);
+  void commit_metaspace_region(G1HeapRegion* region, bool commit_bot, WorkerThreads* pretouch_workers);
 #ifdef ASSERT
   void commit_image_heap_bot(G1HeapRegion* region, WorkerThreads* pretouch_workers);
   void uncommit_image_heap_bot(G1HeapRegion* region);

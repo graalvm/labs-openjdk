@@ -47,6 +47,9 @@ bool G1HeapRegionType::is_valid(Tag tag) {
     case ClosedImageHeapTag:
     case ClosedImageHeapStartsHumongousTag:
     case ClosedImageHeapContinuesHumongousTag:
+    case MetaspaceTag:
+    case MetaspaceStartsHumongousTag:
+    case MetaspaceContinuesHumongousTag:
       return true;
     default:
       return false;
@@ -68,6 +71,9 @@ const char* G1HeapRegionType::get_str() const {
     case ClosedImageHeapTag:                   return "CI";
     case ClosedImageHeapStartsHumongousTag:    return "CIHS";
     case ClosedImageHeapContinuesHumongousTag: return "CIHC";
+    case MetaspaceTag:                         return "METASPACE";
+    case MetaspaceStartsHumongousTag:          return "METASPACE_HUMS";
+    case MetaspaceContinuesHumongousTag:       return "METASPACE_HUMC";
     default:
       ShouldNotReachHere();
       return nullptr; // keep some compilers happy
@@ -89,6 +95,9 @@ const char* G1HeapRegionType::get_short_str() const {
     case ClosedImageHeapTag:                   return "CI";
     case ClosedImageHeapStartsHumongousTag:    return "CIHS";
     case ClosedImageHeapContinuesHumongousTag: return "CIHC";
+    case MetaspaceTag:                         return "M";
+    case MetaspaceStartsHumongousTag:          return "MHS";
+    case MetaspaceContinuesHumongousTag:       return "MHC";
     default:
       ShouldNotReachHere();
       return nullptr; // keep some compilers happy
@@ -111,6 +120,9 @@ G1HeapRegionTraceType::Type G1HeapRegionType::get_trace_type() {
     case OpenImageHeapContinuesHumongousTag:
     case ClosedImageHeapStartsHumongousTag:
     case ClosedImageHeapContinuesHumongousTag:
+    case MetaspaceTag:
+    case MetaspaceStartsHumongousTag:
+    case MetaspaceContinuesHumongousTag:
     default:
       ShouldNotReachHere();
       return G1HeapRegionTraceType::Free; // keep some compilers happy

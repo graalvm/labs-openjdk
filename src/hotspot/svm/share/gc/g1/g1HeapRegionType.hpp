@@ -53,6 +53,9 @@ private:
   // Open image heap:                        0010000 (32)
   // Open image heap, starts humongous:      0011100 (36)
   // Open image heap, continues humongous:   0011101 (37)
+  // Metaspace:                              1000000 (64)
+  // Metaspace, starts humongous:            1000100 (68)
+  // Metaspace, continues humongous:         1000101 (69)
   //
   // Naming convention:
   // - tag:  use usable type
@@ -83,7 +86,12 @@ private:
     OpenImageHeapStartsHumongousTag      = OpenImageHeapTag | StartsHumongousTag,
     OpenImageHeapContinuesHumongousTag   = OpenImageHeapTag | ContinuesHumongousTag,
 
-    ImageHeapTypeMask                    = ClosedImageHeapTag | OpenImageHeapTag
+    ImageHeapTypeMask                    = ClosedImageHeapTag | OpenImageHeapTag,
+
+    MetaspaceBit                         = 64,
+    MetaspaceTag                         = MetaspaceBit,
+    MetaspaceStartsHumongousTag          = MetaspaceTag | StartsHumongousTag,
+    MetaspaceContinuesHumongousTag       = MetaspaceTag | ContinuesHumongousTag
   } Tag;
 
   volatile Tag _tag;
@@ -134,11 +142,15 @@ public:
   bool is_image_heap()                          const { return (get() & ImageHeapTypeMask) != 0; }
   bool is_open_image_heap()                     const { return (get() & ImageHeapTypeMask) == OpenImageHeapTag; }
   bool is_closed_image_heap()                   const { return (get() & ImageHeapTypeMask) == ClosedImageHeapTag; }
+  bool is_metaspace()                           const { return (get() & MetaspaceBit) != 0; }
 
   bool is_old()                                 const { return (get() & OldBit) != 0; }
   bool is_old_or_humongous_or_open_image_heap() const {
     // NOTE (chaeubl): we filter humongous closed image heap regions to avoid false positives
     return (get() & (OldBit | HumongousBit | OpenImageHeapBit)) != 0 && !is_closed_image_heap();
+  }
+  bool is_old_or_humongous_or_open_image_heap_or_metaspace() const {
+    return is_old_or_humongous_or_open_image_heap() || is_metaspace();
   }
 
   // Setters
@@ -153,6 +165,9 @@ public:
   void set_continues_humongous() { set_from(ContinuesHumongousTag, FreeTag); }
 
   void set_old() { set(OldTag); }
+  void set_metaspace() { set(MetaspaceTag); }
+  void set_metaspace_starts_humongous() { set_from(MetaspaceStartsHumongousTag, MetaspaceTag); }
+  void set_metaspace_continues_humongous() { set_from(MetaspaceContinuesHumongousTag, MetaspaceTag); }
 
   // Change the current region type to be of an old region type if not already done so.
   // Returns whether the region type has been changed or not.

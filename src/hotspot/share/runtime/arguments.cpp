@@ -1726,11 +1726,11 @@ void Arguments::set_heap_size() {
   }
 
 #ifdef SVM
-  // Increase all heap sizes by the image heap size without loosing the information if the value was set ergonomically or on the command line.
+  // Increase all heap sizes by the image heap and metaspace sizes without losing the information if the value was set ergonomically or on the command line.
   assert(assert_heap_sizes(), "must be");
 
   {
-    size_t min_heap_size = increase_by_image_heap_size(MinHeapSize);
+    size_t min_heap_size = increase_heap_size(MinHeapSize);
     if (FLAG_IS_CMDLINE(MinHeapSize)) {
       FLAG_SET_CMDLINE(MinHeapSize, min_heap_size);
     } else {
@@ -1740,7 +1740,7 @@ void Arguments::set_heap_size() {
   }
 
   {
-    size_t initial_heap_size = increase_by_image_heap_size(InitialHeapSize);
+    size_t initial_heap_size = increase_heap_size(InitialHeapSize);
     if (FLAG_IS_CMDLINE(InitialHeapSize)) {
       FLAG_SET_CMDLINE(InitialHeapSize, initial_heap_size);
     } else {
@@ -1750,7 +1750,7 @@ void Arguments::set_heap_size() {
   }
 
   {
-    size_t max_heap_size = increase_by_image_heap_size(MaxHeapSize);
+    size_t max_heap_size = increase_heap_size(MaxHeapSize);
     if (FLAG_IS_CMDLINE(MaxHeapSize)) {
       FLAG_SET_CMDLINE(MaxHeapSize, max_heap_size);
     } else {
@@ -1800,13 +1800,15 @@ bool Arguments::assert_heap_sizes() {
   return true;
 }
 
-size_t Arguments::increase_by_image_heap_size(size_t size) {
-  // We increase the heap size by the size of the image heap. However, we don't limit the result to the size of the allocatable memory as this seems
+size_t Arguments::increase_heap_size(size_t size) {
+  assert(SVMGlobalData::_image_heap_size > 0, "must be");
+  // Add the image heap and metaspace sizes. However, we don't limit the result to the size of the allocatable memory as this seems
   // rather useless as the VM will need virtual memory for non heap parts as well. So, even if we would limit the heap size, the VM as a whole can
   // exceed that limit easily.
-  assert(SVMGlobalData::_image_heap_size > 0, "must be");
-  size_t result = size + SVMGlobalData::_image_heap_size;
-  if (size + SVMGlobalData::_image_heap_size < size) {
+  size_t additional_size = SVMGlobalData::_image_heap_size + SVMGlobalData::_metaspace_size;
+  assert(additional_size > 0, "must be");
+  size_t result = size + additional_size;
+  if (result < size) {
     // overflow
     result = (size_t)-1;
   }

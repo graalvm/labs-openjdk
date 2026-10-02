@@ -46,6 +46,9 @@
 #include "runtime/atomic.hpp"
 #include "runtime/globals_extension.hpp"
 #include "utilities/powerOfTwo.hpp"
+#ifdef SVM
+#include "svmMetaspace.hpp"
+#endif // SVM
 
 
 namespace svm_gc {
@@ -220,21 +223,40 @@ void G1HeapRegion::set_continues_humongous(G1HeapRegion* first_hr) {
 
 #ifdef SVM
 // NOTE (chaeubl): see G1HeapRegion::set_starts_humongous(...)
-void G1HeapRegion::set_starts_humongous_in_image_heap() {
+void G1HeapRegion::initialize_starts_humongous_for_image_heap_or_metaspace() {
+  assert(is_image_heap_or_metaspace() && is_starts_humongous(), "must be a starts humongous image heap or metaspace region");
   _humongous_start_region = this;
 
-  G1CSetCandidateGroup* cset_group = new G1CSetCandidateGroup();
-  cset_group->add(this);
+  // Image heap and metaspace remembered sets remain untracked and do not need a card-set group.
+  assert(!_rem_set->is_tracked(), "image heap and metaspace remembered sets must be untracked");
+  assert(!_rem_set->is_added_to_cset_group(), "image heap and metaspace regions must not have a card-set group");
 }
 
 // NOTE (chaeubl): see G1HeapRegion::set_continues_humongous(...)
-void G1HeapRegion::set_continues_humongous_in_image_heap(G1HeapRegion* first_hr) {
+void G1HeapRegion::initialize_continues_humongous_for_image_heap_or_metaspace(G1HeapRegion* first_hr) {
+  assert(is_image_heap_or_metaspace() && is_continues_humongous(), "must be a continues humongous image heap or metaspace region");
+  assert(first_hr->is_starts_humongous(), "precondition");
   _humongous_start_region = first_hr;
+}
+
+void G1HeapRegion::set_starts_humongous_in_metaspace() {
+  assert(is_metaspace() && !is_humongous(), "must be a regular metaspace region");
+  _type.set_metaspace_starts_humongous();
+  initialize_starts_humongous_for_image_heap_or_metaspace();
+}
+
+void G1HeapRegion::set_continues_humongous_in_metaspace(G1HeapRegion* first_hr) {
+  assert(is_metaspace() && !is_humongous(), "must be a regular metaspace region");
+  assert(first_hr->is_starts_humongous() && first_hr->is_metaspace(), "precondition");
+  _type.set_metaspace_continues_humongous();
+  initialize_continues_humongous_for_image_heap_or_metaspace(first_hr);
 }
 #endif
 
 void G1HeapRegion::clear_humongous() {
   assert(is_humongous(), "pre-condition");
+  assert_svm_only(!is_image_heap(), "image heap regions must not be reclaimed");
+  assert_svm_only(!is_metaspace(), "metaspace regions must not be reclaimed");
 
   assert(capacity() == G1HeapRegion::GrainBytes, "pre-condition");
   if (is_starts_humongous()) {
@@ -493,7 +515,7 @@ static bool is_oop_safe(oop obj) {
     return false;
   }
 
-  if (SVM_ONLY(!SVMImageHeap::is_closed_image_heap_object((oop) klass)) NOT_SVM(!Metaspace::contains(klass))) {
+  if (SVM_ONLY(!SVMImageHeap::is_closed_image_heap_object((oop) klass) && !SVMMetaspace::metaspace()->is_in_allocated_memory(klass)) NOT_SVM(!Metaspace::contains(klass))) {
     log_error(gc, verify)("klass " PTR_FORMAT " of object " PTR_FORMAT " "
                           "is not in metaspace", p2i(klass), p2i(obj));
     return false;
@@ -644,6 +666,7 @@ class G1VerifyLiveAndRemSetClosure : public BasicOopIterateClosure {
 
     bool failed() const {
       assert_svm_only(!_to->is_image_heap() || _to->rem_set()->is_empty(), "remembered set of image heap regions must be empty");
+      assert_svm_only(!_to->is_metaspace() || _to->rem_set()->is_empty(), "remembered set of metaspace regions must be empty");
 
       if (_from != _to && !_from->is_young() &&
           _to->rem_set()->is_complete() &&
@@ -777,8 +800,9 @@ void G1HeapRegion::clear(bool mangle_space) {
 #ifndef PRODUCT
 void G1HeapRegion::mangle_unused_area() {
 #ifdef SVM
-  if (is_image_heap()) {
-    // Don't touch image heap regions - they might even be read-only.
+  if (is_image_heap_or_metaspace()) {
+    // Don't touch image heap or metaspace regions. Image heap regions might be read-only and unused
+    // metaspace regions might not be committed.
     return;
   }
 #endif // SVM
@@ -799,9 +823,9 @@ void G1HeapRegion::object_iterate(ObjectClosure* blk) {
 
 #ifdef SVM
 // NOTE (chaeubl): similar to G1HeapRegion::object_iterate(...) but a bit simpler because image heap
-// regions are always fully parsable
+// and metaspace regions are always fully parsable
 void G1HeapRegion::oop_iterate(OopClosure* blk) {
-  assert(is_image_heap(), "may only be called for image heap regions");
+  assert(is_image_heap_or_metaspace(), "may only be called for image heap or metaspace regions");
 
   HeapWord* p = bottom();
   HeapWord* t = top();

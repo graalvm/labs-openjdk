@@ -59,13 +59,15 @@
 #include "utilities/stack.inline.hpp"
 #ifdef SVM
 #include "svmImageHeap.hpp"
+#include "svmMetaspace.hpp"
 #endif // SVM
 
 
 namespace svm_gc {
 
 bool Klass::is_klass() const {
-  return SVMImageHeap::is_closed_image_heap_object((oop)this) && ((oop)this)->klass_without_asserts() == Universe::_dynamic_hub_klass;
+  return (SVMImageHeap::is_closed_image_heap_object((oop)this) || SVMMetaspace::metaspace()->is_in_allocated_memory(this)) &&
+         ((oop)this)->klass_without_asserts() == Universe::_dynamic_hub_klass;
 }
 
 juint load_jshort_as_juint(const Klass* base, int offset) {

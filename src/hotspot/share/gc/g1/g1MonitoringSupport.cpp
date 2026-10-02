@@ -249,6 +249,8 @@ void G1MonitoringSupport::recalculate_sizes() {
   // Recalculate all the sizes from scratch.
 
   // This never includes used bytes of current allocating heap region.
+  // NOTE (chaeubl): GR-79805 tracks consistent image heap and metaspace accounting in heap sizing
+  // and telemetry. These totals still include both, unlike the exported Runtime memory functions.
   _overall_used = _g1h->used_unlocked();
   _eden_space_used = _g1h->eden_regions_used_bytes();
   _survivor_space_used = _g1h->survivor_regions_used_bytes();

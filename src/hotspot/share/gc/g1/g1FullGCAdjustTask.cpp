@@ -70,13 +70,14 @@ class G1AdjustRegionClosure : public G1HeapRegionClosure {
     if (r->is_closed_image_heap() || r->is_free()) {
       // nothing to do
     } else if (r->is_humongous()) {
-      // NOTE (chaeubl): This includes humongous open image heap regions and humongous regions where the object is explicitly pinned.
-      assert(_bitmap->is_marked(r->humongous_start_region()->bottom()) SVM_ONLY(|| r->is_open_image_heap()), "no need to update a dead object");
+      // NOTE (chaeubl): This includes humongous open image heap and metaspace regions, and
+      // humongous regions where the object is explicitly pinned.
+      assert(_bitmap->is_marked(r->humongous_start_region()->bottom()) SVM_ONLY(|| r->is_open_image_heap_or_metaspace()), "no need to update a dead object");
       oop obj = cast_to_oop(r->humongous_start_region()->bottom());
       obj->oop_iterate(&cl, MemRegion(r->bottom(), r->top()));
-    } else if (r->is_open_image_heap()) {
-      // NOTE (chaeubl): image heap objects are always alive and therefore not marked. So, we just
-      // visit all objects in the open image heap region instead of doing a bitmap-based iteration.
+    } else if (r->is_open_image_heap_or_metaspace()) {
+      // NOTE (chaeubl): open image heap and metaspace objects are always alive and therefore not
+      // marked. Visit all objects in these regions instead of doing a bitmap-based iteration.
       r->oop_iterate(&cl);
     } else {
       G1AdjustLiveClosure adjust(&cl);

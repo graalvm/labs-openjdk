@@ -43,13 +43,16 @@
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
 #include "utilities/debug.hpp"
+#ifdef SVM
+#include "svmHeapAddressSpace.hpp"
+#endif // SVM
 
 
 namespace svm_gc {
 
 inline bool G1FullGCMarker::mark_object(oop obj) {
   // Try to mark.
-  if (SVM_ONLY(SVMImageHeap::is_image_heap_object(obj) ||) !_bitmap->par_mark(obj)) {
+  if (SVM_ONLY(SVMHeapAddressSpace::is_image_heap_or_metaspace_object(obj) ||) !_bitmap->par_mark(obj)) {
     // Lost mark race.
     return false;
   }
@@ -81,7 +84,7 @@ template <class T> inline void G1FullGCMarker::mark_and_push(T* p) {
     if (mark_object(obj)) {
       _oop_stack.push(obj);
     }
-    assert(_bitmap->is_marked(obj) SVM_ONLY(|| SVMImageHeap::is_image_heap_object(obj)), "Must be marked");
+    assert(_bitmap->is_marked(obj) SVM_ONLY(|| SVMHeapAddressSpace::is_image_heap_or_metaspace_object(obj)), "Must be marked");
   }
 }
 

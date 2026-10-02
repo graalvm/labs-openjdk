@@ -94,7 +94,13 @@ public:
   HeapWord* end() const            { return _end;    }
 
   void set_top(HeapWord* value) { _top = value; }
+#ifdef SVM
+  void set_top_release(HeapWord* value) { Atomic::release_store(&_top, value); }
+#endif // SVM
   HeapWord* top() const { return _top; }
+#ifdef SVM
+  HeapWord* top_acquire() const { return Atomic::load_acquire(&_top); }
+#endif // SVM
 
   // See the comment above in the declaration of _pre_dummy_top for an
   // explanation of what it is.
@@ -401,13 +407,18 @@ public:
 
 #ifdef SVM
   bool is_old_or_humongous_or_open_image_heap() const { return _type.is_old_or_humongous_or_open_image_heap(); }
+  bool is_old_or_humongous_or_open_image_heap_or_metaspace() const { return _type.is_old_or_humongous_or_open_image_heap_or_metaspace(); }
 
   bool is_image_heap()                          const { return _type.is_image_heap(); }
+  bool is_image_heap_or_metaspace()             const { return is_image_heap() || is_metaspace(); }
   bool is_closed_image_heap()                   const { return _type.is_closed_image_heap(); }
   bool is_open_image_heap()                     const { return _type.is_open_image_heap(); }
+  bool is_open_image_heap_or_metaspace()        const { return is_open_image_heap() || is_metaspace(); }
+  bool is_metaspace()                           const { return _type.is_metaspace(); }
 
   G1HeapRegionType type()                       const { return _type; }
   void set_type(jbyte type);
+  void set_metaspace()                          { _type.set_metaspace(); }
 #else
   // NOTE (chaeubl): usually, calls to this method should be replaced with is_old_or_humongous_or_open_image_heap()
   bool is_old_or_humongous() const { return _type.is_old_or_humongous(); }
@@ -444,8 +455,10 @@ public:
   void set_continues_humongous(G1HeapRegion* first_hr);
 
 #ifdef SVM
-  void set_starts_humongous_in_image_heap();
-  void set_continues_humongous_in_image_heap(G1HeapRegion* first_hr);
+  void initialize_starts_humongous_for_image_heap_or_metaspace();
+  void initialize_continues_humongous_for_image_heap_or_metaspace(G1HeapRegion* first_hr);
+  void set_starts_humongous_in_metaspace();
+  void set_continues_humongous_in_metaspace(G1HeapRegion* first_hr);
 
   void set_image_heap_bot(G1BlockOffsetTable* bot) {
     assert(is_open_image_heap(), "only open image heap regions use the prebuilt BOT");

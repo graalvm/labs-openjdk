@@ -881,7 +881,8 @@ public:
                        bool is_serial);
 
 #ifdef SVM
-  bool iterate_open_image_heap_region(G1CMBitMapClosure* cl);
+  bool iterate_current_region(G1CMBitMapClosure* cl, MemRegion mr);
+  bool iterate_unmarked_region(G1CMBitMapClosure* cl);
 #endif // SVM
 
   // These two calls start and stop the timer

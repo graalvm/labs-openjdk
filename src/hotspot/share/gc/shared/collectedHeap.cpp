@@ -59,6 +59,9 @@
 #include "utilities/copy.hpp"
 #include "utilities/events.hpp"
 #include "utilities/ostream.hpp"
+#ifdef SVM
+#include "svmMetaspace.hpp"
+#endif // SVM
 
 #ifndef SVM
 
@@ -524,6 +527,7 @@ void
 CollectedHeap::fill_with_object_impl(HeapWord* start, size_t words, bool zap)
 {
   assert_svm_only(!SVMImageHeap::is_in_image_heap(start), "must not modify image heap data");
+  assert_svm_only(!SVMMetaspace::is_in_address_space(start), "must not modify metaspace data");
   assert(words <= filler_array_max_size(), "too big for a single object");
 
   if (words >= filler_array_min_size()) {
@@ -692,6 +696,7 @@ void CollectedHeap::reset_promotion_should_fail() {
 void CollectedHeap::update_capacity_and_used_at_gc() {
   _capacity_at_last_gc = capacity();
   _used_at_last_gc     = used();
+  SVM_ONLY(SVMMetaspace::metaspace()->update_used_at_last_gc();)
 }
 
 } // namespace svm_gc
