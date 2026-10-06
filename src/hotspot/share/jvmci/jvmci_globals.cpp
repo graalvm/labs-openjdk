@@ -48,31 +48,31 @@
 struct JVMCIClassIdentityHashCodeKey {
   const char* loader_name;
   const char* class_name;
+
+  static unsigned hash(const JVMCIClassIdentityHashCodeKey& key) {
+    unsigned hash = 0;
+    for (const char* p = key.loader_name; *p != '\0'; p++) {
+      hash = 31 * hash + static_cast<unsigned char>(*p);
+    }
+    hash = 31 * hash + '\t';
+    for (const char* p = key.class_name; *p != '\0'; p++) {
+      hash = 31 * hash + static_cast<unsigned char>(*p);
+    }
+    return hash;
+  }
+
+  static bool equals(const JVMCIClassIdentityHashCodeKey& a, const JVMCIClassIdentityHashCodeKey& b) {
+    return strcmp(a.loader_name, b.loader_name) == 0 && strcmp(a.class_name, b.class_name) == 0;
+  }
 };
-
-static unsigned jvmci_class_identity_hash_code_key_hash(const JVMCIClassIdentityHashCodeKey& key) {
-  unsigned hash = 0;
-  for (const char* p = key.loader_name; *p != '\0'; p++) {
-    hash = 31 * hash + static_cast<unsigned char>(*p);
-  }
-  hash = 31 * hash + '\t';
-  for (const char* p = key.class_name; *p != '\0'; p++) {
-    hash = 31 * hash + static_cast<unsigned char>(*p);
-  }
-  return hash;
-}
-
-static bool jvmci_class_identity_hash_code_key_equals(const JVMCIClassIdentityHashCodeKey& a, const JVMCIClassIdentityHashCodeKey& b) {
-  return strcmp(a.loader_name, b.loader_name) == 0 && strcmp(a.class_name, b.class_name) == 0;
-}
 
 using JVMCIClassIdentityHashCodeTable = ResourceHashtable<
   JVMCIClassIdentityHashCodeKey,
   intptr_t,
   10007,
   AnyObj::C_HEAP, mtJVMCI,
-  jvmci_class_identity_hash_code_key_hash,
-  jvmci_class_identity_hash_code_key_equals>;
+  JVMCIClassIdentityHashCodeKey::hash,
+  JVMCIClassIdentityHashCodeKey::equals>;
 
 fileStream* JVMCIGlobals::_jni_config_file = nullptr;
 static JVMCIClassIdentityHashCodeTable* class_identity_hash_codes = nullptr;
@@ -329,7 +329,7 @@ static intptr_t stable_generated_class_identity_hash_code(Klass* klass) {
     key.print("@array:%d", dimension);
   }
   JVMCIClassIdentityHashCodeKey generated_key = { "@generated", key.as_string() };
-  intptr_t hash_code = jvmci_class_identity_hash_code_key_hash(generated_key) & markWord::hash_mask;
+  intptr_t hash_code = JVMCIClassIdentityHashCodeKey::hash(generated_key) & markWord::hash_mask;
   return hash_code == 0 ? 1 : hash_code;
 }
 
