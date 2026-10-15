@@ -105,8 +105,11 @@ public class ConstantPoolTest {
     }
 
     public static final int ICONST_0 = 3;
+    public static final int LCONST_0 = 9;
     public static final int ALOAD_0 = 42;
     public static final int ALOAD_1 = 43;
+    public static final int IRETURN = 172;
+    public static final int RETURN = 177;
     public static final int LDC = 18;
     public static final int LDC_W = 19;
     public static final int LDC2_W = 20;
@@ -250,6 +253,27 @@ public class ConstantPoolTest {
 
     static void invokeHandle(MethodHandle mh) throws Throwable  {
         mh.invokeExact(0);
+    }
+
+    // We never call this method, so its signature-polymorphic invoke site is never resolved.
+    static void invokeHandle_never_call(MethodHandle mh) throws Throwable {
+        mh.invokeExact(0L);
+    }
+
+    static byte invokeHandle_byte(MethodHandle mh) throws Throwable {
+        return (byte) mh.invokeExact((byte) 0);
+    }
+
+    static boolean invokeHandle_boolean(MethodHandle mh) throws Throwable {
+        return (boolean) mh.invokeExact(false);
+    }
+
+    static short invokeHandle_short(MethodHandle mh) throws Throwable {
+        return (short) mh.invokeExact((short) 0);
+    }
+
+    static char invokeHandle_char(MethodHandle mh) throws Throwable {
+        return (char) mh.invokeExact((char) 0);
     }
 
     static void intFunc(int t) {}
@@ -736,5 +760,84 @@ public class ConstantPoolTest {
                           "wrong method: " + callee);
         Assert.assertEquals(m.getConstantPool().lookupName(rawIndex, INVOKEVIRTUAL), "hashCode");
         Assert.assertEquals(m.getConstantPool().lookupSignature(rawIndex, INVOKEVIRTUAL).toMethodDescriptor(), "()I");
+    }
+
+    @Test
+    public void lookupMethodTest_signaturePolymorphic_resolved() throws Throwable {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodType mt = MethodType.methodType(void.class, int.class);
+        MethodHandle mh = lookup.findStatic(ConstantPoolTest.class, "intFunc", mt);
+        invokeHandle(mh);
+
+        ResolvedJavaMethod m = findInvokeExactCaller("invokeHandle");
+        int rawIndex = getInvokeExactIndex(m, ICONST_0, "(I)V");
+        JavaMethod callee = m.getConstantPool().lookupMethod(rawIndex, INVOKEVIRTUAL, m);
+        assertResolvedInvokeExactMethod(callee, "(Ljava/lang/Object;ILjava/lang/Object;)V");
+    }
+
+    @Test
+    public void lookupMethodTest_signaturePolymorphic_unresolved() throws Exception {
+        ResolvedJavaMethod m = findInvokeExactCaller("invokeHandle_never_call");
+        int rawIndex = getInvokeExactIndex(m, LCONST_0, "(J)V");
+        JavaMethod callee = m.getConstantPool().lookupMethod(rawIndex, INVOKEVIRTUAL, m);
+        Assert.assertTrue(callee instanceof UnresolvedJavaMethod, "unresolved invokeExact site returned " + callee);
+        Assert.assertEquals(callee.getName(), "invokeExact");
+        Assert.assertEquals(callee.getSignature().toMethodDescriptor(), "(J)V");
+        Assert.assertEquals(callee.getDeclaringClass().getName(), "Ljava/lang/invoke/MethodHandle;");
+    }
+
+    @Test
+    public void lookupMethodTest_signaturePolymorphic_subInt() throws Throwable {
+        invokeHandle_byte(MethodHandles.identity(byte.class));
+        invokeHandle_boolean(MethodHandles.identity(boolean.class));
+        invokeHandle_short(MethodHandles.identity(short.class));
+        invokeHandle_char(MethodHandles.identity(char.class));
+
+        String[] methodNames = {"invokeHandle_byte", "invokeHandle_boolean", "invokeHandle_short", "invokeHandle_char"};
+        String[] descriptors = {"(B)B", "(Z)Z", "(S)S", "(C)C"};
+        for (int i = 0; i < methodNames.length; i++) {
+            String returnDescriptor = descriptors[i].substring(descriptors[i].indexOf(')') + 1);
+            ResolvedJavaMethod m = findInvokeExactCaller(methodNames[i], returnDescriptor);
+            int rawIndex = getInvokeExactIndex(m, ICONST_0, descriptors[i]);
+            JavaMethod callee = m.getConstantPool().lookupMethod(rawIndex, INVOKEVIRTUAL, m);
+            assertResolvedInvokeExactMethod(callee, "(Ljava/lang/Object;ILjava/lang/Object;)I");
+        }
+    }
+
+    private void assertResolvedInvokeExactMethod(JavaMethod method, String descriptor) {
+        Assert.assertTrue(method instanceof ResolvedJavaMethod, "resolved invokeExact site returned " + method);
+        Assert.assertEquals(method.getName(), "invokeExact_MT");
+        Assert.assertEquals(method.getSignature().toMethodDescriptor(), descriptor);
+        Assert.assertTrue(method.getDeclaringClass() instanceof ResolvedJavaType, "unresolved declaring class: " + method);
+        Assert.assertTrue(method.getDeclaringClass().getName().startsWith("Ljava/lang/invoke/LambdaForm$MH"),
+                        "wrong declaring class: " + method.getDeclaringClass());
+    }
+
+    private ResolvedJavaMethod findInvokeExactCaller(String methodName) {
+        return findInvokeExactCaller(methodName, "V");
+    }
+
+    private ResolvedJavaMethod findInvokeExactCaller(String methodName, String returnDescriptor) {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        ResolvedJavaType type = metaAccess.lookupJavaType(ConstantPoolTest.class);
+        Signature methodSig = metaAccess.parseMethodDescriptor("(Ljava/lang/invoke/MethodHandle;)" + returnDescriptor);
+        ResolvedJavaMethod method = type.findMethod(methodName, methodSig);
+        Assert.assertNotNull(method, "missing method " + methodName);
+        return method;
+    }
+
+    private int getInvokeExactIndex(ResolvedJavaMethod method, int argumentOpcode, String descriptor) {
+        byte[] bytecode = method.getCode();
+        Assert.assertNotNull(bytecode, method.toString());
+        Assert.assertEquals(bytecode.length, 6, method.toString());
+        Assert.assertEquals(beU1(bytecode, 0), ALOAD_0, method.toString());
+        Assert.assertEquals(beU1(bytecode, 1), argumentOpcode, method.toString());
+        Assert.assertEquals(beU1(bytecode, 2), INVOKEVIRTUAL, method.toString());
+        Assert.assertEquals(beU1(bytecode, 5), descriptor.endsWith("V") ? RETURN : IRETURN, method.toString());
+        int rawIndex = beU2(bytecode, 3);
+        Assert.assertEquals(method.getConstantPool().lookupName(rawIndex, INVOKEVIRTUAL), "invokeExact");
+        Assert.assertEquals(method.getConstantPool().lookupSignature(rawIndex, INVOKEVIRTUAL).toMethodDescriptor(), descriptor);
+        Assert.assertEquals(method.getConstantPool().lookupReferencedType(rawIndex, INVOKEVIRTUAL).getName(), "Ljava/lang/invoke/MethodHandle;");
+        return rawIndex;
     }
 }
