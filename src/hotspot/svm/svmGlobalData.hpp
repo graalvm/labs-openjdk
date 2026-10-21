@@ -274,6 +274,7 @@ struct SVMGlobalData {
   static SVMOopMap* _thread_locals_reference_map;
   static bool _closed_type_world;
   static bool _use_interface_hashing;
+  static bool _use_pext_interface_hashing;
   static int _interface_hashing_max_id;
   static queueVmOperationFunc _collect_for_allocation_op;
   static queueVmOperationFunc _execute_pause_remark_op;

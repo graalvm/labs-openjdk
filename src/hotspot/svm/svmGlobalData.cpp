@@ -74,6 +74,7 @@ size_t SVMGlobalData::_image_heap_block_offset_table_size = 0;
 SVMOopMap* SVMGlobalData::_thread_locals_reference_map = nullptr;
 bool SVMGlobalData::_closed_type_world = false;
 bool SVMGlobalData::_use_interface_hashing = false;
+bool SVMGlobalData::_use_pext_interface_hashing = false;
 int SVMGlobalData::_interface_hashing_max_id = -1;
 queueVmOperationFunc SVMGlobalData::_collect_for_allocation_op = nullptr;
 queueVmOperationFunc SVMGlobalData::_execute_pause_remark_op = nullptr;

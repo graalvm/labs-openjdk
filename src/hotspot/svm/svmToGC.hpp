@@ -64,7 +64,7 @@ extern "C" {
       objArrayOop static_object_fields, typeArrayOop static_primitive_fields, oop vm_operation_thread, oop safepoint, oop runtime_code_info_memory,
       int reference_map_compressed_offset_shift, SVMOopMap *thread_locals_reference_map,
       objArrayOop klasses_assumed_reachable_for_code_unloading, oop performance_data, bool closed_type_world,
-      bool use_interface_hashing, int interface_hashing_max_id, int dynamic_hub_hashing_interface_mask, int dynamic_hub_hashing_shift_offset,
+      bool use_interface_hashing, bool use_pext_interface_hashing, int interface_hashing_max_id, int dynamic_hub_hashing_shift_offset,
       char *offsets, int offsets_length,
       queueVmOperationFunc collect_for_allocation_op, queueVmOperationFunc execute_pause_remark_op, queueVmOperationFunc execute_pause_cleanup_op,
       queueVmOperationFunc collect_full_op, queueVmOperationFunc verify_heap_op, queueVmOperationFunc try_initiate_conc_mark_op,
