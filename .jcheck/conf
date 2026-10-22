@@ -1,11 +1,7 @@
 [general]
 project=jdk-updates
 jbs=JDK
-<<<<<<< HEAD
-version=25.0.4.1.1
-=======
 version=25.0.5.0.2
->>>>>>> jdk-25.0.5.0.2+1
 
 [checks]
 error=author,committer,reviewers,merge,issues,executable,symlink,message,hg-tag,whitespace,problemlists,copyright
