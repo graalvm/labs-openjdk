@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,27 +21,33 @@
  * questions.
  */
 
-import java.net.http.HttpClient.Version;
-import java.time.Duration;
-import org.testng.annotations.Test;
+package compiler.rangechecks;
 
-/*
+import java.util.Objects;
+
+/**
  * @test
- * @summary Tests for connection related timeouts
- * @bug 8208391
- * @run testng/othervm ConnectTimeoutNoProxyAsync
+ * @bug 8382378
+ * @summary Test that C2 can handle long range check indices scaled by zero.
+ * @run main ${test.main.class}
+ * @run main/othervm -Xcomp -XX:-TieredCompilation
+ *                   -XX:CompileCommand=compileonly,${test.main.class}::test*
+ *                   ${test.main.class}
  */
 
-public class ConnectTimeoutNoProxyAsync extends AbstractConnectTimeout {
+public class TestLongRangeCheckWithZeroScaling {
 
-    @Test(dataProvider = "variants")
-    @Override
-    public void timeoutNoProxyAsync(Version requestVersion,
-                                    String scheme,
-                                    String method,
-                                    Duration connectTimeout,
-                                    Duration requestduration)
-    {
-        super.timeoutNoProxyAsync(requestVersion, scheme, method, connectTimeout, requestduration);
+    static void testCheckCancellingSubtractionOfScaledIndices() {
+        for (int i = 0; i < 100; i++) {
+            long index = ((long)(i << 10)) - (((long)i) << 10);
+            Objects.checkIndex(index, 100);
+        }
+    }
+
+    public static void main(String[] args) {
+        Objects.checkIndex(0, 1); // Ensure java.util.Objects is loaded.
+        for (int i = 0; i < 10_000; i++) {
+            testCheckCancellingSubtractionOfScaledIndices();
+        }
     }
 }
