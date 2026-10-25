@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,9 +50,14 @@ import org.junit.Test;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link ResolvedJavaRecordComponent}.
@@ -110,6 +115,32 @@ public class TestResolvedJavaRecordComponent extends FieldUniverse {
         }
     }
 
+    /**
+     * Verifies that {@link ResolvedJavaRecordComponent#getType()} refreshes an unresolved type after
+     * another operation loads it, without triggering class loading itself.
+     */
+    @Test
+    public void getTypeRefreshesInitiallyUnresolvedTypeTest() throws ClassNotFoundException {
+        IsolatedClassLoader loader = new IsolatedClassLoader();
+        Class<?> recordClass = loader.loadClass(RECORD_CLASS_NAME);
+        List<? extends ResolvedJavaRecordComponent> components = metaAccess.lookupJavaType(recordClass).getRecordComponents();
+        assertEquals("record component count", 1, components.size());
+        ResolvedJavaRecordComponent component = components.get(0);
+
+        assertFalse("JVMCI metadata lookup loaded the component type", loader.isLoaded(COMPONENT_CLASS_NAME));
+        assertFalse("component type was unexpectedly resolved", component.getType() instanceof ResolvedJavaType);
+        assertFalse("component type was unexpectedly resolved on retry", component.getType() instanceof ResolvedJavaType);
+        assertFalse("getType loaded the component type", loader.isLoaded(COMPONENT_CLASS_NAME));
+
+        RecordComponent reflectionComponent = recordClass.getRecordComponents()[0];
+        assertTrue("reflection did not load the component type", loader.isLoaded(COMPONENT_CLASS_NAME));
+
+        JavaType resolvedType = component.getType();
+        assertTrue("component type was not refreshed", resolvedType instanceof ResolvedJavaType);
+        assertEquals("refreshed component type", metaAccess.lookupJavaType(reflectionComponent.getType()), resolvedType);
+        assertEquals("reflection component lookup", component, metaAccess.lookupJavaRecordComponent(reflectionComponent));
+    }
+
     @Test
     public void getTypeAnnotationInfoTest() {
         for (RecordComponent rc : recordComponents.keySet()) {
@@ -128,7 +159,32 @@ public class TestResolvedJavaRecordComponent extends FieldUniverse {
         }
     }
 
+    private static final String TEST_PACKAGE = TestResolvedJavaRecordComponent.class.getPackageName();
+    private static final String RECORD_CLASS_NAME = TEST_PACKAGE + ".RecordWithInitiallyUnresolvedComponent";
+    private static final String COMPONENT_CLASS_NAME = TEST_PACKAGE + ".InitiallyUnresolvedComponent";
+
+    /** Loads test fixtures from the test output directory in an isolated namespace. */
+    private static final class IsolatedClassLoader extends URLClassLoader {
+
+        /** Creates a loader without a parent so the fixture bypasses the application class loader. */
+        IsolatedClassLoader() {
+            super(new URL[]{TestResolvedJavaRecordComponent.class.getProtectionDomain().getCodeSource().getLocation()}, null);
+        }
+
+        boolean isLoaded(String name) {
+            return findLoadedClass(name) != null;
+        }
+    }
+
     private static final Field recordComponentAnnotations = lookupField(RecordComponent.class, "annotations");
     private static final Field recordComponentTypeAnnotations = lookupField(RecordComponent.class, "typeAnnotations");
 
+}
+
+/** Record fixture whose component type is loaded after JVMCI creates its metadata. */
+record RecordWithInitiallyUnresolvedComponent(InitiallyUnresolvedComponent component) {
+}
+
+/** Component type loaded separately from its declaring record. */
+final class InitiallyUnresolvedComponent {
 }
