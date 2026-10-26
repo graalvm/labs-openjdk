@@ -77,9 +77,17 @@ public interface ConstantPool {
 
     /**
      * Looks up the type referenced by the {@code rawIndex}.
+     * If {@code opcode} is {@code -1}, {@code rawIndex} is a constant pool index denoting a
+     * class, field reference, method reference, interface method reference, method handle, or
+     * dynamic constant. For a member reference or method handle, returns the symbolic holder
+     * of the member reference, which may differ from the member's declaring class. For a
+     * dynamic constant, returns its declared type. This lookup does not load classes or resolve
+     * method handles; a holder that is not already loaded is returned as an unresolved type.
      *
-     * @param rawIndex index in the bytecode stream after the {@code opcode} (could be rewritten for some opcodes)
-     * @param opcode the opcode of the instruction with {@code rawIndex} as an operand
+     * @param rawIndex index in the bytecode stream after the {@code opcode} (could be rewritten
+     *            for some opcodes), or a constant pool index if {@code opcode} is {@code -1}
+     * @param opcode the opcode of the instruction with {@code rawIndex} as an operand, or
+     *            {@code -1} for symbolic inspection by constant pool index
      * @return a reference to the compiler interface type
      */
     JavaType lookupReferencedType(int rawIndex, int opcode);
@@ -449,6 +457,18 @@ public interface ConstantPool {
      * @return the appendix if it exists and is resolved or {@code null}
      */
     JavaConstant lookupAppendix(int rawIndex, int opcode);
+
+    /**
+     * Decodes a bytecode operand to the index of its entry in this constant pool. The operand
+     * may have been rewritten by the VM. For instructions whose operands are constant pool
+     * indices already, returns {@code rawIndex} unchanged. This does not resolve the referenced
+     * entry or call site, or invoke a bootstrap method.
+     *
+     * @param rawIndex the operand as returned in {@link ResolvedJavaMethod#getCode()}
+     * @param opcode an opcode that has a constant pool index operand
+     * @return the constant pool index of the referenced entry
+     */
+    int decodeIndex(int rawIndex, int opcode);
 
     /**
      * Gets the tag of the constant pool entry at {@code cpi}.

@@ -34,7 +34,6 @@ import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 import static jdk.vm.ci.hotspot.HotSpotVMConfig.config;
 import static jdk.vm.ci.hotspot.UnsafeAccess.UNSAFE;
 import jdk.vm.ci.meta.ConstantPool;
-import jdk.vm.ci.meta.ConstantPool.Tag;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaField;
 import jdk.vm.ci.meta.JavaMethod;
@@ -1015,14 +1014,37 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
     public JavaType lookupReferencedType(int rawIndex, int opcode) {
         int cpi;
         switch (opcode) {
+            case -1: {
+                Tag tag = getTag(rawIndex);
+                if (tag == Tag.DYNAMIC) {
+                    int nameAndTypeIndex = getNameAndTypeRefIndexAt(rawIndex);
+                    String typeName = lookupUtf8(getSignatureRefIndexAt(nameAndTypeIndex));
+                    return runtime().lookupType(typeName, getHolder(), false);
+                }
+                cpi = switch (tag) {
+                    case CLASS -> rawIndex;
+                    case FIELD_REF, METHOD_REF, INTERFACE_METHOD_REF -> getUncachedKlassRefIndexAt(rawIndex);
+                    case METHODHANDLE -> getUncachedKlassRefIndexAt(getMethodHandleRefIndexAt(rawIndex));
+                    default ->
+                        throw JVMCIError.shouldNotReachHere("Unexpected constant pool tag: " + tag);
+                };
+                break;
+            }
             case Bytecodes.CHECKCAST:
             case Bytecodes.INSTANCEOF:
             case Bytecodes.NEW:
             case Bytecodes.ANEWARRAY:
             case Bytecodes.MULTIANEWARRAY:
+                cpi = rawIndex;
+                break;
             case Bytecodes.LDC:
             case Bytecodes.LDC_W:
             case Bytecodes.LDC2_W:
+                if (getTag(rawIndex) == Tag.DYNAMIC) {
+                    int nameAndTypeIndex = getNameAndTypeRefIndexAt(rawIndex);
+                    String typeName = lookupUtf8(getSignatureRefIndexAt(nameAndTypeIndex));
+                    return runtime().lookupType(typeName, getHolder(), false);
+                }
                 cpi = rawIndex;
                 break;
             case Bytecodes.GETSTATIC:
@@ -1040,11 +1062,6 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
             }
             default:
                 throw JVMCIError.shouldNotReachHere("Unexpected opcode " + opcode);
-        }
-        if (getTag(cpi) == Tag.DYNAMIC) {
-            int nameAndTypeIndex = getNameAndTypeRefIndexAt(cpi);
-            String typeName = lookupUtf8(getSignatureRefIndexAt(nameAndTypeIndex));
-            return runtime().lookupType(typeName, getHolder(), false);
         }
         final Object type = compilerToVM().lookupKlassInPool(this, cpi);
         return getJavaType(type);
@@ -1120,39 +1137,7 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
     @Override
     @SuppressWarnings("fallthrough")
     public void loadReferencedType(int rawIndex, int opcode, boolean initialize) {
-        int cpi;
-        switch (opcode) {
-            case Bytecodes.CHECKCAST:
-            case Bytecodes.INSTANCEOF:
-            case Bytecodes.NEW:
-            case Bytecodes.ANEWARRAY:
-            case Bytecodes.MULTIANEWARRAY:
-            case Bytecodes.LDC:
-            case Bytecodes.LDC_W:
-            case Bytecodes.LDC2_W:
-                cpi = rawIndex;
-                break;
-            case Bytecodes.INVOKEDYNAMIC: {
-                cpi = compilerToVM().decodeIndyIndexToCPIndex(this, rawIndex, true);
-                break;
-            }
-            case Bytecodes.GETSTATIC:
-            case Bytecodes.PUTSTATIC:
-            case Bytecodes.GETFIELD:
-            case Bytecodes.PUTFIELD:
-                cpi = compilerToVM().decodeFieldIndexToCPIndex(this, rawIndex);
-                break;
-            case Bytecodes.INVOKEVIRTUAL:
-            case Bytecodes.INVOKESPECIAL:
-            case Bytecodes.INVOKESTATIC:
-            case Bytecodes.INVOKEINTERFACE: {
-                cpi = compilerToVM().decodeMethodIndexToCPIndex(this, rawIndex);
-                break;
-            }
-            default:
-                throw JVMCIError.shouldNotReachHere("Unexpected opcode " + opcode);
-        }
-
+        int cpi = decodeIndex(rawIndex, opcode, true);
         final JvmConstant tag = getTagAt(cpi);
         if (tag == null) {
             assert getTagAt(cpi - 1) == constants.jvmDouble || getTagAt(cpi - 1) == constants.jvmLong;
@@ -1183,12 +1168,31 @@ public final class HotSpotConstantPool implements ConstantPool, MetaspaceHandleO
 
                 break;
             case "InvokeDynamic":
-                // nothing
+                // Already resolved by decodeIndex.
                 break;
             default:
                 // nothing
                 break;
         }
+    }
+
+    @Override
+    public int decodeIndex(int rawIndex, int opcode) {
+        return decodeIndex(rawIndex, opcode, false);
+    }
+
+    private int decodeIndex(int rawIndex, int opcode, boolean resolveIndy) {
+        return switch (opcode) {
+            case Bytecodes.CHECKCAST, Bytecodes.INSTANCEOF, Bytecodes.NEW, Bytecodes.ANEWARRAY,
+                 Bytecodes.MULTIANEWARRAY, Bytecodes.LDC, Bytecodes.LDC_W, Bytecodes.LDC2_W -> rawIndex;
+            case Bytecodes.INVOKEDYNAMIC ->
+                    compilerToVM().decodeIndyIndexToCPIndex(this, rawIndex, resolveIndy);
+            case Bytecodes.GETSTATIC, Bytecodes.PUTSTATIC, Bytecodes.GETFIELD, Bytecodes.PUTFIELD ->
+                    compilerToVM().decodeFieldIndexToCPIndex(this, rawIndex);
+            case Bytecodes.INVOKEVIRTUAL, Bytecodes.INVOKESPECIAL, Bytecodes.INVOKESTATIC, Bytecodes.INVOKEINTERFACE ->
+                    compilerToVM().decodeMethodIndexToCPIndex(this, rawIndex);
+            default -> throw JVMCIError.shouldNotReachHere("Unexpected opcode " + opcode);
+        };
     }
 
     @Override

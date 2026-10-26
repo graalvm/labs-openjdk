@@ -42,6 +42,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.constantpool.PoolEntry;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
@@ -51,6 +53,7 @@ import java.lang.invoke.MethodType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -233,6 +236,7 @@ public class ConstantPoolTest {
         Assert.assertEquals(4, bytecode.length);
         Assert.assertEquals(GETSTATIC, beU1(bytecode, 0));
         int rawIndex = beU2(bytecode, 1);
+        Assert.assertSame(m.getConstantPool().getTag(m.getConstantPool().decodeIndex(rawIndex, GETSTATIC)), Tag.FIELD_REF);
         JavaField field =  m.getConstantPool().lookupField(rawIndex, m, GETSTATIC);
         Assert.assertEquals("someStaticField", field.getName(), "Wrong field name; rawIndex = " + rawIndex + ";");
         Assert.assertEquals(m.getConstantPool().lookupName(rawIndex, GETSTATIC), "someStaticField");
@@ -606,6 +610,167 @@ public class ConstantPoolTest {
     }
 
     @Test
+    public void lookupMethodHandleSymbolicHolderTest() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        for (Class<?> fixture : new Class<?>[]{defineMethodHandleFixture(), defineUnresolvedHolderMethodHandleFixture()}) {
+            ResolvedJavaMethod method = metaAccess.lookupJavaMethod(fixture.getDeclaredMethod("method"));
+            ConstantPool pool = method.getConstantPool();
+            for (int cpi = 1; cpi < pool.length(); cpi++) {
+                if (pool.getTag(cpi) != Tag.METHODHANDLE) {
+                    continue;
+                }
+                int reference = pool.lookupMethodHandleReferenceIndex(cpi);
+                String name = pool.lookupName(cpi, -1);
+                boolean missing = name.startsWith("missing");
+                String expected = missing ? "L" + ConstantPoolTest.class.getName().replace('.', '/') + "$MissingMethodHandleHolder;" :
+                                name.equals("run") ? "Ljava/lang/Runnable;" : metaAccess.lookupJavaType(fixture).getName();
+                // In particular, inheritedField must retain the fixture as its symbolic holder.
+                Assert.assertEquals(pool.lookupReferencedType(cpi, -1).getName(), expected, name);
+                Assert.assertEquals(pool.lookupReferencedType(reference, -1).getName(), expected, name);
+                Assert.assertNull(pool.lookupConstant(cpi, false), name);
+                if (missing) {
+                    Assert.assertTrue(pool.lookupReferencedType(cpi, -1) instanceof UnresolvedJavaType, name);
+                    final int index = cpi;
+                    Assert.assertThrows(LinkageError.class, () -> pool.lookupConstant(index, true));
+                    Assert.assertEquals(pool.lookupReferencedType(cpi, -1).getName(), expected, name);
+                }
+            }
+        }
+    }
+
+    public interface InvokeReferenceInterface {
+        static void staticTarget() {}
+        default void defaultTarget() {}
+        void target();
+    }
+
+    public static class InvokeReferenceClass implements InvokeReferenceInterface {
+        public static void staticTarget() {}
+        public void target() {}
+        public void virtualCall() { target(); }
+        public void interfaceCall(InvokeReferenceInterface receiver) { receiver.target(); }
+        public void classStaticCall() { staticTarget(); }
+        public void interfaceStaticCall() { InvokeReferenceInterface.staticTarget(); }
+        public void classSpecialCall() { super.toString(); }
+        public void interfaceSpecialCall() { InvokeReferenceInterface.super.defaultTarget(); }
+    }
+
+    @Test
+    public void decodeInvokeIndexTest() throws Exception {
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        String[] names = {"virtualCall", "interfaceCall", "classStaticCall", "interfaceStaticCall", "classSpecialCall", "interfaceSpecialCall"};
+        int[] opcodes = {Opcodes.INVOKEVIRTUAL, Opcodes.INVOKEINTERFACE, Opcodes.INVOKESTATIC,
+                        Opcodes.INVOKESTATIC, Opcodes.INVOKESPECIAL, Opcodes.INVOKESPECIAL};
+        int[] bcis = {1, 1, 0, 0, 1, 1};
+        InvokeReferenceClass receiver = new InvokeReferenceClass();
+        // Inspect both unresolved and resolved call sites.
+        for (int pass = 0; pass < 2; pass++) {
+            for (int i = 0; i < names.length; i++) {
+                Class<?>[] parameters = i == 1 ? new Class<?>[]{InvokeReferenceInterface.class} : new Class<?>[0];
+                ResolvedJavaMethod method = metaAccess.lookupJavaMethod(InvokeReferenceClass.class.getDeclaredMethod(names[i], parameters));
+                byte[] code = method.getCode();
+                int bci = bcis[i];
+                Assert.assertEquals(beU1(code, bci), opcodes[i], names[i]);
+                ConstantPool pool = method.getConstantPool();
+                int rawIndex = beU2(code, bci + 1);
+                int cpi = pool.decodeIndex(rawIndex, opcodes[i]);
+                Assert.assertSame(pool.getTag(cpi), i % 2 == 0 ? Tag.METHOD_REF : Tag.INTERFACE_METHOD_REF, names[i]);
+                Assert.assertEquals(pool.lookupName(cpi, -1), pool.lookupName(rawIndex, opcodes[i]), names[i]);
+                Assert.assertEquals(pool.lookupReferencedType(cpi, -1), pool.lookupReferencedType(rawIndex, opcodes[i]), names[i]);
+            }
+            receiver.virtualCall();
+            receiver.interfaceCall(receiver);
+            receiver.classStaticCall();
+            receiver.interfaceStaticCall();
+            receiver.classSpecialCall();
+            receiver.interfaceSpecialCall();
+        }
+    }
+
+    @Test
+    public void lookupDynamicConstantTypeTest() throws Exception {
+        ClassWriter writer = new ClassWriter(0);
+        String name = ConstantPoolTest.class.getName().replace('.', '/') + "$DynamicTypeFixture";
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, "java/lang/Object", null);
+        MethodVisitor method = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "method", "()V", null, null);
+        Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, "java/lang/invoke/ConstantBootstraps", "nullConstant",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/Object;", false);
+        method.visitLdcInsn(new ConstantDynamic("value", "Ljava/lang/String;", bootstrap));
+        method.visitInsn(Opcodes.POP);
+        method.visitInsn(Opcodes.RETURN);
+        method.visitMaxs(1, 0);
+        method.visitEnd();
+        writer.visitEnd();
+        Class<?> fixture = MethodHandles.lookup().defineHiddenClass(writer.toByteArray(), false).lookupClass();
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        ResolvedJavaMethod resolved = metaAccess.lookupJavaMethod(fixture.getDeclaredMethod("method"));
+        byte[] code = resolved.getCode();
+        Assert.assertEquals(beU1(code, 0), LDC);
+        int cpi = beU1(code, 1);
+        ConstantPool pool = resolved.getConstantPool();
+        Assert.assertEquals(pool.decodeIndex(cpi, LDC), cpi);
+        Assert.assertSame(pool.getTag(cpi), Tag.DYNAMIC);
+        Assert.assertEquals(pool.lookupReferencedType(cpi, -1).getName(), "Ljava/lang/String;");
+        Assert.assertEquals(pool.lookupReferencedType(cpi, LDC).getName(), "Ljava/lang/String;");
+        Assert.assertNull(pool.lookupConstant(cpi, false), "symbolic lookup resolved the dynamic constant");
+    }
+
+    private static int decodeIndyBootstrapCalls;
+
+    public static CallSite decodeIndyBootstrap(Lookup lookup, String name, MethodType type) {
+        decodeIndyBootstrapCalls++;
+        return new ConstantCallSite(MethodHandles.empty(type));
+    }
+
+    @Test
+    public void decodeInvokeDynamicIndexTest() throws Exception {
+        ClassWriter writer = new ClassWriter(0);
+        String owner = ConstantPoolTest.class.getName().replace('.', '/');
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, owner + "$DecodeIndyFixture", null, "java/lang/Object", null);
+        Handle bootstrap = new Handle(Opcodes.H_INVOKESTATIC, owner, "decodeIndyBootstrap",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
+        MethodVisitor method = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "method", "()V", null, null);
+        // Two sites ensure that at least one operand is not all ones, exposing byte-order errors.
+        method.visitInvokeDynamicInsn("first", "()V", bootstrap);
+        method.visitInvokeDynamicInsn("second", "()V", bootstrap);
+        method.visitInsn(Opcodes.RETURN);
+        method.visitMaxs(0, 0);
+        method.visitEnd();
+        writer.visitEnd();
+        Class<?> fixture = MethodHandles.lookup().defineHiddenClass(writer.toByteArray(), false).lookupClass();
+        MetaAccessProvider metaAccess = JVMCI.getRuntime().getHostJVMCIBackend().getMetaAccess();
+        ResolvedJavaMethod resolved = metaAccess.lookupJavaMethod(fixture.getDeclaredMethod("method"));
+        ConstantPool pool = resolved.getConstantPool();
+        byte[] code = resolved.getCode();
+        int[] indices = new int[2];
+        int initialCalls = decodeIndyBootstrapCalls;
+        for (int pass = 0; pass < 2; pass++) {
+            for (int i = 0; i < indices.length; i++) {
+                int bci = i * 5;
+                Assert.assertEquals(beU1(code, bci), INVOKEDYNAMIC);
+                int rawIndex = beS4(code, bci + 1);
+                int cpi = pool.decodeIndex(rawIndex, INVOKEDYNAMIC);
+                Assert.assertSame(pool.getTag(cpi), Tag.INVOKEDYNAMIC);
+                Assert.assertEquals(pool.lookupName(cpi, -1), i == 0 ? "first" : "second");
+                if (pass == 0) {
+                    indices[i] = cpi;
+                    Assert.assertNull(pool.lookupAppendix(rawIndex, INVOKEDYNAMIC));
+                } else {
+                    Assert.assertEquals(cpi, indices[i]);
+                }
+                Assert.assertEquals(decodeIndyBootstrapCalls, initialCalls + pass * 2,
+                                "decoding invoked a bootstrap method");
+            }
+            if (pass == 0) {
+                pool.loadReferencedType(beS4(code, 1), INVOKEDYNAMIC);
+                Assert.assertEquals(decodeIndyBootstrapCalls, initialCalls + 1);
+                fixture.getDeclaredMethod("method").invoke(null);
+                Assert.assertEquals(decodeIndyBootstrapCalls, initialCalls + 2);
+            }
+        }
+    }
+
+    @Test
     public void lookupAppendixTest() throws Throwable {
         // We want at least two indy bytecodes -- with a single indy, the rawIndex is -1,
         // or 0xffffffff. Even if we load it with the wrong endianness, it will still come
@@ -645,6 +810,7 @@ public class ConstantPoolTest {
         // indices so they appear to be big-endian.
         int rawIndex = beS4(bytecode, 3);
         JavaConstant constant = m.getConstantPool().lookupAppendix(rawIndex, INVOKEDYNAMIC);
+        Assert.assertSame(m.getConstantPool().getTag(m.getConstantPool().decodeIndex(rawIndex, INVOKEDYNAMIC)), Tag.INVOKEDYNAMIC);
         Assert.assertTrue(constant.toString().startsWith("Object["), "wrong appendix: " + constant);
     }
 
