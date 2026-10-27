@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,8 +24,6 @@ package jdk.vm.ci.hotspot;
 
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
-import jdk.vm.ci.meta.ResolvedJavaType;
-import jdk.vm.ci.meta.UnresolvedJavaType;
 import jdk.vm.ci.meta.annotation.AbstractAnnotated;
 import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
@@ -41,7 +39,7 @@ final class HotSpotResolvedJavaRecordComponent extends AbstractAnnotated impleme
 
     private final HotSpotResolvedObjectTypeImpl declaringRecord;
     private final String name;
-    private JavaType type;
+    private final JavaType type;
 
     /**
      * Index in {@code InstanceKlass::_record_components}.
@@ -77,16 +75,6 @@ final class HotSpotResolvedJavaRecordComponent extends AbstractAnnotated impleme
 
     @Override
     public JavaType getType() {
-        // Pull type into local variable to prevent a race causing
-        // a ClassCastException below
-        JavaType currentType = type;
-        if (currentType instanceof UnresolvedJavaType unresolvedType) {
-            // Don't allow unresolved types to hang around forever
-            JavaType resolved = runtime().lookupType(unresolvedType.getName(), declaringRecord, false);
-            if (resolved instanceof ResolvedJavaType) {
-                type = resolved;
-            }
-        }
         return type;
     }
 
