@@ -35,11 +35,13 @@ public enum AArch64Kind implements PlatformKind {
     DOUBLE(8),
 
     // SIMD
+    V16_BYTE(2, BYTE),
     V32_BYTE(4, BYTE),
     V32_WORD(4, WORD),
     V64_BYTE(8, BYTE),
     V64_WORD(8, WORD),
     V64_DWORD(8, DWORD),
+    V64_SINGLE(8, SINGLE),
     V128_BYTE(16, BYTE),
     V128_WORD(16, WORD),
     V128_DWORD(16, DWORD),
@@ -102,11 +104,13 @@ public enum AArch64Kind implements PlatformKind {
         switch (this) {
             case SINGLE:
             case DOUBLE:
+            case V16_BYTE:
             case V32_BYTE:
             case V32_WORD:
             case V64_BYTE:
             case V64_WORD:
             case V64_DWORD:
+            case V64_SINGLE:
             case V128_BYTE:
             case V128_WORD:
             case V128_DWORD:
@@ -134,11 +138,13 @@ public enum AArch64Kind implements PlatformKind {
                 return 'S';
             case DOUBLE:
                 return 'D';
+            case V16_BYTE:
             case V32_BYTE:
             case V32_WORD:
             case V64_BYTE:
             case V64_WORD:
             case V64_DWORD:
+            case V64_SINGLE:
             case V128_BYTE:
             case V128_WORD:
             case V128_DWORD:
