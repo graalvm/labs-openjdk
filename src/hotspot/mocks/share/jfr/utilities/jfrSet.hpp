@@ -25,8 +25,7 @@
 #ifndef SHARE_JFR_UTILITIES_JFRSET_HPP
 #define SHARE_JFR_UTILITIES_JFRSET_HPP
 
-#include "jfr/utilities/jfrAllocation.hpp"
+#include "memory/allocation.hpp"
 #include "jfr/utilities/jfrTypes.hpp"
-#include "utilities/resizeableResourceHash.hpp"
 
 #endif // SHARE_JFR_UTILITIES_JFRSET_HPP

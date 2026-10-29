@@ -28,7 +28,7 @@
 
 #include "utilities/macros.hpp"
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_M_ARM64)
   #include "safefetch_windows.hpp"
 #elif defined(ZERO) || defined (_AIX)
   #include "safefetch_sigjmp.hpp"

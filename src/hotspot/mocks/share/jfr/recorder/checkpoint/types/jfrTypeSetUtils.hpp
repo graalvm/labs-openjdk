@@ -28,6 +28,7 @@
 #include "jfr/recorder/checkpoint/types/traceid/jfrTraceId.inline.hpp"
 #include "jfr/support/jfrSymbolTable.hpp"
 #include "jfr/utilities/jfrAllocation.hpp"
+#include "jfr/utilities/jfrSet.hpp"
 #include "oops/klass.hpp"
 #include "oops/method.hpp"
 
