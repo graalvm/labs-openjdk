@@ -37,9 +37,16 @@
 
 #define DEFINE_FLAG_MEMBER_ENUM(type, name, ...)  FLAG_MEMBER_ENUM_(name)
 
+
+namespace svm_gc {
+
 enum JVMFlagsEnum : int {
   INVALID_JVMFlagsEnum = -1,
   ALL_FLAGS(DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
+            DEFINE_FLAG_MEMBER_ENUM,
             DEFINE_FLAG_MEMBER_ENUM,
             DEFINE_FLAG_MEMBER_ENUM,
             DEFINE_FLAG_MEMBER_ENUM,
@@ -59,10 +66,14 @@ enum JVMFlagsEnum : int {
 #define DEFINE_FLAG_MEMBER_SETTER(type, name, ...) FLAG_MEMBER_SETTER_(type, name)
 
 #ifdef PRODUCT
-ALL_FLAGS(IGNORE_FLAG,               // develop     : declared as const
+ALL_FLAGS(DEFINE_FLAG_MEMBER_SETTER,
+          DEFINE_FLAG_MEMBER_SETTER,
+          DEFINE_FLAG_MEMBER_SETTER,
+          DEFINE_FLAG_MEMBER_SETTER,
+          IGNORE_FLAG,               // develop     : declared as const
           IGNORE_FLAG,               // develop-pd  : declared as const
-          DEFINE_FLAG_MEMBER_SETTER,
-          DEFINE_FLAG_MEMBER_SETTER,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
           IGNORE_RANGE,
           IGNORE_CONSTRAINT)
 #else
@@ -70,6 +81,10 @@ ALL_FLAGS(DEFINE_FLAG_MEMBER_SETTER,
           DEFINE_FLAG_MEMBER_SETTER,
           DEFINE_FLAG_MEMBER_SETTER,
           DEFINE_FLAG_MEMBER_SETTER,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
+          IGNORE_FLAG,
           IGNORE_RANGE,
           IGNORE_CONSTRAINT)
 #endif
@@ -95,5 +110,8 @@ ALL_FLAGS(DEFINE_FLAG_MEMBER_SETTER,
       FLAG_SET_ERGO(name, value);             \
     }                                         \
   } while (0)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_GLOBALS_EXTENSION_HPP

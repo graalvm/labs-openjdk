@@ -35,6 +35,9 @@
 
 // Power of two convenience library.
 
+
+namespace svm_gc {
+
 template <typename T, ENABLE_IF(std::is_integral<T>::value)>
 constexpr T max_power_of_2() {
   T max_val = std::numeric_limits<T>::max();
@@ -86,10 +89,12 @@ inline int log2i_ceil(T value) {
   return log2i_graceful(value - 1) + 1;
 }
 
+#ifndef SVM
 // Preconditions: value != 0, and the unsigned representation of value is a power of two
 inline int exact_log2(intptr_t value) {
   return log2i_exact((uintptr_t)value);
 }
+#endif // !SVM
 
 // Preconditions: value != 0, and the unsigned representation of value is a power of two
 inline int exact_log2_long(jlong value) {
@@ -136,5 +141,8 @@ inline T submultiple_power_of_2(T value) {
   assert(value > 0, "Invalid value");
   return value & -value;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_POWEROFTWO_HPP

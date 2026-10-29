@@ -28,6 +28,9 @@
 #include "runtime/globals.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 void G1InitLogger::print_heap() {
   log_info_p(gc, init)("Heap Region Size: %zuM", G1HeapRegionSize / M);
   GCInitLogger::print_heap();
@@ -54,3 +57,6 @@ void G1InitLogger::print() {
   G1InitLogger init_log;
   init_log.print_all();
 }
+
+} // namespace svm_gc
+

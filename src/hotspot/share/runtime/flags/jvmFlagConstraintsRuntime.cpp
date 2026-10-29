@@ -31,6 +31,9 @@
 #include "runtime/task.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 JVMFlag::Error AOTCacheConstraintFunc(ccstr value, bool verbose) {
   if (value == nullptr) {
     JVMFlag::printError(verbose, "AOTCache cannot be empty\n");
@@ -157,3 +160,6 @@ JVMFlag::Error LargePageSizeInBytesConstraintFunc(size_t value, bool verbose) {
   }
   return JVMFlag::SUCCESS;
 }
+
+} // namespace svm_gc
+

@@ -32,6 +32,9 @@
 #include "utilities/count_trailing_zeros.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 inline void BitMap::set_bit(idx_t bit) {
   verify_index(bit);
   *word_addr(bit) |= bit_mask(bit);
@@ -380,9 +383,11 @@ inline BitMap::IteratorImpl::IteratorImpl(const BitMap* map, idx_t beg, idx_t en
   : _map(map), _cur_beg(beg), _cur_end(end)
 {}
 
+#ifndef SVM
 inline bool BitMap::IteratorImpl::is_empty() const {
   return _cur_beg == _cur_end;
 }
+#endif // !SVM
 
 inline BitMap::idx_t BitMap::IteratorImpl::first() const {
   assert_not_empty();
@@ -585,5 +590,8 @@ inline void BitMap2D::at_put_grow(idx_t slot_index, idx_t bit_within_slot_index,
   }
   _map.at_put(bit, value);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_BITMAP_INLINE_HPP

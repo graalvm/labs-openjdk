@@ -52,6 +52,9 @@
 #include "utilities/quickSort.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 G1DirtyCardQueue::G1DirtyCardQueue(G1DirtyCardQueueSet* qset) :
   PtrQueue(qset),
   _refinement_stats(new G1ConcurrentRefineStats())
@@ -111,10 +114,12 @@ void G1DirtyCardQueueSet::handle_zero_index(G1DirtyCardQueue& queue) {
   }
 }
 
+#ifndef SVM
 void G1DirtyCardQueueSet::handle_zero_index_for_thread(Thread* t) {
   G1DirtyCardQueue& queue = G1ThreadLocalData::dirty_card_queue(t);
   G1BarrierSet::dirty_card_queue_set().handle_zero_index(queue);
 }
+#endif // !SVM
 
 size_t G1DirtyCardQueueSet::num_cards() const {
   return Atomic::load(&_num_cards);
@@ -590,10 +595,15 @@ void G1DirtyCardQueueSet::record_detached_refinement_stats(G1ConcurrentRefineSta
   stats->reset();
 }
 
+#ifndef SVM
 size_t G1DirtyCardQueueSet::mutator_refinement_threshold() const {
   return Atomic::load(&_mutator_refinement_threshold);
 }
+#endif // !SVM
 
 void G1DirtyCardQueueSet::set_mutator_refinement_threshold(size_t value) {
   Atomic::store(&_mutator_refinement_threshold, value);
 }
+
+} // namespace svm_gc
+

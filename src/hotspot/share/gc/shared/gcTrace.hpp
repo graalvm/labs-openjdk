@@ -36,6 +36,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 class GCHeapSummary;
 class MetaspaceChunkFreeListSummary;
 class MetaspaceSummary;
@@ -101,7 +104,9 @@ class GCTracer {
   void report_gc_start(GCCause::Cause cause, const Ticks& timestamp);
   void report_gc_end(const Ticks& timestamp, TimePartitions* time_partitions);
   void report_gc_heap_summary(GCWhen::Type when, const GCHeapSummary& heap_summary) const;
+#ifndef SVM
   void report_metaspace_summary(GCWhen::Type when, const MetaspaceSummary& metaspace_summary) const;
+#endif // !SVM
   void report_gc_reference_stats(const ReferenceProcessorStats& rp) const;
   void report_object_count_after_gc(BoolObjectClosure* object_filter, WorkerThreads* workers) NOT_SERVICES_RETURN;
   void report_cpu_time_event(double user_time, double system_time, double real_time) const;
@@ -115,8 +120,10 @@ class GCTracer {
   bool should_send_cpu_time_event() const;
   void send_garbage_collection_event() const;
   void send_gc_heap_summary_event(GCWhen::Type when, const GCHeapSummary& heap_summary) const;
+#ifndef SVM
   void send_meta_space_summary_event(GCWhen::Type when, const MetaspaceSummary& meta_space_summary) const;
   void send_metaspace_chunk_free_list_summary(GCWhen::Type when, Metaspace::MetadataType mdtype, const MetaspaceChunkFreeListSummary& summary) const;
+#endif // !SVM
   void send_reference_stats_event(ReferenceType type, size_t count) const;
   void send_phase_events(TimePartitions* time_partitions) const;
   void send_cpu_time_event(double user_time, double system_time, double real_time) const;
@@ -183,6 +190,7 @@ class OldGCTracer : public GCTracer {
   void send_concurrent_mode_failure_event();
 };
 
+#ifndef SVM
 class ParallelOldTracer : public OldGCTracer {
   ParallelOldGCInfo _parallel_old_gc_info;
 
@@ -211,5 +219,9 @@ class DefNewTracer : public YoungGCTracer, public CHeapObj<mtGC> {
  public:
   DefNewTracer() : YoungGCTracer(DefNew) {}
 };
+#endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCTRACE_HPP

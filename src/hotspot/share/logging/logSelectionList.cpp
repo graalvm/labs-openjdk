@@ -26,8 +26,12 @@
 #include "logging/logTagSet.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 static const char* DefaultExpressionString = "all";
 
+#ifndef SVM
 bool LogSelectionList::verify_selections(outputStream* out) const {
   bool valid = true;
 
@@ -98,6 +102,7 @@ bool LogSelectionList::parse(const char* str, outputStream* errstream) {
   os::free(copy);
   return success;
 }
+#endif // !SVM
 
 LogLevelType LogSelectionList::level_for(const LogTagSet& ts) const {
   // Return NotMentioned if the given tagset isn't covered by this expression.
@@ -109,3 +114,6 @@ LogLevelType LogSelectionList::level_for(const LogTagSet& ts) const {
   }
   return level;
 }
+
+} // namespace svm_gc
+

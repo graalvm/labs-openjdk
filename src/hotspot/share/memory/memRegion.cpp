@@ -30,6 +30,9 @@
 // A very simple data structure representing a contiguous word-aligned
 // region of address space.
 
+
+namespace svm_gc {
+
 MemRegion MemRegion::intersection(const MemRegion mr2) const {
   MemRegion res;
   HeapWord* res_start = MAX2(start(), mr2.start());
@@ -41,6 +44,7 @@ MemRegion MemRegion::intersection(const MemRegion mr2) const {
   return res;
 }
 
+#ifndef SVM
 MemRegion MemRegion::_union(const MemRegion mr2) const {
   // If one region is empty, return the other
   if (is_empty()) return mr2;
@@ -100,6 +104,7 @@ MemRegion MemRegion::minus(const MemRegion mr2) const {
   ShouldNotReachHere();
   return MemRegion();
 }
+#endif // !SVM
 
 MemRegion* MemRegion::create_array(size_t length, MemTag mem_tag) {
   MemRegion* result = NEW_C_HEAP_ARRAY(MemRegion, length, mem_tag);
@@ -118,3 +123,6 @@ void MemRegion::destroy_array(MemRegion* array, size_t length) {
   }
   FREE_C_HEAP_ARRAY(MemRegion, array);
 }
+
+} // namespace svm_gc
+

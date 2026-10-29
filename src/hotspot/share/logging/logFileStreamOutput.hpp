@@ -29,6 +29,9 @@
 #include "runtime/os.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class LogDecorations;
 
 // Base class for all FileStream-based log outputs.
@@ -86,5 +89,8 @@ class LogStderrOutput : public LogFileStreamOutput {
     return "stderr";
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGFILESTREAMOUTPUT_HPP

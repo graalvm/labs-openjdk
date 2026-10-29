@@ -33,6 +33,9 @@
 #include "utilities/enumIterator.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 class LineBuffer;
 class G1ParScanThreadState;
 class STWGCTimer;
@@ -444,5 +447,8 @@ public:
 
   void stop();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1GCPHASETIMES_HPP

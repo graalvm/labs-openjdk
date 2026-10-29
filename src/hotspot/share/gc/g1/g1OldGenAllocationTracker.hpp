@@ -28,6 +28,9 @@
 #include "gc/g1/g1HeapRegion.hpp"
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 class G1AdaptiveIHOPControl;
 
 // Track allocation details in the old generation.
@@ -65,5 +68,8 @@ public:
   // Calculates and resets stats after a collection.
   void reset_after_gc(size_t humongous_bytes_after_gc);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_VM_GC_G1_G1OLDGENALLOCATIONTRACKER_HPP

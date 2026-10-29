@@ -36,6 +36,10 @@
 // as they are processed by jvmFlag.cpp in that order.
 
 #define ALL_FLAGS(            \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -44,6 +48,10 @@
     constraint)               \
                               \
   LP64_RUNTIME_FLAGS(         \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -52,12 +60,20 @@
     constraint)               \
                               \
   ARCH_FLAGS(                 \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     product,                  \
     range,                    \
     constraint)               \
                               \
   JVMCI_ONLY(JVMCI_FLAGS(     \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -66,6 +82,10 @@
     constraint))              \
                               \
   COMPILER1_PRESENT(C1_FLAGS( \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -74,6 +94,10 @@
     constraint))              \
                               \
   COMPILER2_PRESENT(C2_FLAGS( \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -82,6 +106,10 @@
     constraint))              \
                               \
   COMPILER_FLAGS(             \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -90,6 +118,10 @@
     constraint)               \
                               \
   CDS_FLAGS(                  \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -98,6 +130,10 @@
     constraint)               \
                               \
   RUNTIME_FLAGS(              \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -106,6 +142,10 @@
     constraint)               \
                               \
   RUNTIME_OS_FLAGS(           \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -114,6 +154,10 @@
     constraint)               \
                               \
   DEBUG_RUNTIME_FLAGS(        \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -122,6 +166,10 @@
     constraint)               \
                               \
   GC_FLAGS(                   \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \
@@ -130,6 +178,10 @@
     constraint)               \
                               \
   TLAB_FLAGS(                 \
+    ni_hosted,                \
+    ni_hosted_pd,             \
+    ni_runtime,               \
+    ni_runtime_pd,            \
     develop,                  \
     develop_pd,               \
     product,                  \

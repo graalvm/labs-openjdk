@@ -34,6 +34,9 @@
 #include "gc/g1/g1HeapRegion.inline.hpp"
 #include "gc/shared/fullGCForwarding.inline.hpp"
 
+
+namespace svm_gc {
+
 void G1DetermineCompactionQueueClosure::free_empty_humongous_region(G1HeapRegion* hr) {
   _g1h->free_humongous_region(hr, nullptr);
   _collector->set_free(hr->hrm_index());
@@ -41,6 +44,9 @@ void G1DetermineCompactionQueueClosure::free_empty_humongous_region(G1HeapRegion
 }
 
 inline bool G1DetermineCompactionQueueClosure::should_compact(G1HeapRegion* hr) const {
+  assert_svm_only(!hr->is_image_heap(), "image heap must not be compacted");
+  assert_svm_only(!hr->is_metaspace(), "metaspace must not be compacted");
+
   // There is no need to iterate and forward objects in non-movable regions ie.
   // prepare them for compaction.
   if (hr->is_humongous() || hr->has_pinned_objects()) {
@@ -80,6 +86,12 @@ static bool has_pinned_objects(G1HeapRegion* hr) {
 }
 
 inline bool G1DetermineCompactionQueueClosure::do_heap_region(G1HeapRegion* hr) {
+#ifdef SVM
+  if (hr->is_image_heap_or_metaspace()) {
+    // No need to free or compact the image heap or metaspace.
+    return false;
+  } else
+#endif // SVM
   if (should_compact(hr)) {
     assert(!hr->is_humongous(), "moving humongous objects not supported.");
     add_to_compaction_queue(hr);
@@ -129,5 +141,8 @@ inline size_t G1SerialRePrepareClosure::apply(oop obj) {
 
   return size;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCPREPARETASK_INLINE_HPP

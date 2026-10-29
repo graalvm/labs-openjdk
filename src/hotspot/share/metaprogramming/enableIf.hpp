@@ -30,6 +30,9 @@
 // Retained temporarily for backward compatibility.
 // For function template SFINAE, use the ENABLE_IF macro below.
 // For class template SFINAE, use std::enable_if_t directly.
+
+namespace svm_gc {
+
 template<bool cond, typename T = void>
 using EnableIf = std::enable_if<cond, T>;
 
@@ -138,5 +141,8 @@ using EnableIf = std::enable_if<cond, T>;
 
 #define ENABLE_IF_SDEFN(...) \
   std::enable_if_t<bool(__VA_ARGS__), int>
+
+
+} // namespace svm_gc
 
 #endif // SHARE_METAPROGRAMMING_ENABLEIF_HPP

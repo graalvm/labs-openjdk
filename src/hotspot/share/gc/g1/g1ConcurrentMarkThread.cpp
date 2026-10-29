@@ -45,6 +45,9 @@
 #include "utilities/formatBuffer.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 G1ConcurrentMarkThread::G1ConcurrentMarkThread(G1ConcurrentMark* cm) :
   ConcurrentGCThread(),
   _vtime_start(0.0),
@@ -164,7 +167,9 @@ bool G1ConcurrentMarkThread::wait_for_next_cycle() {
 
 bool G1ConcurrentMarkThread::phase_clear_cld_claimed_marks() {
   G1ConcPhaseTimer p(_cm, "Concurrent Clear Claimed Marks");
+#ifndef SVM
   ClassLoaderDataGraph::clear_claimed_marks();
+#endif // !SVM
   return _cm->has_aborted();
 }
 
@@ -350,3 +355,6 @@ void G1ConcurrentMarkThread::update_threads_cpu_time() {
   tttc.do_thread(this);
   _cm->threads_do(&tttc);
 }
+
+} // namespace svm_gc
+

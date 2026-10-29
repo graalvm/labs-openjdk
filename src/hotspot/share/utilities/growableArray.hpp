@@ -69,6 +69,9 @@
 // Non-template base class responsible for handling the length and max.
 
 
+
+namespace svm_gc {
+
 class GrowableArrayBase : public AnyObj {
   friend class VMStructs;
 
@@ -506,9 +509,9 @@ public:
   }
 
   void swap(GrowableArrayWithAllocator* other) {
-    ::swap(this->_data, other->_data);
-    ::swap(this->_len, other->_len);
-    ::swap(this->_capacity, other->_capacity);
+    svm_gc::swap(this->_data, other->_data);
+    svm_gc::swap(this->_len, other->_len);
+    svm_gc::swap(this->_capacity, other->_capacity);
   }
 
   // Ensure capacity is at least new_capacity.
@@ -898,5 +901,8 @@ class GrowableArrayIterator : public StackObj {
 typedef GrowableArray<int> intArray;
 typedef GrowableArray<int> intStack;
 typedef GrowableArray<bool> boolArray;
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_GROWABLEARRAY_HPP

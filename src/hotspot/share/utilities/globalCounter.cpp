@@ -30,7 +30,13 @@
 #include "utilities/globalCounter.hpp"
 #include "utilities/spinYield.hpp"
 
+
+namespace svm_gc {
+
 GlobalCounter::PaddedCounter GlobalCounter::_global_counter;
+#ifdef SVM
+GlobalCounter::PaddedCounter GlobalCounter::_java_threads_in_critical_section;
+#endif // SVM
 
 class GlobalCounter::CounterThreadCheck : public ThreadClosure {
  private:
@@ -63,10 +69,31 @@ void GlobalCounter::write_synchronize() {
 
   // Do all RCU threads.
   CounterThreadCheck ctc(gbl_cnt);
+#ifdef SVM
+  // NOTE (chaeubl): The HotSpot code iterates over all threads (including Java threads), which isn't easily possible in
+  // Native Image. Java threads mainly use the global counter infrastructure in slowpath code (e.g., pre/post write barrier).
+  // So, we just use a single counter to keep track of all the Java threads that are currently in critical sections. This is
+  // good enough for now but it is still prone to starvation if a lot of Java threads enter a critical section regularly.
+
+  // Spin until we reach a point where there are (at least for a moment) no Java threads in the critical section.
+  SpinYield yield;
+  while(true) {
+    uintx cnt = Atomic::load_acquire(&_java_threads_in_critical_section._counter);
+    if (cnt > 0) {
+      yield.wait();
+    } else {
+      break;
+    }
+  }
+#else
   for (JavaThreadIteratorWithHandle jtiwh; JavaThread *thread = jtiwh.next(); ) {
     ctc.do_thread(thread);
   }
+#endif // SVM
   for (NonJavaThread::Iterator njti; !njti.end(); njti.step()) {
     ctc.do_thread(njti.current());
   }
 }
+
+} // namespace svm_gc
+

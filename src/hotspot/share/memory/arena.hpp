@@ -37,6 +37,9 @@
 #define ARENA_AMALLOC_ALIGNMENT BytesPerLong
 #define ARENA_ALIGN(x) (align_up((x), ARENA_AMALLOC_ALIGNMENT))
 
+
+namespace svm_gc {
+
 class ChunkPoolLocker : public StackObj {
  public:
   ChunkPoolLocker();
@@ -183,6 +186,7 @@ protected:
     return internal_amalloc(x, alloc_failmode);
   }
 
+#ifndef SVM
   // Fast delete in area.  Common case is: NOP (except for storage reclaimed)
   bool Afree(void *ptr, size_t size) {
     if (ptr == nullptr) {
@@ -199,6 +203,7 @@ protected:
       return false;
     }
   }
+#endif // !SVM
 
   void *Arealloc( void *old_ptr, size_t old_size, size_t new_size,
       AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
@@ -246,5 +251,8 @@ private:
 
 #define NEW_ARENA_OBJ(arena, type) \
   NEW_ARENA_ARRAY(arena, type, 1)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_ARENA_HPP

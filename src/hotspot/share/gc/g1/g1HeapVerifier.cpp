@@ -43,6 +43,9 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.inline.hpp"
 
+
+namespace svm_gc {
+
 int G1HeapVerifier::_enabled_verification_types = G1HeapVerifier::G1VerifyAll;
 
 class VerifyRootsClosure: public OopClosure {
@@ -113,7 +116,7 @@ class G1VerifyCodeRootOopClosure: public OopClosure {
       G1HeapRegionRemSet* hrrs = hr->rem_set();
       // Verify that the code root list for this region
       // contains the nmethod
-      if (!hrrs->code_roots_list_contains(_nm)) {
+      if (SVM_ONLY(!hr->is_image_heap_or_metaspace() &&) !hrrs->code_roots_list_contains(_nm)) {
         log_error(gc, verify)("Code root location " PTR_FORMAT " "
                               "from nmethod " PTR_FORMAT " not in strong "
                               "code roots for region [" PTR_FORMAT "," PTR_FORMAT ")",
@@ -143,6 +146,11 @@ public:
 
   void do_nmethod(nmethod* nm) {
     assert(nm != nullptr, "Sanity");
+#ifdef SVM
+    if (nm->will_be_freed()) {
+      return;
+    }
+#endif // SVM
     _oop_cl->set_nmethod(nm);
     nm->oops_do(_oop_cl);
   }
@@ -160,6 +168,7 @@ class YoungRefCounterClosure : public OopClosure {
   void reset_count() { _count = 0; };
 };
 
+#ifndef SVM
 class VerifyCLDClosure: public CLDClosure {
   YoungRefCounterClosure _young_ref_counter_closure;
   OopClosure *_oop_closure;
@@ -175,6 +184,7 @@ class VerifyCLDClosure: public CLDClosure {
     }
   }
 };
+#endif // !SVM
 
 class VerifyLivenessOopClosure: public BasicOopIterateClosure {
   G1CollectedHeap* _g1h;
@@ -331,7 +341,9 @@ void G1HeapVerifier::verify(VerifyOption vo) {
 
   log_debug(gc, verify)("Roots");
   VerifyRootsClosure rootsCl(vo);
+#ifndef SVM
   VerifyCLDClosure cldCl(_g1h, &rootsCl);
+#endif // !SVM
 
   // We apply the relevant closures to all the oops in the
   // system dictionary, class loader data graph, the string table
@@ -341,7 +353,7 @@ void G1HeapVerifier::verify(VerifyOption vo) {
 
   {
     G1RootProcessor root_processor(_g1h, 1);
-    root_processor.process_all_roots(&rootsCl, &cldCl, &blobsCl);
+    root_processor.process_all_roots(&rootsCl, SVM_ONLY(true) NOT_SVM(&cldCl), &blobsCl);
   }
 
   bool failures = rootsCl.failures() || codeRootsCl.failures();
@@ -393,6 +405,11 @@ public:
     _old_count(), _humongous_count(), _free_count(){ }
 
   bool do_heap_region(G1HeapRegion* hr) {
+#ifdef SVM
+    if (hr->is_image_heap_or_metaspace()) {
+      assert(hr->containing_set() == nullptr, "image heap and metaspace regions must not be part of any region set");
+    } else
+#endif // SVM
     if (hr->is_young()) {
       // TODO
     } else if (hr->is_humongous()) {
@@ -456,9 +473,21 @@ public:
     }
 
     G1ConcurrentMark* cm = G1CollectedHeap::heap()->concurrent_mark();
-
-    bool part_of_marking = r->is_old_or_humongous() && !r->is_collection_set_candidate();
+    bool part_of_marking = SVM_ONLY((r->is_old() || r->is_humongous())) NOT_SVM(r->is_old_or_humongous()) && !r->is_collection_set_candidate();
     HeapWord* top_at_mark_start = cm->top_at_mark_start(r);
+
+#ifdef SVM
+    if (r->is_image_heap_or_metaspace()) {
+      HeapWord* expected_top_at_mark_start = r->is_closed_image_heap() ? r->bottom() : r->top();
+      guarantee(expected_top_at_mark_start == top_at_mark_start,
+                "region %u (%s) has incorrect TAMS " PTR_FORMAT ", expected " PTR_FORMAT,
+                r->hrm_index(), r->get_short_type_str(), p2i(top_at_mark_start), p2i(expected_top_at_mark_start));
+      guarantee(cm->live_bytes(r->hrm_index()) == 0,
+                "region %u (%s) has %zu live bytes recorded",
+                r->hrm_index(), r->get_short_type_str(), cm->live_bytes(r->hrm_index()));
+      return false;
+    }
+#endif // SVM
 
     if (part_of_marking) {
       guarantee(r->bottom() != top_at_mark_start,
@@ -498,6 +527,7 @@ void G1HeapVerifier::verify_marking_state() {
   // - if part of marking: TAMS != bottom, liveness == 0, bitmap clear
   // - if evacuation failed + part of marking: TAMS != bottom, liveness != 0, bitmap has at least on object set (corresponding to liveness)
   // - if not part of marking: TAMS == bottom, liveness == 0, bitmap clear; must be in root region
+  // - NOTE (chaeubl): in SVM, open image heap and metaspace regions are traversed without a bitmap and have TAMS == top; closed image heap regions have TAMS == bottom
 
   // To compare liveness recorded in G1ConcurrentMark and actual we need to flush the
   // cache.
@@ -627,6 +657,16 @@ public:
   virtual bool do_heap_region(G1HeapRegion* hr) {
     uint i = hr->hrm_index();
     G1HeapRegionAttr region_attr = (G1HeapRegionAttr) G1CollectedHeap::heap()->_region_attr.get_by_index(i);
+
+#ifdef SVM
+    if (hr->is_image_heap_or_metaspace()) {
+      if (!region_attr.is_default()) {
+        log_error(gc, verify)("## image heap or metaspace region %u has incorrect region attr type %s", i, region_attr.get_type_str());
+        _failures = true;
+        return true;
+      }
+    } else
+#endif // SVM
     if (hr->is_humongous()) {
       if (hr->in_collection_set()) {
         log_error(gc, verify)("## humongous region %u in CSet", i);
@@ -682,3 +722,6 @@ bool G1HeapVerifier::check_region_attr_table() {
   return !cl.failures();
 }
 #endif // PRODUCT
+
+} // namespace svm_gc
+

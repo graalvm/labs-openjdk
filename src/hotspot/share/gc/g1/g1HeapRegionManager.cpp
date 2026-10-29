@@ -39,6 +39,9 @@
 #include "runtime/orderAccess.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+namespace svm_gc {
+
 class G1MasterFreeRegionListChecker : public G1HeapRegionSetChecker {
 public:
   void check_mt_safety() {
@@ -264,6 +267,7 @@ void G1HeapRegionManager::clear_auxiliary_data_structures(uint start, uint num_r
   _cardtable_mapper->signal_mapping_changed(start, num_regions);
 }
 
+#ifndef SVM
 MemoryUsage G1HeapRegionManager::get_auxiliary_data_memory_usage() const {
   size_t used_sz =
     _bitmap_mapper->committed_size() +
@@ -277,10 +281,83 @@ MemoryUsage G1HeapRegionManager::get_auxiliary_data_memory_usage() const {
 
   return MemoryUsage(0, used_sz, committed_sz, committed_sz);
 }
+#endif // !SVM
 
 bool G1HeapRegionManager::has_inactive_regions() const {
   return _committed_map.num_inactive() > 0;
 }
+
+#ifdef SVM
+void G1HeapRegionManager::create_image_heap_or_metaspace_regions(uint start, uint num_regions) {
+  if (num_regions == 0) {
+    return;
+  }
+
+  // NOTE (chaeubl): similar to G1HeapRegionManager::initialize_regions()
+  for (uint i = start; i < start + num_regions; i++) {
+    assert(!is_available(i), "must not be in use");
+    G1HeapRegion* hr = new_heap_region(i);
+
+    // NOTE (chaeubl): similar to G1HeapRegionManager::expand
+    _regions.set_by_index(i, hr);
+    _next_highest_used_hrm_index = MAX2(_next_highest_used_hrm_index, i + 1);
+
+    hr->initialize();
+    hr->set_node_index(G1NUMA::numa()->index_for_region(hr));
+  }
+
+  // NOTE (chaeubl): similar to G1HeapRegionManager::activate_regions
+  _committed_map.activate(start, start + num_regions);
+  verify_optional();
+}
+
+// Similar to G1HeapRegionManager::commit_regions(), but only commits the bitmap and card table.
+// These must cover all active regions, including empty metaspace regions, because full GC clears
+// their card tables and bitmap verification reads their bitmap ranges.
+// With 512-byte cards and 8-byte object alignment, this eagerly commits about 1.76% of the
+// reserved metaspace size (1/512 for cards + 1/64 for the bitmap), before OS page rounding.
+// For the default 32 MiB metaspace, that is 64 KiB + 512 KiB = 576 KiB of committed memory,
+// not necessarily resident physical memory. GR-79974 tracks committing this memory on demand.
+void G1HeapRegionManager::commit_image_heap_and_metaspace_auxiliary_data(uint num_regions, WorkerThreads* pretouch_workers) {
+  guarantee(num_regions <= num_inactive_regions(),
+            "Cannot commit more than the maximum amount of regions");
+
+  _bitmap_mapper->commit_regions(0, num_regions, pretouch_workers);
+  _cardtable_mapper->commit_regions(0, num_regions, pretouch_workers);
+}
+
+void G1HeapRegionManager::create_metaspace_regions(uint num_regions) {
+  create_image_heap_or_metaspace_regions(0, num_regions);
+}
+
+void G1HeapRegionManager::create_image_heap_regions(uint start, uint num_regions) {
+  create_image_heap_or_metaspace_regions(start, num_regions);
+}
+
+// Similar to G1HeapRegionManager::commit_regions(), but the bitmap and card table were
+// committed up front during image heap and metaspace initialization.
+void G1HeapRegionManager::commit_metaspace_region(G1HeapRegion* region, bool commit_bot, WorkerThreads* pretouch_workers) {
+  assert(region->is_metaspace(), "must be a metaspace region");
+  assert(region->top() == region->bottom(), "must be empty");
+  _heap_mapper->commit_regions(region->hrm_index(), 1, pretouch_workers);
+  // Humongous objects are located through region metadata, just like in the image heap.
+  if (commit_bot) {
+    _bot_mapper->commit_regions(region->hrm_index(), 1, pretouch_workers);
+  }
+}
+
+#ifdef ASSERT
+void G1HeapRegionManager::commit_image_heap_bot(G1HeapRegion* region, WorkerThreads* pretouch_workers) {
+  assert(region->is_image_heap(), "must be an image heap region");
+  _bot_mapper->commit_regions(region->hrm_index(), 1, pretouch_workers);
+}
+
+void G1HeapRegionManager::uncommit_image_heap_bot(G1HeapRegion* region) {
+  assert(region->is_image_heap(), "must be an image heap region");
+  _bot_mapper->uncommit_regions(region->hrm_index());
+}
+#endif // ASSERT
+#endif // SVM
 
 uint G1HeapRegionManager::uncommit_inactive_regions(uint limit) {
   assert(limit > 0, "Need to specify at least one region to uncommit");
@@ -485,6 +562,7 @@ uint G1HeapRegionManager::find_contiguous_allow_expand(uint num_regions) {
   return find_contiguous_in_range(0, max_num_regions(), num_regions);
 }
 
+#ifndef SVM
 G1HeapRegion* G1HeapRegionManager::next_region_in_heap(const G1HeapRegion* r) const {
   guarantee(r != nullptr, "Start region must be a valid region");
   guarantee(is_available(r->hrm_index()), "Trying to iterate starting from region %u which is not in the heap", r->hrm_index());
@@ -496,6 +574,7 @@ G1HeapRegion* G1HeapRegionManager::next_region_in_heap(const G1HeapRegion* r) co
   }
   return nullptr;
 }
+#endif // !SVM
 
 void G1HeapRegionManager::iterate(G1HeapRegionClosure* blk) const {
   uint len = max_num_regions();
@@ -528,6 +607,7 @@ void G1HeapRegionManager::iterate(G1HeapRegionIndexClosure* blk) const {
   }
 }
 
+#ifndef SVM
 bool G1HeapRegionManager::allocate_containing_regions(MemRegion range, size_t* commit_count, WorkerThreads* pretouch_workers) {
   size_t commits = 0;
   uint start_index = (uint)_regions.get_index_by_address(range.start());
@@ -550,6 +630,7 @@ bool G1HeapRegionManager::allocate_containing_regions(MemRegion range, size_t* c
   *commit_count = commits;
   return true;
 }
+#endif // !SVM
 
 void G1HeapRegionManager::par_iterate(G1HeapRegionClosure* blk, G1HeapRegionClaimer* hrclaimer, const uint start_index) const {
   // Every worker will actually look at all regions, skipping over regions that
@@ -810,3 +891,6 @@ void G1HeapRegionManager::rebuild_free_list(WorkerThreads* workers) {
   }
   G1CollectedHeap::heap()->phase_times()->record_serial_rebuild_freelist_time_ms((Ticks::now() - serial_time).seconds() * 1000.0);
 }
+
+} // namespace svm_gc
+

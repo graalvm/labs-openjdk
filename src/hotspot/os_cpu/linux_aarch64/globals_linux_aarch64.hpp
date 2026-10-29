@@ -36,6 +36,9 @@
 // for all the following flags, we set them to 2 pages less than 2MB. On
 // systems where 2MB is the default large page size, 4KB is most commonly
 // the regular page size.
+
+namespace svm_gc {
+
 define_pd_global(intx, ThreadStackSize,          2040); // 0 => use system default
 define_pd_global(intx, VMThreadStackSize,        2040);
 
@@ -48,5 +51,8 @@ define_pd_global(uintx,HeapBaseMinAddress,       2*G);
 
 class Thread;
 extern __thread Thread *aarch64_currentThread;
+
+
+} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_AARCH64_GLOBALS_LINUX_AARCH64_HPP

@@ -28,6 +28,9 @@
 #include "gc/shared/plab.hpp"
 #include "memory/metaspaceStats.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 
 class G1HeapTransition {
@@ -39,7 +42,9 @@ class G1HeapTransition {
     size_t _survivor_length;
     size_t _old_length;
     size_t _humongous_length;
+#ifndef SVM
     const MetaspaceCombinedStats _meta_sizes;
+#endif // !SVM
 
     // Only includes current eden regions.
     uint* _eden_length_per_node;
@@ -58,5 +63,8 @@ public:
 
   void print();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPTRANSITION_HPP

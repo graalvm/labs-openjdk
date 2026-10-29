@@ -39,6 +39,9 @@
 
 // Array of all active blocks.  Refcounted for lock-free reclaim of
 // old array when a new array is allocated for expansion.
+
+namespace svm_gc {
+
 class OopStorage::ActiveArray {
   friend class OopStorage::TestAccess;
 
@@ -182,6 +185,7 @@ public:
 
   size_t active_index() const;
   void set_active_index(size_t index);
+#ifndef SVM
   static size_t active_index_safe(const Block* block); // Returns 0 if access fails.
 
   // Return block of owner containing ptr, if ptr is a valid entry of owner.
@@ -189,6 +193,7 @@ public:
   // positive" pointer; see allocation_status.
   // precondition: ptr != nullptr
   static Block* block_for_ptr(const OopStorage* owner, const oop* ptr);
+#endif // !SVM
 
   oop* allocate();
   uintx allocate_all();
@@ -200,7 +205,9 @@ public:
   template<typename F> bool iterate(F f);
   template<typename F> bool iterate(F f) const;
 
+#ifndef SVM
   bool print_containing(const oop* addr, outputStream* st);
+#endif // !SVM
 }; // class Block
 
 inline OopStorage::Block* OopStorage::AllocationList::head() {
@@ -317,10 +324,12 @@ inline oop* OopStorage::Block::get_pointer(unsigned index) {
   return &_data[index];
 }
 
+#ifndef SVM
 inline const oop* OopStorage::Block::get_pointer(unsigned index) const {
   check_index(index);
   return &_data[index];
 }
+#endif // !SVM
 
 inline uintx OopStorage::Block::allocated_bitmask() const {
   return _allocated_bitmask;
@@ -407,5 +416,8 @@ template<typename IsAliveClosure, typename Closure>
 inline void OopStorage::weak_oops_do(IsAliveClosure* is_alive, Closure* cl) {
   iterate_safepoint(if_alive_fn(is_alive, oop_fn(cl)));
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGE_INLINE_HPP

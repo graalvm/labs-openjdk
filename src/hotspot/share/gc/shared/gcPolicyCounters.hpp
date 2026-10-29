@@ -30,6 +30,9 @@
 // GCPolicyCounters is a holder class for performance counters
 // that track a generation
 
+
+namespace svm_gc {
+
 class GCPolicyCounters: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -43,7 +46,9 @@ class GCPolicyCounters: public CHeapObj<mtGC> {
   PerfVariable* _desired_survivor_size;
   PerfVariable* _gc_overhead_limit_exceeded_counter;
 
+#ifndef SVM
   const char* _name_space;
+#endif // !SVM
 
 public:
   GCPolicyCounters(const char* name, int collectors, int generations);
@@ -60,7 +65,12 @@ public:
     return _gc_overhead_limit_exceeded_counter;
   }
 
+#ifndef SVM
   const char* name_space() const { return _name_space; }
+#endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCPOLICYCOUNTERS_HPP

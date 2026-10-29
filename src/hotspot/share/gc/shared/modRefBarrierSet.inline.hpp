@@ -33,6 +33,9 @@
 #include "oops/oop.hpp"
 #include "runtime/thread.hpp"
 
+
+namespace svm_gc {
+
 class Klass;
 
 // count is number of array elements being written
@@ -109,6 +112,9 @@ oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, T* src_raw,
     Raw::oop_arraycopy(nullptr, 0, src_raw, nullptr, 0, dst_raw, length);
     bs->write_ref_array((HeapWord*)dst_raw, length);
   } else {
+#ifdef SVM
+    ShouldNotReachHere();
+#else
     assert(dst_obj != nullptr, "better have an actual oop");
     Klass* bound = objArrayOop(dst_obj)->element_klass();
     T* from = const_cast<T*>(src_raw);
@@ -129,6 +135,7 @@ oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, T* src_raw,
       }
     }
     bs->write_ref_array((HeapWord*)dst_raw, length);
+#endif // SVM
   }
   return true;
 }
@@ -140,5 +147,8 @@ clone_in_heap(oop src, oop dst, size_t size) {
   BarrierSetT *bs = barrier_set_cast<BarrierSetT>(barrier_set());
   bs->write_region(MemRegion((HeapWord*)(void*)dst, size));
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MODREFBARRIERSET_INLINE_HPP

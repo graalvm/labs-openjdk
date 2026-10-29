@@ -37,6 +37,9 @@
   } while (0)
 
 
+
+namespace svm_gc {
+
 inline void G1AllocRegion::reset_alloc_region() {
   _alloc_region = _dummy_region;
 }
@@ -106,5 +109,8 @@ inline HeapWord* MutatorAllocRegion::attempt_retained_allocation(size_t min_word
   }
   return nullptr;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ALLOCREGION_INLINE_HPP

@@ -128,6 +128,9 @@
 //   If is_alive->do_object_b(*p) is false, then cl will not be
 //   invoked on p.
 
+
+namespace svm_gc {
+
 class OopStorage::BasicParState {
   const OopStorage* _storage;
   ActiveArray* _active_array;
@@ -207,5 +210,8 @@ public:
   void increment_num_dead(size_t num_dead) { _basic_state.increment_num_dead(num_dead); }
   void report_num_dead() const { _basic_state.report_num_dead(); }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGEPARSTATE_HPP

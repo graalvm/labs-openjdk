@@ -36,10 +36,17 @@
 
 #include <type_traits>
 
+
+namespace svm_gc {
+
 template <DecoratorSet decorators>
 template <DecoratorSet idecorators, typename T>
 inline typename EnableIf<
+#ifdef SVM
+  AccessInternal::MustDecodeOop<idecorators, T>::value, T>::type
+#else
   AccessInternal::MustConvertCompressedOop<idecorators, T>::value, T>::type
+#endif // SVM
 RawAccessBarrier<decorators>::decode_internal(typename HeapOopType<idecorators>::type value) {
   if (HasDecorator<decorators, IS_NOT_NULL>::value) {
     return CompressedOops::decode_not_null(value);
@@ -330,5 +337,8 @@ inline void RawAccessBarrier<decorators>::clone(oop src, oop dst, size_t size) {
   // Clear the header
   dst->init_mark();
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ACCESSBACKEND_INLINE_HPP

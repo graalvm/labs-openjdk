@@ -49,14 +49,14 @@
 // Convenience macro that produces a string literal with the filename
 // and linenumber of the location where the macro was used.
 #ifndef FILE_AND_LINE
-#define FILE_AND_LINE __FILE__ ":" XSTR(__LINE__)
+#define FILE_AND_LINE __FILENAME_ONLY__ ":" XSTR(__LINE__)
 #endif
 
 // -DINCLUDE_<something>=0 | 1 can be specified on the command line to include
 // or exclude functionality.
 
 #ifndef FILE_AND_LINE
-#define FILE_AND_LINE __FILE__ ":" XSTR(__LINE__)
+#define FILE_AND_LINE __FILENAME_ONLY__ ":" XSTR(__LINE__)
 #endif
 
 #ifndef INCLUDE_JVMTI
@@ -171,12 +171,14 @@
 #define NOT_G1GC(x)
 #define NOT_G1GC_RETURN        /* next token must be ; */
 #define NOT_G1GC_RETURN_(code) /* next token must be ; */
+#define trueIfG1IsIncluded true
 #else
 #define G1GC_ONLY(x)
 #define G1GC_ONLY_ARG(arg)
 #define NOT_G1GC(x) x
 #define NOT_G1GC_RETURN        {}
 #define NOT_G1GC_RETURN_(code) { return code; }
+#define trueIfG1IsIncluded false
 #endif // INCLUDE_G1GC
 
 #ifndef INCLUDE_PARALLELGC
@@ -279,6 +281,28 @@
 #define NOT_JVMCI_RETURN {}
 #endif // INCLUDE_JVMCI
 
+// SVM
+#ifdef SVM
+#define SVM_ONLY(code) code
+#define NOT_SVM(code)
+#define trueInSvm true
+#define falseInSvm false
+#define NOT_EXTERN_C_IF_SVM
+#else // SVM
+#define SVM_ONLY(code)
+#define NOT_SVM(code) code
+#define trueInSvm false
+#define falseInSvm true
+#define NOT_EXTERN_C_IF_SVM extern "C"
+#endif // SVM
+
+// SVM_COMPRESSED_REFERENCES
+#ifdef SVM_COMPRESSED_REFERENCES
+#define trueInSvmWithCompressedReferences true
+#else // SVM_COMPRESSED_REFERENCES
+#define trueInSvmWithCompressedReferences false
+#endif // SVM_COMPRESSED_REFERENCES
+
 // COMPILER1 variant
 #ifdef COMPILER1
 #define COMPILER1_PRESENT(code) code
@@ -362,7 +386,7 @@
 // Enabled by default in debug builds.  Otherwise, disabled by default.
 #ifndef TASKQUEUE_STATS
 #ifdef ASSERT
-#define TASKQUEUE_STATS 1
+#define TASKQUEUE_STATS SVM_ONLY(0) NOT_SVM(1)
 #else
 #define TASKQUEUE_STATS 0
 #endif // ASSERT

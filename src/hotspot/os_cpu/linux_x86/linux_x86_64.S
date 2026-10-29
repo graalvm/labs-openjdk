@@ -20,7 +20,6 @@
 # or visit www.oracle.com if you need additional information or have any
 # questions.
 #
-
 #include "defs.S.inc"
 
         # NOTE WELL!  The _Copy functions are called directly
@@ -30,6 +29,11 @@
         # compiler.
 
         .text
+
+#ifdef __SANDBOX_SWCFI__ // SVM related
+        .extern __x86_return_thunk
+#define ret jmp __x86_return_thunk
+#endif
 
         .align 16
 DECLARE_FUNC(SpinPause):

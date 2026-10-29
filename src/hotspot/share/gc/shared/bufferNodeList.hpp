@@ -27,6 +27,9 @@
 
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class BufferNode;
 
 struct BufferNodeList {
@@ -37,5 +40,8 @@ struct BufferNodeList {
   BufferNodeList();
   BufferNodeList(BufferNode* head, BufferNode* tail, size_t entry_count);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_BUFFERNODELIST_HPP

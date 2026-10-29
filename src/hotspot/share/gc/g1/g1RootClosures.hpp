@@ -28,6 +28,9 @@
 #include "memory/allocation.hpp"
 #include "memory/iterator.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 class G1ParScanThreadState;
 
@@ -36,9 +39,11 @@ public:
   // Closures to process raw oops in the root set.
   virtual OopClosure* strong_oops() = 0;
 
+#ifndef SVM
   // Closures to process CLDs in the root set.
   virtual CLDClosure* weak_clds() = 0;
   virtual CLDClosure* strong_clds() = 0;
+#endif // !SVM
 
   // Applied to nmethods reachable as strong roots.
   virtual NMethodClosure* strong_nmethods() = 0;
@@ -53,5 +58,8 @@ public:
                                                         G1ParScanThreadState* pss,
                                                         bool process_only_dirty_klasses);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ROOTCLOSURES_HPP

@@ -28,6 +28,9 @@
 #include "runtime/os.hpp"
 
 // See http://www.technovelty.org/code/c/reading-rdtsc.htl for details
+
+namespace svm_gc {
+
 inline jlong os::rdtsc() {
 #ifndef AMD64
   // 64 bit result in edx:eax
@@ -42,5 +45,8 @@ inline jlong os::rdtsc() {
   return (jlong)res;
 #endif // AMD64
 }
+
+
+} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_X86_OS_LINUX_X86_INLINE_HPP

@@ -32,6 +32,9 @@
 #include "utilities/checkedCast.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 size_t PartialArrayTaskStepper::chunk_size() const {
   return _chunk_size;
 }
@@ -94,5 +97,8 @@ PartialArrayTaskStepper::Step
 PartialArrayTaskStepper::next(PartialArrayState* state) const {
   return next_impl(state->length(), state->index_addr());
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PARTIALARRAYTASKSTEPPER_INLINE_HPP

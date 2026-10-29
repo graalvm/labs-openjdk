@@ -27,6 +27,9 @@
 #include "gc/g1/g1HeapRegion.inline.hpp"
 #include "utilities/growableArray.hpp"
 
+
+namespace svm_gc {
+
 uint G1CSetCandidateGroup::_next_group_id = 2;
 
 G1CSetCandidateGroup::G1CSetCandidateGroup(G1CardSetConfiguration* config, G1MonotonicArenaFreePool* card_set_freelist_pool, uint group_id) :
@@ -468,3 +471,6 @@ const char* G1CollectionSetCandidates::get_short_type_str(const G1HeapRegion* r)
   uint8_t kind = static_cast<std::underlying_type<CandidateOrigin>::type>(_contains_map[r->hrm_index()]);
   return type_strings[kind];
 }
+
+} // namespace svm_gc
+

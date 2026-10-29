@@ -29,12 +29,25 @@
 #include "memory/memRegion.hpp"
 #include "oops/oopsHierarchy.hpp"
 
+#ifndef SVM
+
+namespace svm_gc {
+
 class CodeBlob;
+
+} // namespace svm_gc
+
+#endif // !SVM
+
+namespace svm_gc {
+
 class nmethod;
 class ReferenceDiscoverer;
 class DataLayout;
+#ifndef SVM
 class KlassClosure;
 class ClassLoaderData;
+#endif // !SVM
 class Symbol;
 class Metadata;
 class Thread;
@@ -50,10 +63,39 @@ class ThreadClosure {
 };
 
 // OopClosure is used for iterating through references to Java objects.
+// NOTE (chaeubl): this class was merged with OopIterateClosure so that iterating a whole heap region is easier
 class OopClosure : public Closure {
+#ifdef SVM
+ private:
+  ReferenceDiscoverer* _ref_discoverer;
+
+ protected:
+  OopClosure(ReferenceDiscoverer* rd) : _ref_discoverer(rd) { }
+  OopClosure() : _ref_discoverer(nullptr) { }
+  ~OopClosure() { }
+
+  void set_ref_discoverer_internal(ReferenceDiscoverer* rd) { _ref_discoverer = rd; }
+#endif // SVM
+
  public:
   virtual void do_oop(oop* o) = 0;
   virtual void do_oop(narrowOop* o) = 0;
+
+#ifdef SVM
+ public:
+  ReferenceDiscoverer* ref_discoverer() const { return _ref_discoverer; }
+
+  // Iteration of InstanceRefKlasses differ depending on the closure,
+  // the below enum describes the different alternatives.
+  enum ReferenceIterationMode {
+    DO_DISCOVERY,                // Apply closure and discover references
+    DO_FIELDS,                   // Apply closure to all fields
+    DO_FIELDS_EXCEPT_REFERENT    // Apply closure to all fields except the referent field
+  };
+
+  // The default iteration mode is to do discovery.
+  virtual ReferenceIterationMode reference_iteration_mode() { return DO_DISCOVERY; }
+#endif // SVM
 };
 
 class DoNothingClosure : public OopClosure {
@@ -63,6 +105,10 @@ class DoNothingClosure : public OopClosure {
 };
 extern DoNothingClosure do_nothing_cl;
 
+#ifdef SVM
+typedef OopClosure OopIterateClosure;
+typedef OopClosure ClaimMetadataVisitingOopIterateClosure;
+#else
 // OopIterateClosure adds extra code to be run during oop iterations.
 // This is needed by the GC and is extracted to a separate type to not
 // pollute the OopClosure interface.
@@ -109,16 +155,19 @@ class OopIterateClosure : public OopClosure {
   // The code cache unloading needs to get notified about methods from stackChunkOops
   virtual void do_nmethod(nmethod* nm) = 0;
 };
+#endif // !SVM
 
 // An OopIterateClosure that can be used when there's no need to visit the Metadata.
 class BasicOopIterateClosure : public OopIterateClosure {
 public:
   BasicOopIterateClosure(ReferenceDiscoverer* rd = nullptr) : OopIterateClosure(rd) {}
 
+#ifndef SVM
   virtual bool do_metadata() { return false; }
   virtual void do_klass(Klass* k) { ShouldNotReachHere(); }
   virtual void do_cld(ClassLoaderData* cld) { ShouldNotReachHere(); }
   virtual void do_method(Method* m) { ShouldNotReachHere(); }
+#endif // !SVM
   virtual void do_nmethod(nmethod* nm) { ShouldNotReachHere(); }
 };
 
@@ -130,6 +179,7 @@ public:
 
 enum class derived_base : intptr_t;
 enum class derived_pointer : intptr_t;
+#ifndef SVM
 class DerivedOopClosure : public Closure {
  public:
   enum { SkipNull = true };
@@ -194,6 +244,7 @@ class MetadataVisitingOopIterateClosure: public ClaimMetadataVisitingOopIterateC
  public:
   MetadataVisitingOopIterateClosure(ReferenceDiscoverer* rd = nullptr);
 };
+#endif // !SVM
 
 // ObjectClosure is used for iterating through an object space
 
@@ -208,10 +259,12 @@ class BoolObjectClosure : public Closure {
   virtual bool do_object_b(oop obj) = 0;
 };
 
+#ifndef SVM
 class OopFieldClosure {
 public:
   virtual void do_field(oop base, oop* p) = 0;
 };
+#endif // !SVM
 
 class AlwaysTrueClosure: public BoolObjectClosure {
  public:
@@ -268,6 +321,7 @@ class MarkingNMethodClosure : public NMethodToOopClosure {
   virtual void do_nmethod(nmethod* nm);
 };
 
+#ifndef SVM
 // MonitorClosure is used for iterating over monitors in the monitors cache
 
 class ObjectMonitor;
@@ -277,6 +331,7 @@ class MonitorClosure : public StackObj {
   // called for each monitor in cache
   virtual void do_monitor(ObjectMonitor* m) = 0;
 };
+#endif // !SVM
 
 // A closure that is applied without any arguments.
 class VoidClosure : public StackObj {
@@ -301,10 +356,12 @@ public:
  virtual bool should_return_fine_grain() { return false; }
 };
 
+#ifndef SVM
 class SymbolClosure : public StackObj {
  public:
   virtual void do_symbol(Symbol**) = 0;
 };
+#endif // !SVM
 
 template <typename E>
 class CompareClosure : public Closure {
@@ -318,5 +375,8 @@ class OopIteratorClosureDispatch {
   template <typename OopClosureType> static void oop_oop_iterate(OopClosureType* cl, oop obj, Klass* klass, MemRegion mr);
   template <typename OopClosureType> static void oop_oop_iterate_backwards(OopClosureType* cl, oop obj, Klass* klass);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_ITERATOR_HPP

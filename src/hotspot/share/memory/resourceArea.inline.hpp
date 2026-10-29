@@ -28,11 +28,17 @@
 #include "memory/resourceArea.hpp"
 #include "nmt/memTracker.hpp"
 
+
+namespace svm_gc {
+
 inline char* ResourceArea::allocate_bytes(size_t size, AllocFailType alloc_failmode) {
 #ifdef ASSERT
   verify_has_resource_mark();
 #endif // ASSERT
   return (char*)Amalloc(size, alloc_failmode);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_RESOURCEAREA_INLINE_HPP

@@ -27,6 +27,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/numberSeq.hpp"
 
+
+namespace svm_gc {
+
 AbsSeq::AbsSeq(double alpha) :
   _num(0), _sum(0.0), _sum_of_squares(0.0),
   _davg(0.0), _dvariance(0.0), _alpha(alpha) {
@@ -113,6 +116,7 @@ NumberSeq::NumberSeq(double alpha) :
   AbsSeq(alpha), _last(0.0), _maximum(0.0) {
 }
 
+#ifndef SVM
 bool NumberSeq::check_nums(NumberSeq *total, int n, NumberSeq **parts) {
   for (int i = 0; i < n; ++i) {
     if (parts[i] != nullptr && total->num() != parts[i]->num())
@@ -120,6 +124,7 @@ bool NumberSeq::check_nums(NumberSeq *total, int n, NumberSeq **parts) {
   }
   return true;
 }
+#endif // !SVM
 
 void NumberSeq::add(double val) {
   AbsSeq::add(val);
@@ -204,6 +209,7 @@ double TruncatedSeq::oldest() const {
   }
 }
 
+#ifndef SVM
 double TruncatedSeq::predict_next() const {
   if (_num == 0) {
     // No data points, pick function: y = 0 + 0*x
@@ -243,6 +249,7 @@ double TruncatedSeq::predict_next() const {
 
   return b0 + b1 * num;
 }
+#endif // !SVM
 
 
 // Printing/Debugging Support
@@ -273,3 +280,6 @@ void TruncatedSeq::dump_on(outputStream* s) {
   }
   s->cr();
 }
+
+} // namespace svm_gc
+

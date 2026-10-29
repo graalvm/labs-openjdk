@@ -68,6 +68,9 @@
  f(size_t, MaxMetaspaceSizeConstraintFunc)                     \
  f(uint, GCCardSizeInBytesConstraintFunc)
 
+
+namespace svm_gc {
+
 SHARED_GC_CONSTRAINTS(DECLARE_CONSTRAINT)
 
 JVMFlag::Error MaxPLABSizeBounds(const char* name, size_t value, bool verbose);
@@ -76,5 +79,8 @@ JVMFlag::Error MaxPLABSizeBounds(const char* name, size_t value, bool verbose);
   SHARED_GC_CONSTRAINTS(f)                     \
   G1GC_ONLY(G1_GC_CONSTRAINTS(f))              \
   PARALLELGC_ONLY(PARALLEL_GC_CONSTRAINTS(f))
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_JVMFLAGCONSTRAINTSGC_HPP

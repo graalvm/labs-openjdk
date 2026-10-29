@@ -28,6 +28,9 @@
 #include "logging/log.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 void G1CardTable::g1_mark_as_young(const MemRegion& mr) {
   CardValue *const first = byte_for(mr.start());
   CardValue *const last = byte_after(mr.last());
@@ -77,3 +80,6 @@ bool G1CardTable::is_in_young(const void* p) const {
   volatile CardValue* card = byte_for(p);
   return *card == G1CardTable::g1_young_card_val();
 }
+
+} // namespace svm_gc
+

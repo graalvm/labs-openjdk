@@ -35,6 +35,9 @@
 // pin count for the very common case that the application pins and unpins the
 // same object without any interleaving by a garbage collection or pinning/unpinning
 // to an object in another region.
+
+namespace svm_gc {
+
 class G1RegionPinCache : public StackObj {
   uint _region_idx;
   size_t _count;
@@ -53,5 +56,8 @@ public:
 
   void flush();
 };
+
+
+} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1REGIONPINCACHE_HPP */

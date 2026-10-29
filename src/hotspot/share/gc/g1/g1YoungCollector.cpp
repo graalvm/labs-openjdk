@@ -65,6 +65,9 @@
 // GC cause.
 // The code relies on the fact that GCTraceTimeWrapper stores the string passed
 // initially as a reference only, so that we can modify it as needed.
+
+namespace svm_gc {
+
 class G1YoungGCTraceTime {
   G1YoungCollector* _collector;
 
@@ -295,13 +298,20 @@ class G1PrepareEvacuationTask : public WorkerTask {
     void sample_card_set_size(G1HeapRegion* hr) {
       // Sample card set sizes for humongous before GC: this makes the policy to give
       // back memory to the OS keep the most recent amount of memory for these regions.
-      if (hr->is_starts_humongous()) {
+      // NOTE (chaeubl): image heap and metaspace regions have no card-set group, which card_set_memory_stats() requires.
+      if (hr->is_starts_humongous() SVM_ONLY(&& !hr->is_image_heap_or_metaspace())) {
         _card_set_stats.add(hr->rem_set()->card_set_memory_stats());
       }
     }
 
     bool humongous_region_is_candidate(G1HeapRegion* region) const {
       assert(region->is_starts_humongous(), "Must start a humongous object");
+
+#ifdef SVM
+      if (region->is_image_heap_or_metaspace()) {
+        return false;
+      }
+#endif // SVM
 
       oop obj = cast_to_oop(region->bottom());
 
@@ -392,6 +402,14 @@ class G1PrepareEvacuationTask : public WorkerTask {
       } else {
         _g1h->register_region_with_region_attr(hr);
       }
+#ifdef SVM
+      if (hr->is_image_heap_or_metaspace()) {
+        // Image heap and metaspace regions have no card-set group to query below.
+        assert(!hr->rem_set()->is_added_to_cset_group(), "image heap and metaspace regions must not have a card-set group");
+        _worker_humongous_total++;
+        return false;
+      }
+#endif // SVM
       log_debug(gc, humongous)("Humongous region %u (object size %zu @ " PTR_FORMAT ") remset %zu code roots %zu "
                                "marked %d pinned count %zu reclaim candidate %d type array %d",
                                index,
@@ -1151,3 +1169,6 @@ void G1YoungCollector::collect() {
   }
   TASKQUEUE_STATS_ONLY(_g1h->task_queues()->print_and_reset_taskqueue_stats("Oop Queue");)
 }
+
+} // namespace svm_gc
+

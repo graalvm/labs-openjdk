@@ -31,6 +31,9 @@
 // Provide wrappers for some functions otherwise forbidden from use in HotSpot.
 // See forbiddenFunctions.hpp for details.
 
+
+namespace svm_gc {
+
 namespace permit_forbidden_function {
 BEGIN_ALLOW_FORBIDDEN_FUNCTIONS
 
@@ -41,5 +44,8 @@ inline char* realpath(const char* path, char* resolved_path) {
 
 END_ALLOW_FORBIDDEN_FUNCTIONS
 } // namespace permit_forbidden_function
+
+
+} // namespace svm_gc
 
 #endif // OS_POSIX_PERMITFORBIDDENFUNCTIONS_POSIX_HPP

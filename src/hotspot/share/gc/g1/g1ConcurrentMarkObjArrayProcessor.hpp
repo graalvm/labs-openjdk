@@ -27,6 +27,9 @@
 
 #include "oops/oopsHierarchy.hpp"
 
+
+namespace svm_gc {
+
 class G1CMTask;
 
 // Helper class to mark through large objArrays during marking in an efficient way.
@@ -55,5 +58,8 @@ public:
   // continuation.
   size_t process_obj(oop obj);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTMARKOBJARRAYPROCESSOR_HPP

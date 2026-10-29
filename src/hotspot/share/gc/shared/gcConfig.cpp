@@ -46,6 +46,10 @@
 #include "gc/z/zArguments.hpp"
 #endif
 
+#ifndef SVM
+
+namespace svm_gc {
+
 struct IncludedGC {
   bool&               _flag;
   CollectedHeap::Name _name;
@@ -56,6 +60,13 @@ struct IncludedGC {
       _flag(flag), _name(name), _arguments(arguments), _hs_err_name(hs_err_name) {}
 };
 
+} // namespace svm_gc
+
+#endif // !SVM
+
+
+namespace svm_gc {
+
    EPSILONGC_ONLY(static EpsilonArguments    epsilonArguments;)
         G1GC_ONLY(static G1Arguments         g1Arguments;)
   PARALLELGC_ONLY(static ParallelArguments   parallelArguments;)
@@ -63,6 +74,7 @@ struct IncludedGC {
 SHENANDOAHGC_ONLY(static ShenandoahArguments shenandoahArguments;)
          ZGC_ONLY(static ZArguments          zArguments;)
 
+#ifndef SVM
 // Table of included GCs, for translating between command
 // line flag, CollectedHeap::Name and GCArguments instance.
 static const IncludedGC IncludedGCs[] = {
@@ -81,8 +93,11 @@ SHENANDOAHGC_ONLY_ARG(IncludedGC(UseShenandoahGC,    CollectedHeap::Shenandoah, 
   if (option) {                                                             \
     vm_exit_during_initialization("Option -XX:+" #option " not supported"); \
   }
+#endif // !SVM
 
 GCArguments* GCConfig::_arguments = nullptr;
+
+#ifndef SVM
 bool GCConfig::_gc_selected_ergonomically = false;
 
 void GCConfig::fail_if_non_included_gc_is_selected() {
@@ -172,12 +187,22 @@ GCArguments* GCConfig::select_gc() {
 
   return nullptr;
 }
+#endif // SVM
 
 void GCConfig::initialize() {
   assert(_arguments == nullptr, "Already initialized");
+#ifdef SVM
+#if INCLUDE_G1GC
+  _arguments = &g1Arguments;
+#else
+  Unimplemented();
+#endif // INCLUDE_G1GC
+#else
   _arguments = select_gc();
+#endif // !SVM
 }
 
+#ifndef SVM
 bool GCConfig::is_gc_supported(CollectedHeap::Name name) {
   FOR_EACH_INCLUDED_GC(gc) {
     if (gc->_name == name && gc->_arguments.is_supported()) {
@@ -189,8 +214,16 @@ bool GCConfig::is_gc_supported(CollectedHeap::Name name) {
   // Not supported
   return false;
 }
+#endif // !SVM
 
 bool GCConfig::is_gc_selected(CollectedHeap::Name name) {
+#ifdef SVM
+#if INCLUDE_G1GC
+  return name == CollectedHeap::G1;
+#else
+  Unimplemented();
+#endif // INCLUDE_G1GC
+#else
   FOR_EACH_INCLUDED_GC(gc) {
     if (gc->_name == name && gc->_flag) {
       // Selected
@@ -200,8 +233,10 @@ bool GCConfig::is_gc_selected(CollectedHeap::Name name) {
 
   // Not selected
   return false;
+#endif // SVM
 }
 
+#ifndef SVM
 bool GCConfig::is_gc_selected_ergonomically() {
   return _gc_selected_ergonomically;
 }
@@ -228,8 +263,12 @@ const char* GCConfig::hs_err_name(CollectedHeap::Name name) {
   }
   return "unknown gc";
 }
+#endif // !SVM
 
 GCArguments* GCConfig::arguments() {
   assert(_arguments != nullptr, "Not initialized");
   return _arguments;
 }
+
+} // namespace svm_gc
+

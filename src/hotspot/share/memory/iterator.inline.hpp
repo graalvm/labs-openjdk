@@ -41,8 +41,15 @@
 #include "oops/objArrayKlass.inline.hpp"
 #include "oops/typeArrayKlass.inline.hpp"
 #include "utilities/debug.hpp"
+#ifdef SVM
+#include "oops/instancePodKlass.inline.hpp"
+#endif // SVM
 
+#ifndef SVM
 // Defaults to strong claiming.
+
+namespace svm_gc {
+
 inline MetadataVisitingOopIterateClosure::MetadataVisitingOopIterateClosure(ReferenceDiscoverer* rd) :
     ClaimMetadataVisitingOopIterateClosure(ClassLoaderData::_claim_strong, rd) {}
 
@@ -67,6 +74,11 @@ inline void ClaimMetadataVisitingOopIterateClosure::do_method(Method* m) {
   // Mark interpreted frames for class redefinition
   m->record_gc_epoch();
 }
+
+} // namespace svm_gc
+
+#endif // !SVM
+
 
 // Dispatch table implementation for *Klass::oop_oop_iterate
 //
@@ -102,6 +114,9 @@ inline void ClaimMetadataVisitingOopIterateClosure::do_method(Method* m) {
 //   oop_oop_iterate function replaces the init function in the table, and
 //   succeeding calls will jump directly to oop_oop_iterate.
 
+
+
+namespace svm_gc {
 
 template <typename OopClosureType>
 class OopOopIterateDispatch : public AllStatic {
@@ -149,8 +164,12 @@ private:
     Table(){
       set_init_function<InstanceKlass>();
       set_init_function<InstanceRefKlass>();
+#ifdef SVM
+      set_init_function<InstancePodKlass>();
+#else
       set_init_function<InstanceMirrorKlass>();
       set_init_function<InstanceClassLoaderKlass>();
+#endif // SVM
       set_init_function<InstanceStackChunkKlass>();
       set_init_function<ObjArrayKlass>();
       set_init_function<TypeArrayKlass>();
@@ -212,8 +231,12 @@ private:
     Table(){
       set_init_function<InstanceKlass>();
       set_init_function<InstanceRefKlass>();
+#ifdef SVM
+      set_init_function<InstancePodKlass>();
+#else
       set_init_function<InstanceMirrorKlass>();
       set_init_function<InstanceClassLoaderKlass>();
+#endif // SVM
       set_init_function<InstanceStackChunkKlass>();
       set_init_function<ObjArrayKlass>();
       set_init_function<TypeArrayKlass>();
@@ -275,8 +298,12 @@ private:
     Table(){
       set_init_function<InstanceKlass>();
       set_init_function<InstanceRefKlass>();
+#ifdef SVM
+      set_init_function<InstancePodKlass>();
+#else
       set_init_function<InstanceMirrorKlass>();
       set_init_function<InstanceClassLoaderKlass>();
+#endif // SVM
       set_init_function<InstanceStackChunkKlass>();
       set_init_function<ObjArrayKlass>();
       set_init_function<TypeArrayKlass>();
@@ -309,5 +336,8 @@ template <typename OopClosureType>
 void OopIteratorClosureDispatch::oop_oop_iterate_backwards(OopClosureType* cl, oop obj, Klass* klass) {
   OopOopIterateBackwardsDispatch<OopClosureType>::function(klass)(cl, obj, klass);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_ITERATOR_INLINE_HPP

@@ -25,9 +25,11 @@
 #ifndef SHARE_JVMCI_JVMCI_GLOBALS_HPP
 #define SHARE_JVMCI_JVMCI_GLOBALS_HPP
 
-#include "oops/oopsHierarchy.hpp"
 #include "runtime/globals_shared.hpp"
 #include "utilities/vmEnums.hpp"
+
+
+namespace svm_gc {
 
 class fileStream;
 
@@ -38,7 +40,11 @@ class fileStream;
 // Declare all global flags used by the JVMCI compiler. Only flags that need
 // to be accessible to the JVMCI C++ code should be defined here.
 //
-#define JVMCI_FLAGS(develop,                                                \
+#define JVMCI_FLAGS(ni_hosted,                                              \
+                    ni_hosted_pd,                                           \
+                    ni_runtime,                                             \
+                    ni_runtime_pd,                                          \
+                    develop,                                                \
                     develop_pd,                                             \
                     product,                                                \
                     product_pd,                                             \
@@ -148,15 +154,6 @@ class fileStream;
           "Dumps to the given file a description of the classes, fields "   \
           "and methods the JVMCI shared library must provide")              \
                                                                             \
-  /* See initialize_class_identity_hash_codes() in jvmci_globals.cpp. */      \
-  product(ccstr, JVMCIClassIdentityHashCodeFile, nullptr, EXPERIMENTAL,     \
-          "File containing identity hash codes to install in newly created "\
-          "Class mirrors")                                                  \
-                                                                            \
-  product(bool, JVMCIUseStableGeneratedClassIdentityHashCodes, false,       \
-          EXPERIMENTAL, "Use stable identity hash codes for generated "     \
-          "Class mirrors with unstable names")                              \
-                                                                            \
   product(bool, UseJVMCINativeLibrary, false, EXPERIMENTAL,                 \
           "Execute JVMCI Java code from a shared library (\"libjvmci\") "   \
           "instead of loading it from class files and executing it "        \
@@ -211,6 +208,7 @@ class fileStream;
 
 DECLARE_FLAGS(JVMCI_FLAGS)
 
+#ifndef SVM
 // The base name for the shared library containing the JVMCI based compiler
 #define JVMCI_SHARED_LIBRARY_NAME "jvmcicompiler"
 
@@ -234,9 +232,9 @@ class JVMCIGlobals {
   static void check_jvmci_supported_gc();
 
   static fileStream* get_jni_config_file() { return _jni_config_file; }
-
-  // Installs a requested identity hash code before the newly allocated mirror is published.
-  // primitive_name must be provided for primitive mirrors, which have no Klass.
-  static void initialize_class_identity_hash_code(oop mirror, const char* primitive_name = nullptr);
 };
 #endif // SHARE_JVMCI_JVMCI_GLOBALS_HPP
+
+} // namespace svm_gc
+
+#endif // !SVM

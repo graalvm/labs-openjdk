@@ -30,6 +30,9 @@
 
 // G1RedirtyCardsLocalQueueSet
 
+
+namespace svm_gc {
+
 G1RedirtyCardsLocalQueueSet::G1RedirtyCardsLocalQueueSet(G1RedirtyCardsQueueSet* shared_qset) :
   PtrQueueSet(shared_qset->allocator()),
   _shared_qset(shared_qset),
@@ -106,10 +109,12 @@ void G1RedirtyCardsQueueSet::verify_empty() const {
 }
 #endif // ASSERT
 
+#ifndef SVM
 BufferNode* G1RedirtyCardsQueueSet::all_completed_buffers() const {
   DEBUG_ONLY(_collecting = false;)
   return _list.top();
 }
+#endif // !SVM
 
 BufferNodeList G1RedirtyCardsQueueSet::take_all_completed_buffers() {
   DEBUG_ONLY(_collecting = false;)
@@ -146,3 +151,6 @@ void G1RedirtyCardsQueueSet::add_bufferlist(const BufferNodeList& buffers) {
     update_tail(buffers._tail);
   }
 }
+
+} // namespace svm_gc
+

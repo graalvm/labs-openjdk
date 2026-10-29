@@ -30,6 +30,9 @@
 #include "oops/oopsHierarchy.hpp"
 #include "utilities/align.hpp"
 
+
+namespace svm_gc {
+
 class CardTable: public CHeapObj<mtGC> {
   friend class VMStructs;
 public:
@@ -89,6 +92,10 @@ public:
   virtual ~CardTable() = default;
 
   void initialize(void* region0_start, void* region1_start);
+
+#ifdef SVM
+  size_t byte_map_size() const { return _byte_map_size; }
+#endif // !SVM
 
   // *** Barrier set functions.
 
@@ -212,5 +219,8 @@ public:
   void verify_not_dirty_region(MemRegion mr) PRODUCT_RETURN;
   void verify_dirty_region(MemRegion mr) PRODUCT_RETURN;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_CARDTABLE_HPP

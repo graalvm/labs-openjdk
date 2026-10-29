@@ -27,6 +27,9 @@
 #include "logging/logDecorators.hpp"
 #include "logging/logTagSet.hpp"
 
+
+namespace svm_gc {
+
 class outputStream;
 
 // LogDecorations keeps resolved values for decorators, as well as the
@@ -45,8 +48,10 @@ class LogDecorations {
   // In debug mode we keep the decorators around for sanity checking when printing
   DEBUG_ONLY(const LogDecorators _decorators;)
 
+#ifndef SVM
   static const char* volatile _host_name;
   static const char* host_name();
+#endif // !SVM
   static const int _pid;          // for "pid"
 
 #define DECORATOR(name, abbr) void print_##name##_decoration(outputStream* st) const;
@@ -68,5 +73,8 @@ class LogDecorations {
   const char* decoration(LogDecorators::Decorator decorator, char* buf, size_t buflen) const;
 
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGDECORATIONS_HPP

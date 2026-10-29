@@ -47,6 +47,9 @@
 // G1GCAllocationFailureALotCount successful evacuations.
 //
 // Available only when ALLOCATION_FAILURE_INJECTOR is defined.
+
+namespace svm_gc {
+
 class G1YoungGCAllocationFailureInjector {
 #if ALLOCATION_FAILURE_INJECTOR
   // Should we inject evacuation failures in the current GC.
@@ -83,5 +86,8 @@ public:
   // the end of an evacuation pause in which an allocation failure occurred.
   void reset() ALLOCATION_FAILURE_INJECTOR_RETURN;
 };
+
+
+} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1YOUNGGCALLOCATIONFAILUREINJECTOR_HPP */

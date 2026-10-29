@@ -32,6 +32,9 @@
 // has a default value of 320K/1MB [32bit/64bit]). Depending on Windows version, changing
 // ThreadStackSize to non-zero may have significant impact on memory usage.
 // See comments in os_windows.cpp.
+
+namespace svm_gc {
+
 define_pd_global(intx, ThreadStackSize,          0); // 0 => use system default
 define_pd_global(intx, VMThreadStackSize,        0); // 0 => use system default
 
@@ -45,5 +48,7 @@ define_pd_global(size_t, JVMInvokeMethodSlack,   8192);
 
 // Used on 64 bit platforms for UseCompressedOops base address
 define_pd_global(size_t, HeapBaseMinAddress,     2*G);
+
+} // namespace svm_gc
 
 #endif // OS_CPU_WINDOWS_X86_GLOBALS_WINDOWS_X86_HPP

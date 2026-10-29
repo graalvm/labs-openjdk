@@ -31,6 +31,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/powerOfTwo.hpp"
 
+
+namespace svm_gc {
+
 G1FreeIdSet::G1FreeIdSet(uint start, uint size) :
   _sem(size),          // counting semaphore for available ids
   _next(nullptr),      // array of "next" indices
@@ -103,3 +106,6 @@ void G1FreeIdSet::release_par_id(uint id) {
   // Now that id has been released, permit another thread through the gate.
   _sem.signal();
 }
+
+} // namespace svm_gc
+

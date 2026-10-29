@@ -30,11 +30,15 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 class Decoder;
 class frame;
 class VM_ReportJavaOutOfMemory;
 
 class VMError : public AllStatic {
+#ifndef SVM
   friend class VMStructs;
 
   static int         _id;               // Solaris/Linux signals: 0 - SIGRTMAX
@@ -67,6 +71,7 @@ class VMError : public AllStatic {
   // used by fatal error handler
   static int         _current_step;
   static const char* _current_step_info;
+#endif // !SVM
 
   // used for reattempt step logic
   static const size_t _reattempt_required_stack_headroom;
@@ -75,6 +80,7 @@ class VMError : public AllStatic {
   // so use thread id instead of Thread* to identify thread.
   static volatile intptr_t _first_error_tid;
 
+#ifndef SVM
   // Core dump status, false if we have been unable to write a core/minidump for some reason
   static bool coredump_status;
 
@@ -141,10 +147,12 @@ class VMError : public AllStatic {
   static void record_step_start_time();
   static jlong get_step_start_time();
   static void clear_step_start_time();
+#endif // !SVM
 
   WINDOWS_ONLY([[noreturn]] static void raise_fail_fast(const void* exrecord, const void* context);)
 
 public:
+#ifndef SVM
 
   // return a string to describe the error
   static char* error_string(char* buf, int buflen);
@@ -160,6 +168,7 @@ public:
   ATTRIBUTE_PRINTF(6, 7)
   static void report_and_die(Thread* thread, unsigned int sig, address pc, const void* siginfo,
                              const void* context, const char* detail_fmt, ...);
+#endif // !SVM
 
   [[noreturn]]
   ATTRIBUTE_PRINTF(6, 7)
@@ -172,9 +181,11 @@ public:
                              Thread* thread, address pc, const void* siginfo, const void* context,
                              const char* filename, int lineno, size_t size);
 
+#ifndef SVM
   [[noreturn]]
   static void report_and_die(Thread* thread, unsigned int sig, address pc,
                              const void* siginfo, const void* context);
+#endif // !SVM
 
   [[noreturn]]
   ATTRIBUTE_PRINTF(6, 0)
@@ -187,17 +198,20 @@ public:
                              VMErrorType vm_err_type, const char* detail_fmt,
                              va_list detail_args);
 
+#ifndef SVM
   // reporting OutOfMemoryError
   static void report_java_out_of_memory(const char* message);
 
   // Called by the WatcherThread to check if error reporting has timed-out.
   //  Returns true if error reporting has not completed within the ErrorLogTimeout limit.
   static bool check_timeout();
+#endif // !SVM
 
   // Returns true if at least one thread reported a fatal error and
   //  fatal error handling is in process.
   static bool is_error_reported();
 
+#ifndef SVM
   // Returns true if the current thread reported a fatal error.
   static bool is_error_reported_in_current_thread();
 
@@ -205,10 +219,12 @@ public:
 
   // Non-null address guaranteed to generate a SEGV mapping error on read, for test purposes.
   static const intptr_t segfault_address;
+#endif // !SVM
 
   // Max value for the ErrorLogPrintCodeLimit flag.
   static const int max_error_log_print_code = 10;
 
+#ifndef SVM
   // Needed when printing signal handlers.
   NOT_WINDOWS(static const void* crash_handler_address;)
 
@@ -218,6 +234,7 @@ public:
   static int prepare_log_file(const char* pattern, const char* default_pattern, bool overwrite_existing, char* buf, size_t buflen);
 
   static bool was_assert_poison_crash(const void* sigInfo);
+#endif // !SVM
 };
 
 class VMErrorCallback {
@@ -241,5 +258,8 @@ public:
   VMErrorCallbackMark(VMErrorCallback* callback);
   ~VMErrorCallbackMark();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_VMERROR_HPP

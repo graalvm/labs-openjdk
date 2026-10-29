@@ -29,6 +29,9 @@
 #include "memory/memRegion.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class SpaceDecorator : AllStatic {
  public:
   // Initialization flags.
@@ -41,5 +44,8 @@ class SpaceDecorator : AllStatic {
 struct SpaceMangler : AllStatic {
   static void mangle_region(MemRegion mr) NOT_DEBUG_RETURN;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_SPACEDECORATOR_HPP

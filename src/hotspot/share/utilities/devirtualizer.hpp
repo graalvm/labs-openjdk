@@ -28,6 +28,9 @@
 #include "oops/oopsHierarchy.hpp"
 #include "utilities/bitMap.hpp"
 
+
+namespace svm_gc {
+
 class ClassLoaderData;
 
 // Dispatches to the non-virtual functions if OopClosureType has
@@ -35,11 +38,16 @@ class ClassLoaderData;
 class Devirtualizer {
  public:
   template <typename OopClosureType, typename T> static void do_oop(OopClosureType* closure, T* p);
+#ifndef SVM
   template <typename OopClosureType>             static void do_klass(OopClosureType* closure, Klass* k);
   template <typename OopClosureType>             static void do_cld(OopClosureType* closure, ClassLoaderData* cld);
   template <typename OopClosureType>             static bool do_metadata(OopClosureType* closure);
   template <typename DerivedOopClosureType>      static void do_derived_oop(DerivedOopClosureType* closure, derived_base* base, derived_pointer* derived);
   template <typename BitMapClosureType>          static bool do_bit(BitMapClosureType* closure, BitMap::idx_t index);
+#endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_DEVIRTUALIZER_HPP

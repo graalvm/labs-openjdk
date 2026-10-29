@@ -29,6 +29,9 @@
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 class ReservedSpace;
 class WorkerThreads;
 
@@ -88,5 +91,8 @@ class G1RegionToSpaceMapper : public CHeapObj<mtGC> {
                                               size_t byte_translation_factor,
                                               MemTag mem_tag);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1REGIONTOSPACEMAPPER_HPP

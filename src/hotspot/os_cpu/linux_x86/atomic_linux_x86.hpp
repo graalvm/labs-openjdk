@@ -27,6 +27,9 @@
 
 // Implementation of class atomic
 
+
+namespace svm_gc {
+
 template<size_t byte_size>
 struct Atomic::PlatformAdd {
   template<typename D, typename I>
@@ -229,5 +232,8 @@ struct Atomic::PlatformOrderedStore<8, RELEASE_X_FENCE>
   }
 };
 #endif // AMD64
+
+
+} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_X86_ATOMIC_LINUX_X86_HPP

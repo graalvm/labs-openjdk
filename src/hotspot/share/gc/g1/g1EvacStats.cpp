@@ -29,6 +29,9 @@
 #include "memory/allocation.inline.hpp"
 #include "runtime/globals.hpp"
 
+
+namespace svm_gc {
+
 void G1EvacStats::log_plab_allocation() {
   log_debug(gc, plab)("%s PLAB allocation: "
                       "allocated: %zuB, "
@@ -164,3 +167,6 @@ void G1EvacStats::adjust_desired_plab_size() {
   // Clear accumulators for next round
   reset();
 }
+
+} // namespace svm_gc
+

@@ -31,6 +31,9 @@
 #include "services/memoryManager.hpp"
 #include "services/memoryService.hpp"
 
+
+namespace svm_gc {
+
 class CollectorCounters;
 class G1CollectedHeap;
 class G1OldGenerationCounters;
@@ -129,6 +132,7 @@ class G1MonitoringSupport : public CHeapObj<mtGC> {
 
   G1CollectedHeap* _g1h;
 
+#ifndef SVM
   // java.lang.management MemoryManager and MemoryPool support
   GCMemoryManager _young_gc_memory_manager;
   GCMemoryManager _full_gc_memory_manager;
@@ -137,6 +141,7 @@ class G1MonitoringSupport : public CHeapObj<mtGC> {
   MemoryPool* _eden_space_pool;
   MemoryPool* _survivor_space_pool;
   MemoryPool* _old_gen_pool;
+#endif // !SVM
 
   // jstat performance counters
   //  young stop-the-world collections (including mixed)
@@ -188,9 +193,11 @@ public:
 
   void initialize_serviceability();
 
+#ifndef SVM
   MemoryUsage memory_usage();
   GrowableArray<GCMemoryManager*> memory_managers();
   GrowableArray<MemoryPool*> memory_pools();
+#endif // !SVM
 
   // Recalculate all the sizes from scratch and update all the jstat
   // counters accordingly.
@@ -212,23 +219,27 @@ public:
   size_t old_gen_committed()          { return _old_gen_committed; }
   size_t old_gen_used()               { return _old_gen_used; }
 
+#ifndef SVM
   // Monitoring support for MemoryPools. Values in the returned MemoryUsage are
   // guaranteed to be consistent with each other.
   MemoryUsage eden_space_memory_usage(size_t initial_size, size_t max_size);
   MemoryUsage survivor_space_memory_usage(size_t initial_size, size_t max_size);
 
   MemoryUsage old_gen_memory_usage(size_t initial_size, size_t max_size);
+#endif // !SVM
 };
 
 // Scope object for java.lang.management support.
 class G1MonitoringScope : public StackObj {
   G1MonitoringSupport* _monitoring_support;
+#ifndef SVM
   TraceCollectorStats _tcs;
   TraceMemoryManagerStats _tms;
+#endif // !SVM
 protected:
   G1MonitoringScope(G1MonitoringSupport* monitoring_support,
                     CollectorCounters* collection_counters,
-                    GCMemoryManager* gc_memory_manager,
+                    NOT_SVM(GCMemoryManager* gc_memory_manager COMMA)
                     const char* end_message,
                     bool all_memory_pools_affected = true);
   ~G1MonitoringScope();
@@ -248,4 +259,7 @@ class G1ConcGCMonitoringScope : public G1MonitoringScope {
 public:
   G1ConcGCMonitoringScope(G1MonitoringSupport* monitoring_support);
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_G1_G1MONITORINGSUPPORT_HPP

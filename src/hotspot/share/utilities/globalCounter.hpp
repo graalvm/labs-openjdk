@@ -28,6 +28,9 @@
 #include "memory/allStatic.hpp"
 #include "memory/padded.hpp"
 
+
+namespace svm_gc {
+
 class Thread;
 
 // The GlobalCounter provides a synchronization mechanism between threads for
@@ -53,6 +56,9 @@ class GlobalCounter : public AllStatic {
 
   // The global counter
   static PaddedCounter _global_counter;
+#ifdef SVM
+  static PaddedCounter _java_threads_in_critical_section;
+#endif // SVM
 
   // Bit 0 is active bit.
   static const uintx COUNTER_ACTIVE = 1;
@@ -86,5 +92,8 @@ class GlobalCounter : public AllStatic {
   // A scoped object for a read-side critical-section.
   class CriticalSection;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_GLOBALCOUNTER_HPP

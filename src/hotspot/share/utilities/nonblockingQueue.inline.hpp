@@ -29,6 +29,9 @@
 
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 template<typename T, T* volatile* (*next_ptr)(T&)>
 T* NonblockingQueue<T, next_ptr>::next(const T& node) {
   return Atomic::load(next_ptr(const_cast<T&>(node)));
@@ -244,5 +247,8 @@ Pair<T*, T*> NonblockingQueue<T, next_ptr>::take_all() {
   Atomic::store(&_tail, (T*)nullptr);
   return result;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_NONBLOCKINGQUEUE_INLINE_HPP
