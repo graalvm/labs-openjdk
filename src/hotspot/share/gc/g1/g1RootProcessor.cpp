@@ -232,7 +232,6 @@ void G1RootProcessor::process_java_roots(G1RootClosures* closures,
     G1GCParPhaseTimesTracker x(phase_times, G1GCPhaseTimes::CLDGRoots, worker_id);
     ClassLoaderDataGraph::roots_cld_do(closures->strong_clds(), closures->weak_clds());
   }
-}
 #endif // !SVM
 }
 

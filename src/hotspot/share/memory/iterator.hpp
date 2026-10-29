@@ -56,6 +56,7 @@ class ThreadClosure {
 // OopClosure is used for iterating through references to Java objects.
 // NOTE (chaeubl): this class was merged with OopIterateClosure so that iterating a whole heap region is easier
 class OopClosure : public Closure {
+#ifdef SVM
  private:
   ReferenceDiscoverer* _ref_discoverer;
 
@@ -65,11 +66,13 @@ class OopClosure : public Closure {
   ~OopClosure() { }
 
   void set_ref_discoverer_internal(ReferenceDiscoverer* rd) { _ref_discoverer = rd; }
+#endif // SVM
 
  public:
   virtual void do_oop(oop* o) = 0;
   virtual void do_oop(narrowOop* o) = 0;
 
+#ifdef SVM
  public:
   ReferenceDiscoverer* ref_discoverer() const { return _ref_discoverer; }
 
@@ -83,6 +86,7 @@ class OopClosure : public Closure {
 
   // The default iteration mode is to do discovery.
   virtual ReferenceIterationMode reference_iteration_mode() { return DO_DISCOVERY; }
+#endif // SVM
 };
 
 class DoNothingClosure : public OopClosure {
@@ -100,10 +104,29 @@ typedef OopClosure ClaimMetadataVisitingOopIterateClosure;
 // This is needed by the GC and is extracted to a separate type to not
 // pollute the OopClosure interface.
 class OopIterateClosure : public OopClosure {
+ private:
+  ReferenceDiscoverer* _ref_discoverer;
+
  protected:
-  OopIterateClosure(ReferenceDiscoverer* rd) : OopClosure(rd) { }
-  OopIterateClosure() : OopClosure(nullptr) { }
+  OopIterateClosure(ReferenceDiscoverer* rd) : _ref_discoverer(rd) { }
+  OopIterateClosure() : _ref_discoverer(nullptr) { }
   ~OopIterateClosure() { }
+
+  void set_ref_discoverer_internal(ReferenceDiscoverer* rd) { _ref_discoverer = rd; }
+
+ public:
+  ReferenceDiscoverer* ref_discoverer() const { return _ref_discoverer; }
+
+  // Iteration of InstanceRefKlasses differ depending on the closure,
+  // the below enum describes the different alternatives.
+  enum ReferenceIterationMode {
+    DO_DISCOVERY,                // Apply closure and discover references
+    DO_FIELDS,                   // Apply closure to all fields
+    DO_FIELDS_EXCEPT_REFERENT    // Apply closure to all fields except the referent field
+  };
+
+  // The default iteration mode is to do discovery.
+  virtual ReferenceIterationMode reference_iteration_mode() { return DO_DISCOVERY; }
 
   // If the do_metadata functions return "true",
   // we invoke the following when running oop_iterate():

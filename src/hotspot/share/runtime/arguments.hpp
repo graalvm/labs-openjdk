@@ -353,7 +353,7 @@ class Arguments : AllStatic {
 
   static jint parse_vm_init_args(
 #ifndef SVM
-      GrowableArrayCHeap<VMInitArgsGroup, mtArguments>* all_args)
+      GrowableArrayCHeap<VMInitArgsGroup, mtArguments>* all_args
 #endif // !SVM
   );
 #ifdef SVM
@@ -550,9 +550,6 @@ class Arguments : AllStatic {
   // preview features
   static void set_enable_preview() { _enable_preview = true; }
   static bool enable_preview() { return _enable_preview; }
-
-  // jdwp
-  static bool has_jdwp_agent() { return _has_jdwp_agent; }
 
   // jdwp
   static bool has_jdwp_agent() { return _has_jdwp_agent; }

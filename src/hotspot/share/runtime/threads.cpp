@@ -757,13 +757,13 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
 #endif // SVM
 
   assert(Universe::is_fully_initialized(), "not initialized");
+#ifndef SVM
   if (VerifyDuringStartup) {
     // Make sure we're starting with a clean slate.
     VM_Verify verify_op;
     VMThread::execute(&verify_op);
   }
 
-#ifndef SVM
   // We need this to update the java.vm.info property in case any flags used
   // to initially define it have been changed. This is needed for both CDS
   // since UseSharedSpaces may be changed after java.vm.info
@@ -1336,11 +1336,15 @@ void Threads::assert_all_threads_claimed() {
     NJTClaimedVerifierClosure(uintx thread_claim_token) : ThreadClosure(), _thread_claim_token(thread_claim_token) { }
 
     virtual void do_thread(Thread* thread) override {
+#ifdef SVM
       // NOTE (chaeubl): HotSpot only checks the VM thread here. We check all threads but ignore threads with
       // a token of 0, as those are usually newly started threads.
       if (thread->threads_do_token() != 0) {
         assert_thread_claimed("Non-JavaThread", thread, _thread_claim_token);
       }
+#else
+      assert_thread_claimed("Non-JavaThread", VMThread::vm_thread(), _thread_claim_token);
+#endif // SVM
     }
   } tc(_thread_claim_token);
 

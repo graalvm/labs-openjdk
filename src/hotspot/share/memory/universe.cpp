@@ -118,7 +118,11 @@ static LatestMethodCache _do_stack_walk_cache;              // AbstractStackWalk
 TypeArrayKlass* Universe::_typeArrayKlasses[T_LONG+1] = { nullptr /*, nullptr...*/ };
 ObjArrayKlass* Universe::_objectArrayKlass            = nullptr;
 #endif // !SVM
+#ifdef SVM
 TypeArrayKlass* Universe::_fillerArrayKlass           = nullptr;
+#else
+Klass* Universe::_fillerArrayKlass                    = nullptr;
+#endif // SVM
 #ifndef SVM
 OopHandle Universe::_basic_type_mirrors[T_VOID+1];
 #if INCLUDE_CDS_JAVA_HEAP

@@ -57,10 +57,12 @@ void VM_GC_Sync_Operation::doit_epilogue() {
   Heap_lock->unlock();
 }
 
+#ifndef SVM
 void VM_Verify::doit() {
   Universe::heap()->prepare_for_verify();
   Universe::verify();
 }
+#endif // !SVM
 
 VM_GC_Operation::~VM_GC_Operation() {
   CollectedHeap* ch = Universe::heap();

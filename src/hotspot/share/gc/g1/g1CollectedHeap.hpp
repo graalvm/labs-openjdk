@@ -156,7 +156,7 @@ public:
 #ifdef SVM
     return IsolateThread::get_num_attached_threads();
 #else
-    return _list.length());
+    return _list.length();
 #endif // SVM
   }
 };

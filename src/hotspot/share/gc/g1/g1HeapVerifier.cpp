@@ -470,6 +470,7 @@ public:
     }
 
     G1ConcurrentMark* cm = G1CollectedHeap::heap()->concurrent_mark();
+    bool part_of_marking = SVM_ONLY((r->is_old() || r->is_humongous())) NOT_SVM(r->is_old_or_humongous()) && !r->is_collection_set_candidate();
     HeapWord* top_at_mark_start = cm->top_at_mark_start(r);
 
 #ifdef SVM
@@ -484,8 +485,6 @@ public:
       return false;
     }
 #endif // SVM
-
-    bool part_of_marking = (r->is_old() || r->is_humongous()) && !r->is_collection_set_candidate();
 
     if (part_of_marking) {
       guarantee(r->bottom() != top_at_mark_start,

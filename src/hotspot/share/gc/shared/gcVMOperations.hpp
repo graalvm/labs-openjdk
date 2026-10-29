@@ -95,11 +95,13 @@ public:
   virtual void doit_epilogue();
 };
 
+#ifndef SVM
 class VM_Verify : public VM_GC_Sync_Operation {
  public:
   VMOp_Type type() const { return VMOp_Verify; }
   void doit();
 };
+#endif // !SVM
 
 class VM_GC_Operation: public VM_GC_Sync_Operation {
  protected:
