@@ -45,6 +45,9 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreter/linkResolver.hpp"
+#if INCLUDE_JVMCI
+#include "jvmci/jvmci_globals.hpp"
+#endif
 #include "jvm.h"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"

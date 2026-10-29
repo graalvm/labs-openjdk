@@ -25,10 +25,11 @@
 #ifndef SHARE_RUNTIME_THREADSMR_HPP
 #define SHARE_RUNTIME_THREADSMR_HPP
 
-#include "oops/oop.hpp"
+#include "memory/allocation.hpp"
 #include "runtime/javaThread.hpp"
-#include "runtime/vmOperation.hpp"
-#include "runtime/threadSMR.hpp"
+#include "runtime/mutexLocker.hpp"
+#include "runtime/timer.hpp"
+#include "utilities/debug.hpp"
 #ifdef SVM
 #include "runtime/safepoint.hpp"
 #include "svmIsolateThread.hpp"

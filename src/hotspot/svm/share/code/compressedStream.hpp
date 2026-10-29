@@ -26,6 +26,7 @@
 #define SHARE_CODE_COMPRESSEDSTREAM_HPP
 
 #include "memory/allocation.hpp"
+#include "utilities/unsigned5.hpp"
 
 // Simple interface for filing out and filing in basic types
 // Used for writing out and reading in debugging information.

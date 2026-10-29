@@ -28,7 +28,7 @@
 
 #include "oops/oop.inline.hpp"
 #include "oops/stackChunkOop.inline.hpp"
-#include "runtime/continuationJavaClasses.inline.hpp"
+#include "runtime/continuationJavaClasses.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "utilities/bitMap.inline.hpp"

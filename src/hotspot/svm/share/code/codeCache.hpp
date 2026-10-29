@@ -25,14 +25,15 @@
 #ifndef SHARE_CODE_CODECACHE_HPP
 #define SHARE_CODE_CODECACHE_HPP
 
-#include "asm/codeBuffer.hpp"
-#include "compiler/compilerDefinitions.hpp"
-#include "compiler/oopMap.hpp"
-#include "runtime/javaFrameAnchor.hpp"
-#include "runtime/frame.hpp"
-#include "runtime/handles.hpp"
-#include "utilities/align.hpp"
-#include "utilities/macros.hpp"
+#include "code/codeBlob.hpp"
+#include "code/nmethod.hpp"
+#include "gc/shared/gcBehaviours.hpp"
+#include "memory/allocation.hpp"
+#include "memory/heap.hpp"
+#include "oops/instanceKlass.hpp"
+#include "oops/oopsHierarchy.hpp"
+#include "runtime/mutexLocker.hpp"
+#include "utilities/numberSeq.hpp"
 
 // The GC only needs read access to the code cache, so all more complex operations such as adding or removing code
 // only exist on the SVM-side. The GC may only access the code cache at a safepoint or during teardown because it

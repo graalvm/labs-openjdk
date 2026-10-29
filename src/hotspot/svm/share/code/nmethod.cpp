@@ -28,7 +28,6 @@
 #include "code/dependencies.hpp"
 #include "code/nativeInst.hpp"
 #include "code/nmethod.inline.hpp"
-#include "code/relocInfo.hpp"
 #include "code/scopeDesc.hpp"
 #include "compiler/abstractCompiler.hpp"
 #include "compiler/compilationLog.hpp"

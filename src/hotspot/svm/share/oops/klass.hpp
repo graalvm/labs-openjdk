@@ -26,8 +26,6 @@
 #define SHARE_OOPS_KLASS_HPP
 
 #include "oops/klassFlags.hpp"
-#include "memory/iterator.hpp"
-#include "memory/memRegion.hpp"
 #include "oops/markWord.hpp"
 #include "oops/metadata.hpp"
 #include "oops/oop.hpp"
