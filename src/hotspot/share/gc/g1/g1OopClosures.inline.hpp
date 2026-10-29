@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -54,8 +54,8 @@ inline void G1ScanClosureBase::prefetch_and_push(T* p, const oop obj) {
   Prefetch::write(obj, 0);
   Prefetch::read(obj, (HeapWordSize*2));
 #else
-  Prefetch::write(obj->mark_addr(), 0);
-  Prefetch::read(obj->mark_addr(), (HeapWordSize*2));
+  Prefetch::write(obj->base_addr(), oopDesc::mark_offset_in_bytes());
+  Prefetch::read(obj->base_addr(), oopDesc::mark_offset_in_bytes() + (HeapWordSize*2));
 #endif // SVM
 
   // slightly paranoid test; I'm trying to catch potential
