@@ -1,7 +1,7 @@
 # Substrate VM G1 Garbage Collector Sources
 
-This branch is based on the LabsJDK CE tag `jvmci-25.2-b20` and contains the
-Substrate VM integration of the G1 garbage collector.
+This branch contains the Substrate VM integration of the G1 garbage collector.
+The LabsJDK CE base revision is recorded in [BASE_REVISION](BASE_REVISION).
 
 ## Maintenance Model
 
@@ -136,7 +136,7 @@ In general, we keep the diff against OpenJDK small because large diffs make JDK 
 - VM operations and safepoints are implemented differently.
   This is mainly needed because the VM operation thread is a normal Java thread in Native Image.
 - Performance data support is different because Native Image manages all performance-data memory and data structures.
-- Our G1 version does not have any metaspace or class (un)loading support.
+- Our G1 version supports a reserved metaspace for runtime-allocated metadata. Class unloading is not supported.
 - There are many locking differences, e.g.:
   - Only a subset of the OpenJDK locks is used.
   - Far more locks must be lockable by Java threads.
