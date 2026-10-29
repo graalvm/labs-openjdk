@@ -31,6 +31,9 @@
 #include "runtime/mutex.hpp"
 #include "runtime/os.hpp"
 #ifndef SVM
+
+namespace svm_gc {
+
 inline bool os::zero_page_read_protected() {
   return true;
 }
@@ -63,9 +66,15 @@ inline void os::map_stack_shadow_pages(address sp) {
 }
 
 inline bool os::numa_has_group_homing()     { return false;  }
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 // Platform Mutex/Monitor implementation
+
+
+namespace svm_gc {
 
 inline void PlatformMutex::lock() {
   EnterCriticalSection(&_mutex);
@@ -92,4 +101,7 @@ inline void PlatformMonitor::notify_all() {
 inline bool os::can_trim_native_heap() { return false; }
 inline bool os::trim_native_heap(os::size_change_t* rss_change) { return false; }
 #endif // !SVM
+
+} // namespace svm_gc
+
 #endif // OS_WINDOWS_OS_WINDOWS_INLINE_HPP

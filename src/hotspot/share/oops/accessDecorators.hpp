@@ -37,6 +37,9 @@
 // Some decorators are set at buildtime, such as whether primitives require GC barriers or not, others
 // at callsites such as whether an access is in the heap or not, and others are resolved at runtime
 // such as GC-specific barriers and encoding/decoding compressed oops.
+
+namespace svm_gc {
+
 typedef uint64_t DecoratorSet;
 
 // The HasDecorator trait can help at compile-time determining whether a decorator set
@@ -253,5 +256,8 @@ namespace AccessInternal {
     return barrier_strength_default;
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ACCESSDECORATORS_HPP

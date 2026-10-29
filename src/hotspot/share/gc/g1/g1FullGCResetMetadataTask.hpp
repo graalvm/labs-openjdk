@@ -27,6 +27,9 @@
 #include "gc/g1/g1FullGCTask.hpp"
 #include "gc/g1/g1HeapRegion.hpp"
 
+
+namespace svm_gc {
+
 class G1FullGCResetMetadataTask : public G1FullGCTask {
   G1FullCollector* _collector;
   G1HeapRegionClaimer _claimer;
@@ -57,5 +60,8 @@ public:
 
   void work(uint worker_id);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCRESETMETADATATASK_HPP

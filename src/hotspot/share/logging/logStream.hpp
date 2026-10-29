@@ -30,6 +30,9 @@
 #include "logging/logMessage.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 class LogStreamImplBase : public outputStream {
   friend class LogStreamTest_TestLineBufferAllocation_vm_Test;
   friend class LogStreamTest_TestLineBufferAllocationCap_vm_Test;
@@ -165,5 +168,8 @@ public:
     : LogStreamImpl(LogMessageHandle(level, lm)) {}
 };
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGSTREAM_HPP

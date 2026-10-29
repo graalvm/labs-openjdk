@@ -30,6 +30,9 @@
 
 // NOTE (chaeubl): see SVM class Pod (this file doesn't exist on HotSpot).
 
+
+namespace svm_gc {
+
 podOop InstancePodKlass::allocate(int length) {
   if (length < 0 || length > max_length()) {
     return nullptr;
@@ -40,3 +43,6 @@ podOop InstancePodKlass::allocate(int length) {
   PodAllocator allocator(this, word_size, length);
   return (podOop)allocator.allocate();
 }
+
+} // namespace svm_gc
+

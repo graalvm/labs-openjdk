@@ -27,6 +27,9 @@
 
 #include "memory/iterator.hpp"
 
+
+namespace svm_gc {
+
 class VerifyOopClosure: public BasicOopIterateClosure {
  protected:
   template <class T> void do_oop_work(T* p);
@@ -35,5 +38,8 @@ class VerifyOopClosure: public BasicOopIterateClosure {
   virtual void do_oop(narrowOop* p);
   static VerifyOopClosure verify_oop;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_VERIFYOOPCLOSURE_HPP

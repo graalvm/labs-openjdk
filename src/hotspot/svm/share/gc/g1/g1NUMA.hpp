@@ -29,6 +29,9 @@
 #include "gc/g1/g1NUMAStats.hpp"
 #include "memory/allocation.hpp"
 #include "runtime/os.hpp"
+
+namespace svm_gc {
+
 class LogStream;
 
 class G1NUMA : public CHeapObj<mtGC> {
@@ -73,4 +76,7 @@ public:
 
   bool do_heap_region(G1HeapRegion* hr) override { return false; }
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_VM_GC_G1_NUMA_HPP

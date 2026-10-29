@@ -45,6 +45,9 @@
 #include "utilities/formatBuffer.hpp"
 #include "utilities/ticks.hpp"
 
+
+namespace svm_gc {
+
 G1ConcurrentMarkThread::G1ConcurrentMarkThread(G1ConcurrentMark* cm) :
   ConcurrentGCThread(),
   _vtime_start(0.0),
@@ -352,3 +355,6 @@ void G1ConcurrentMarkThread::update_threads_cpu_time() {
   tttc.do_thread(this);
   _cm->threads_do(&tttc);
 }
+
+} // namespace svm_gc
+

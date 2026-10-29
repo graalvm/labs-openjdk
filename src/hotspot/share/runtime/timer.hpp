@@ -29,6 +29,9 @@
 
 // Timers for simple measurement.
 
+
+namespace svm_gc {
+
 class elapsedTimer {
   friend class VMStructs;
  private:
@@ -86,5 +89,8 @@ class TimeHelper {
   static jlong millis_to_counter(jlong millis);
   static jlong micros_to_counter(jlong micros);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_TIMER_HPP

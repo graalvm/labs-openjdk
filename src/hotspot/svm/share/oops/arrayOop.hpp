@@ -29,6 +29,9 @@
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class arrayOopDesc : public oopDesc {
 private:
   // Returns the address of the length "field".  See length_offset_in_bytes().
@@ -75,5 +78,8 @@ private:
     *length_addr_impl(mem) = length;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ARRAYOOP_HPP

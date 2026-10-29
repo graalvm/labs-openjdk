@@ -24,6 +24,9 @@
 
 #include "gc/shared/gcCause.hpp"
 
+
+namespace svm_gc {
+
 const char* GCCause::to_string(GCCause::Cause cause) {
   switch (cause) {
     case _java_lang_system_gc:
@@ -83,3 +86,5 @@ const char* GCCause::to_string(GCCause::Cause cause) {
   }
   ShouldNotReachHere();
 }
+
+} // namespace svm_gc

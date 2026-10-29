@@ -33,6 +33,9 @@
 #include "runtime/os.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 bool G1PeriodicGCTask::should_start_periodic_gc(G1CollectedHeap* g1h,
                                                 G1GCCounters* counters) {
   // Ensure no GC safepoints while we're doing the checks, to avoid data races.
@@ -95,3 +98,6 @@ void G1PeriodicGCTask::execute() {
   // real value provided.
   schedule(G1PeriodicGCInterval == 0 ? 1000 : G1PeriodicGCInterval);
 }
+
+} // namespace svm_gc
+

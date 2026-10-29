@@ -31,8 +31,14 @@
 
 // NOTE (chaeubl): this file doesn't exist on HotSpot.
 
+
+namespace svm_gc {
+
 inline void* arrayOopDesc::base() const {
   return reinterpret_cast<void*>(cast_from_oop<intptr_t>(as_oop()) + ((ArrayKlass*)klass())->base_offset_in_bytes());
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ARRAYOOP_INLINE_HPP

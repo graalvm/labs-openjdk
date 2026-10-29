@@ -30,6 +30,9 @@
 #include "svmIsolateThread.hpp"
 #include "svmGlobalData.hpp"
 
+
+namespace svm_gc {
+
 typeArrayOop IsolateThread::get_pod_reference_map() {
   narrowOop* ref_map = (narrowOop*)thread_local_at(SVMGlobalData::_offsets._thread_locals._pod_reference_map);
   // Thread locals don't need read/write barriers.
@@ -40,3 +43,6 @@ typeArrayOop IsolateThread::get_pod_reference_map() {
 IsolateThread* IsolateThread::current() {
   return JavaThread::current()->isolate_thread();
 }
+
+} // namespace svm_gc
+

@@ -45,6 +45,9 @@
 // and the pending list lock object in the same class is notified.
 
 
+
+namespace svm_gc {
+
 class InstanceRefKlass: public InstanceKlass {
   friend class InstanceKlass;
  public:
@@ -115,5 +118,8 @@ class InstanceRefKlass: public InstanceKlass {
   template <typename T>
   static void trace_reference_gc(const char *s, oop obj) NOT_DEBUG_RETURN;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCEREFKLASS_HPP

@@ -38,6 +38,9 @@
 #include "svmMetaspace.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 void G1FullGCCompactTask::G1CompactRegionClosure::clear_in_bitmap(oop obj) {
   assert(_bitmap->is_marked(obj), "Should only compact marked objects");
   _bitmap->clear(obj);
@@ -159,3 +162,6 @@ void G1FullGCCompactTask::free_non_overlapping_regions(uint src_start_idx, uint 
     _g1h->free_humongous_region(hr, nullptr);
   }
 }
+
+} // namespace svm_gc
+

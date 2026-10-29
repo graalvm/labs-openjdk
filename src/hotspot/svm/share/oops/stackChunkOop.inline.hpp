@@ -45,9 +45,15 @@
 #include "utilities/macros.hpp"
 #include CPU_HEADER_INLINE(stackChunkOop)
 
+
+namespace svm_gc {
+
 inline stackChunkOop stackChunkOopDesc::cast(oop obj) {
   assert(obj == nullptr || obj->is_stackChunk(), "Wrong type");
   return stackChunkOop(obj);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_STACKCHUNKOOP_INLINE_HPP

@@ -29,6 +29,9 @@
 #define JNIIMPORT
 #define JNICALL
 
+
+namespace svm_gc {
+
 typedef int jint;
 #if defined(_WIN32)
 typedef long long jlong;
@@ -39,4 +42,7 @@ typedef long long jlong;
 #endif
 
 typedef signed char jbyte;
+
+} // namespace svm_gc
+
 #endif /* !_JAVASOFT_JNI_MD_H_ */

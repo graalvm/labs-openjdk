@@ -29,6 +29,9 @@
 #include "svmGlobalData.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 // Shared interface for collector-specific metaspace implementations.
 class SVMMetaspace {
  private:
@@ -54,5 +57,8 @@ class SVMMetaspace {
   virtual bool is_in_allocated_memory(const void* address) const = 0;
   virtual void update_used_at_last_gc() = 0;
 };
+
+
+} // namespace svm_gc
 
 #endif // SVM_METASPACE_HPP

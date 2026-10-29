@@ -37,6 +37,9 @@
 #endif // SVM
 
 // For UseCompressedOops.
+
+namespace svm_gc {
+
 MemRegion CompressedOops::_heap_address_range;
 
 void CompressedOops::initialize() {
@@ -55,4 +58,7 @@ void CompressedOops::initialize() {
 bool CompressedOops::is_in(void* addr) {
   return _heap_address_range.contains(addr);
 }
+
+
+} // namespace svm_gc
 

@@ -29,6 +29,9 @@
 
 #include "utilities/growableArray.hpp"
 
+
+namespace svm_gc {
+
 template<typename Func>
 void G1CSetCandidateGroupList::iterate(Func&& f) const {
   for (G1CSetCandidateGroup* group : _groups) {
@@ -45,5 +48,8 @@ void G1CollectionSetCandidates::iterate_regions(Func&& f) const {
 
   _retained_groups.iterate(f);
 }
+
+
+} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1COLLECTIONSETCANDIDATES_INLINE_HPP */

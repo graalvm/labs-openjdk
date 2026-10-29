@@ -35,6 +35,9 @@
 // into "N"-word subregions (where "N" = 2^"LogN".  An array with an entry
 // for each such subregion indicates how far back one must go to find the
 // start of the chunk that includes the first word of the subregion.
+
+namespace svm_gc {
+
 class G1BlockOffsetTable: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -126,5 +129,8 @@ public:
     }
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1BLOCKOFFSETTABLE_HPP

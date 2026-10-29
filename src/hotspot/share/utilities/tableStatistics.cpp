@@ -31,6 +31,9 @@
 #include "jfr/jfr.hpp"
 #endif
 
+
+namespace svm_gc {
+
 TableRateStatistics::TableRateStatistics() :
   _added_items(0), _removed_items(0),
   _time_stamp(0), _seconds_stamp(0),
@@ -154,4 +157,7 @@ void TableStatistics::print(outputStream* st, const char *table_name) {
   st->print_cr("Maximum bucket size     : %9" PRIuPTR, _maximum_bucket_size);
 }
 #endif // !SVM
+
+
+} // namespace svm_gc
 

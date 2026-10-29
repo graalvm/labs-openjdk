@@ -30,11 +30,17 @@
 #include "gc/shared/oopStorage.inline.hpp"
 #include "utilities/enumIterator.hpp"
 
+
+namespace svm_gc {
+
 template <typename Closure>
 void OopStorageSet::strong_oops_do(Closure* cl) {
   for (auto id : EnumRange<StrongId>()) {
     storage(id)->oops_do(cl);
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGESET_INLINE_HPP

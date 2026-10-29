@@ -29,6 +29,9 @@
 #include "utilities/globalDefinitions.hpp"
 
 #include <windows.h>
+
+namespace svm_gc {
+
 class WindowsSemaphore : public CHeapObj<mtInternal> {
   HANDLE _semaphore;
 
@@ -46,4 +49,7 @@ class WindowsSemaphore : public CHeapObj<mtInternal> {
 };
 
 typedef WindowsSemaphore SemaphoreImpl;
+
+} // namespace svm_gc
+
 #endif // OS_WINDOWS_SEMAPHORE_WINDOWS_HPP

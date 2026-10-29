@@ -32,6 +32,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 class OopStorage;
 
 class OopStorageSet : public AllStatic {
@@ -134,5 +137,8 @@ public:
   constexpr auto begin() const { return Iterator<StorageId>(_range.begin()); }
   constexpr auto end() const { return Iterator<StorageId>(_range.end()); }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGESET_HPP

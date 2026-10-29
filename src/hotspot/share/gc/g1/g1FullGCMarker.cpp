@@ -30,6 +30,9 @@
 #include "gc/shared/verifyOption.hpp"
 #include "memory/iterator.inline.hpp"
 
+
+namespace svm_gc {
+
 G1FullGCMarker::G1FullGCMarker(G1FullCollector* collector,
                                uint worker_id,
                                G1RegionMarkStats* mark_stats) :
@@ -73,3 +76,6 @@ void G1FullGCMarker::complete_marking(OopQueueSet* oop_stacks,
 void G1FullGCMarker::flush_mark_stats_cache() {
   _mark_stats_cache.evict_all();
 }
+
+} // namespace svm_gc
+

@@ -57,6 +57,9 @@
 #include "svmIsolateThread.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 THREAD_LOCAL Thread* Thread::_thr_current = nullptr;
 
 #ifdef SVM
@@ -711,3 +714,6 @@ void Thread::SpinRelease(volatile int * adr) {
   *adr = 0;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

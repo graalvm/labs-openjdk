@@ -26,6 +26,9 @@
 #include "svmMetaspace.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 SVMMetaspace* SVMMetaspace::_metaspace = nullptr;
 
 void SVMMetaspace::set_metaspace(SVMMetaspace* metaspace) {
@@ -34,3 +37,5 @@ void SVMMetaspace::set_metaspace(SVMMetaspace* metaspace) {
   _metaspace = metaspace;
 }
 
+
+} // namespace svm_gc

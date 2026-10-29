@@ -40,6 +40,9 @@
 // a) first transition the whole VM into a form where all sizes are strongly typed
 // b) change all WordSize's to ByteSize's where desired and fix the compilation errors
 
+
+namespace svm_gc {
+
 enum class WordSize : int {};
 
 constexpr WordSize in_WordSize(int size) { return static_cast<WordSize>(size); }
@@ -60,5 +63,8 @@ constexpr bool     operator != (ByteSize x, int     y) { return in_bytes(x) != y
 // Use the following #define to get C++ field member offsets
 
 #define byte_offset_of(klass,field)   in_ByteSize((int)offset_of(klass, field))
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_SIZES_HPP

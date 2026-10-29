@@ -32,6 +32,9 @@
 # define strtok_r strtok_s
 #endif
 
+
+namespace svm_gc {
+
 class StringUtils : AllStatic {
 public:
   // Replace the substring <from> with another string <to>. <to> must be
@@ -82,5 +85,8 @@ public:
     ccstrlist canonicalize(ccstrlist option_value);
   };
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_STRINGUTILS_HPP

@@ -52,6 +52,9 @@
 #include "utilities/vmError.hpp"
 
 
+
+namespace svm_gc {
+
 void VMThread::execute(VM_Operation* op) {
   Thread* current_thread = Thread::current();
 
@@ -170,3 +173,6 @@ void VMThread::execute(VM_Operation* op) {
 
   guarantee(isolate_thread == nullptr || isolate_thread->has_status_vm(), "isolate thread must be back in VM state");
 }
+
+} // namespace svm_gc
+

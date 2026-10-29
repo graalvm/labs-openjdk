@@ -50,6 +50,9 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/pair.hpp"
 
+
+namespace svm_gc {
+
 G1Policy::G1Policy(STWGCTimer* gc_timer) :
   _predictor((100 - G1ConfidencePercent) / 100.0),
   _analytics(new G1Analytics(&_predictor)),
@@ -1486,3 +1489,6 @@ void G1Policy::transfer_survivors_to_cset(const G1SurvivorRegions* survivors) {
   // the survivor regions from this evacuation pause as 'young'
   // at the start of the next.
 }
+
+} // namespace svm_gc
+

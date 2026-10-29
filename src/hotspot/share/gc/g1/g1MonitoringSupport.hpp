@@ -31,6 +31,9 @@
 #include "services/memoryManager.hpp"
 #include "services/memoryService.hpp"
 
+
+namespace svm_gc {
+
 class CollectorCounters;
 class G1CollectedHeap;
 class G1OldGenerationCounters;
@@ -256,4 +259,7 @@ class G1ConcGCMonitoringScope : public G1MonitoringScope {
 public:
   G1ConcGCMonitoringScope(G1MonitoringSupport* monitoring_support);
 };
+
+} // namespace svm_gc
+
 #endif // SHARE_GC_G1_G1MONITORINGSUPPORT_HPP

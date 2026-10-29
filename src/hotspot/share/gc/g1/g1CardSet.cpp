@@ -37,6 +37,9 @@
 #include "utilities/concurrentHashTableTasks.inline.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 G1CardSet::ContainerPtr G1CardSet::FullCardSet = (G1CardSet::ContainerPtr)-1;
 uint G1CardSet::_split_card_shift = 0;
 size_t G1CardSet::_split_card_mask = 0;
@@ -1074,3 +1077,6 @@ void G1CardSet::reset_table_scanner() {
 void G1CardSet::reset_table_scanner_for_groups() {
   _table->reset_table_scanner_for_groups();
 }
+
+} // namespace svm_gc
+

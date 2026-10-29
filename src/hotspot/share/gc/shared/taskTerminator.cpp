@@ -31,6 +31,9 @@
 #include "runtime/javaThread.hpp"
 #include "runtime/mutexLocker.hpp"
 
+
+namespace svm_gc {
+
 TaskTerminator::DelayContext::DelayContext() {
   _yield_count = 0;
   reset_hard_spin_information();
@@ -202,3 +205,6 @@ bool TaskTerminator::offer_termination(TerminatorTerminator* terminator) {
     }
   }
 }
+
+} // namespace svm_gc
+

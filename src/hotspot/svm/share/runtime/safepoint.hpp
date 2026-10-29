@@ -47,6 +47,9 @@
 // exit points *must* be at a safepoint.
 
 
+
+namespace svm_gc {
+
 class JavaThread;
 
 //
@@ -87,5 +90,8 @@ class SafepointSynchronize : AllStatic {
 
 #define assert_not_at_safepoint_msg(...)                                \
   assert(!SafepointSynchronize::is_at_safepoint(), __VA_ARGS__)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_SAFEPOINT_HPP

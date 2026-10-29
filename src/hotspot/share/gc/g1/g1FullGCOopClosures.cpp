@@ -32,6 +32,9 @@
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
 
+
+namespace svm_gc {
+
 G1IsAliveClosure::G1IsAliveClosure(G1FullCollector* collector) :
   G1IsAliveClosure(collector, collector->mark_bitmap()) { }
 
@@ -39,3 +42,6 @@ void G1FollowStackClosure::do_void() { _marker->follow_marking_stacks(); }
 
 void G1FullKeepAliveClosure::do_oop(oop* p) { do_oop_work(p); }
 void G1FullKeepAliveClosure::do_oop(narrowOop* p) { do_oop_work(p); }
+
+} // namespace svm_gc
+

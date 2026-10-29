@@ -28,6 +28,9 @@
 #include "gc/shared/gcArguments.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 extern size_t MinNewSize;
 
 extern size_t MinOldSize;
@@ -56,5 +59,8 @@ protected:
   virtual void initialize_heap_flags_and_sizes();
 };
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GENARGUMENTS_HPP

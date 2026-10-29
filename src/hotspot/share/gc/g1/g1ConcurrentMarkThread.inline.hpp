@@ -30,6 +30,9 @@
 #include "gc/g1/g1ConcurrentMark.hpp"
 
   // Total virtual time so far.
+
+namespace svm_gc {
+
 inline double G1ConcurrentMarkThread::vtime_accum() {
   return _vtime_accum + _cm->all_task_accum_vtime();
 }
@@ -63,5 +66,8 @@ inline bool G1ConcurrentMarkThread::in_progress() const {
 inline bool G1ConcurrentMarkThread::in_undo_mark() const {
   return _state == UndoMark;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTMARKTHREAD_INLINE_HPP

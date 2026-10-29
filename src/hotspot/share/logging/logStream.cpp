@@ -26,6 +26,9 @@
 #include "runtime/os.hpp"
 #include "utilities/align.hpp"
 
+
+namespace svm_gc {
+
 LogStreamImplBase::LineBuffer::LineBuffer()
   : _buf(_smallbuf), _cap(sizeof(_smallbuf)), _pos(0) {
   _buf[0] = '\0';
@@ -129,3 +132,6 @@ template class LogStreamImpl<LogTargetHandle>;
 #ifndef SVM
 template class LogStreamImpl<LogMessageHandle>;
 #endif // !SVM
+
+} // namespace svm_gc
+

@@ -26,6 +26,9 @@
 #include "gc/g1/g1OopClosures.hpp"
 #include "memory/iterator.hpp"
 
+
+namespace svm_gc {
+
 class G1CollectedHeap;
 class G1ParScanThreadState;
 
@@ -62,3 +65,6 @@ public:
 #endif // !SVM
     _nmethods(pss->worker_id(), &_oops_in_nmethod, should_mark) {}
 };
+
+} // namespace svm_gc
+

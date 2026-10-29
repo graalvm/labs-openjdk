@@ -31,10 +31,16 @@
 #include "utilities/macros.hpp"
 
 // Interface to jdk.internal.vm.StackChunk objects
+
+namespace svm_gc {
+
 class jdk_internal_vm_StackChunk : AllStatic {
  public:
   static inline address ip(oop chunk);
   static inline void set_ip(HeapWord* mem, address value);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_CONTINUATIONJAVACLASSES_HPP

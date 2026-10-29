@@ -32,6 +32,9 @@
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.hpp"
 
+
+namespace svm_gc {
+
 template <DecoratorSet decorators, typename BarrierSetT>
 template <typename T>
 inline bool BarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, T* src_raw,
@@ -62,5 +65,8 @@ inline bool BarrierSet::AccessBarrier<decorators, BarrierSetT>::oop_arraycopy_in
   return true;
 #endif // !SVM
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_BARRIERSET_INLINE_HPP

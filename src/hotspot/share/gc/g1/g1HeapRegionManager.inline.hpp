@@ -31,6 +31,9 @@
 #include "gc/g1/g1HeapRegion.hpp"
 #include "gc/g1/g1HeapRegionSet.inline.hpp"
 
+
+namespace svm_gc {
+
 inline bool G1HeapRegionManager::is_available(uint region) const {
   return _committed_map.active(region);
 }
@@ -82,5 +85,8 @@ inline G1HeapRegion* G1HeapRegionManager::allocate_free_regions_starting_at(uint
   _free_list.remove_starting_at(start, num_regions);
   return start;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONMANAGER_INLINE_HPP

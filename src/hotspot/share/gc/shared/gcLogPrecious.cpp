@@ -28,6 +28,9 @@
 #include "runtime/thread.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 stringStream* GCLogPrecious::_lines = nullptr;
 stringStream* GCLogPrecious::_temp = nullptr;
 Mutex* GCLogPrecious::_lock = nullptr;
@@ -100,3 +103,6 @@ void GCLogPrecious::print_on_error(outputStream* st) {
   _lock->unlock();
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

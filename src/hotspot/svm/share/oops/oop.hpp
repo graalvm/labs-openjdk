@@ -47,6 +47,9 @@
 //
 // no virtual functions allowed
 
+
+namespace svm_gc {
+
 class oopDesc {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -216,5 +219,8 @@ class oopDesc {
 // treated as referring to an oopDesc.  For that to be valid, the oopDesc
 // class must have a trivial default constructor (C++14 3.8/1).
 static_assert(std::is_trivially_default_constructible<oopDesc>::value, "required");
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_OOP_HPP

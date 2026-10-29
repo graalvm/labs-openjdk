@@ -37,6 +37,9 @@
 #include "svmGlobalData.hpp"
 #include "gc/g1/g1Metaspace.hpp"
 
+
+namespace svm_gc {
+
 uint G1Metaspace::_current_region = 0;
 uint G1Metaspace::_committed_regions = 0;
 size_t G1Metaspace::_used = 0;
@@ -200,3 +203,5 @@ bool G1Metaspace::is_in_allocated_memory(const void* address) const {
   return region != nullptr && region->is_metaspace() && value >= region->bottom() && value < region->top_acquire();
 }
 
+
+} // namespace svm_gc

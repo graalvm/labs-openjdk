@@ -102,6 +102,9 @@
 #endif
 
 #ifndef SVM
+
+namespace svm_gc {
+
 GrowableArray<Method*>* collected_profiled_methods;
 
 static int compare_methods(Method** a, Method** b) {
@@ -372,11 +375,17 @@ void print_statistics() {
     ClassLoader::print_counters(&log);
   }
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 // Note: before_exit() can be executed only once, if more than one threads
 //       are trying to shutdown the VM at the same time, only one thread
 //       can run before_exit() and all other threads must wait.
+
+namespace svm_gc {
+
 void before_exit(JavaThread* thread, bool halt) {
   #define BEFORE_EXIT_NOT_RUN 0
   #define BEFORE_EXIT_RUNNING 1
@@ -804,3 +813,6 @@ void JDK_Version::to_string(char* buffer, size_t buflen) const {
   }
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

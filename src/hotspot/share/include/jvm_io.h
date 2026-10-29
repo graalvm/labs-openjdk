@@ -31,6 +31,9 @@
 #include "jni.h"
 #include "jvm_md.h"
 
+
+namespace svm_gc {
+
 #ifndef SVM
 #ifdef __cplusplus
 extern "C" {
@@ -68,5 +71,8 @@ jio_vfprintf(FILE *, const char *fmt, va_list args);
 } /* extern "C" */
 #endif /* __cplusplus */
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif /* _JVM_IO_H_ */

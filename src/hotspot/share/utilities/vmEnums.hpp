@@ -29,6 +29,9 @@
 // you don't use their members directly. This way you don't need to include the
 // complex header files that have the full definitions of these enums.
 
+
+namespace svm_gc {
+
 enum class CompileCommandEnum : int;
 enum class JavaThreadStatus : int;
 enum class JVMFlagOrigin : int;
@@ -36,5 +39,8 @@ enum JVMFlagsEnum : int;
 enum class vmClassID : int;
 enum class vmIntrinsicID : int;
 enum class vmSymbolID : int;
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_VMENUMS_HPP

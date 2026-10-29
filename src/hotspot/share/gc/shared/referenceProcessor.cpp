@@ -42,6 +42,9 @@
 #include "runtime/nonJavaThread.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 ReferencePolicy* ReferenceProcessor::_always_clear_soft_ref_policy = nullptr;
 ReferencePolicy* ReferenceProcessor::_default_soft_ref_policy      = nullptr;
 jlong            ReferenceProcessor::_soft_ref_timestamp_clock = 0;
@@ -1154,3 +1157,6 @@ RefProcMTDegreeAdjuster::~RefProcMTDegreeAdjuster() {
   // Revert to previous status.
   _rp->set_active_mt_degree(_saved_num_queues);
 }
+
+} // namespace svm_gc
+

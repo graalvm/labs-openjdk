@@ -27,4 +27,10 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/nativeCallStack.hpp"
 
+
+namespace svm_gc {
+
 const NativeCallStack NativeCallStack::_empty_stack; // Uses default ctor
+
+} // namespace svm_gc
+

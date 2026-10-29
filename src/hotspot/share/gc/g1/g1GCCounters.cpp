@@ -25,8 +25,14 @@
 #include "gc/g1/g1CollectedHeap.hpp"
 #include "gc/g1/g1GCCounters.hpp"
 
+
+namespace svm_gc {
+
 G1GCCounters::G1GCCounters(G1CollectedHeap* g1h) :
   _total_collections(g1h->total_collections()),
   _total_full_collections(g1h->total_full_collections()),
   _old_marking_cycles_started(g1h->old_marking_cycles_started())
 {}
+
+} // namespace svm_gc
+

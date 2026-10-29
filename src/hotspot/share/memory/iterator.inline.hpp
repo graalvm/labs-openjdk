@@ -47,6 +47,9 @@
 
 #ifndef SVM
 // Defaults to strong claiming.
+
+namespace svm_gc {
+
 inline MetadataVisitingOopIterateClosure::MetadataVisitingOopIterateClosure(ReferenceDiscoverer* rd) :
     ClaimMetadataVisitingOopIterateClosure(ClassLoaderData::_claim_strong, rd) {}
 
@@ -71,6 +74,9 @@ inline void ClaimMetadataVisitingOopIterateClosure::do_method(Method* m) {
   // Mark interpreted frames for class redefinition
   m->record_gc_epoch();
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
 
 
@@ -108,6 +114,9 @@ inline void ClaimMetadataVisitingOopIterateClosure::do_method(Method* m) {
 //   oop_oop_iterate function replaces the init function in the table, and
 //   succeeding calls will jump directly to oop_oop_iterate.
 
+
+
+namespace svm_gc {
 
 template <typename OopClosureType>
 class OopOopIterateDispatch : public AllStatic {
@@ -327,5 +336,8 @@ template <typename OopClosureType>
 void OopIteratorClosureDispatch::oop_oop_iterate_backwards(OopClosureType* cl, oop obj, Klass* klass) {
   OopOopIterateBackwardsDispatch<OopClosureType>::function(klass)(cl, obj, klass);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_MEMORY_ITERATOR_INLINE_HPP

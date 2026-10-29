@@ -28,6 +28,9 @@
 #include "logging/logStream.hpp"
 #include "memory/metaspaceUtils.hpp"
 
+
+namespace svm_gc {
+
 G1HeapTransition::Data::Data(G1CollectedHeap* g1_heap) :
   _eden_length(g1_heap->eden_regions_count()),
   _survivor_length(g1_heap->survivor_regions_count()),
@@ -185,3 +188,6 @@ void G1HeapTransition::print() {
   MetaspaceUtils::print_metaspace_change(_before._meta_sizes);
 #endif // SVM
 }
+
+} // namespace svm_gc
+

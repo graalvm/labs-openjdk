@@ -48,6 +48,9 @@
 // a survivor rate group changes, this class organizes the arrays containing the
 // predictors in reverse chronological order as returned by age_in_group(). I.e.
 // index 0 contains the rate information for the region retired most recently.
+
+namespace svm_gc {
+
 class G1SurvRateGroup : public CHeapObj<mtGC> {
   uint _stats_arrays_length;
   uint _num_added_regions;   // The number of regions in this survivor rate group.
@@ -96,5 +99,8 @@ public:
     return _num_added_regions - age_index;
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1SURVRATEGROUP_HPP

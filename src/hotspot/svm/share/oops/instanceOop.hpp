@@ -31,10 +31,16 @@
 // An instanceOop is an instance of a Java Class
 // Evaluating "new HashTable()" will create an instanceOop.
 
+
+namespace svm_gc {
+
 class instanceOopDesc : public oopDesc {
 };
 
 // See similar requirement for oopDesc.
 static_assert(std::is_trivially_default_constructible<instanceOopDesc>::value, "required");
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCEOOP_HPP

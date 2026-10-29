@@ -41,6 +41,9 @@
  * - If a reference is used as a base for derived references then that base reference gets encoded in a separate run
  *   together with all derived offsets. However, the encoding for such a run is different from the normal encoding.
  */
+
+namespace svm_gc {
+
 void SVMCodeReferenceMapDecoder::walk_offsets_from_pointer(u_char *base_address, u_char *encoded_reference_map, jlong reference_map_index, OopClosure *f) {
   assert(encoded_reference_map != nullptr, "must be");
   assert(reference_map_index >= 0, "must be");
@@ -128,3 +131,6 @@ void SVMCodeReferenceMapDecoder::walk_offsets_from_pointer(u_char *base_address,
     }
   }
 }
+
+} // namespace svm_gc
+

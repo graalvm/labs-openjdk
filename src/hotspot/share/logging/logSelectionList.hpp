@@ -31,6 +31,9 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class LogTagSet;
 
 // Class used to temporary encode a series of log selections during log configuration.
@@ -63,5 +66,8 @@ class LogSelectionList : public StackObj {
 
   LogDecorators get_default_decorators() const;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGSELECTIONLIST_HPP

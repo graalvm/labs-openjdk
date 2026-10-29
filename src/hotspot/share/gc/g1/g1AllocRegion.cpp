@@ -32,6 +32,9 @@
 #include "runtime/orderAccess.hpp"
 #include "utilities/align.hpp"
 
+
+namespace svm_gc {
+
 G1CollectedHeap* G1AllocRegion::_g1h = nullptr;
 G1HeapRegion* G1AllocRegion::_dummy_region = nullptr;
 
@@ -350,3 +353,6 @@ void G1GCAllocRegion::reuse(G1HeapRegion* alloc_region) {
   _used_bytes_before = alloc_region->used();
   set(alloc_region);
 }
+
+} // namespace svm_gc
+

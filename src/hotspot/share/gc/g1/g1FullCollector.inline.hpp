@@ -32,6 +32,9 @@
 #include "oops/oopsHierarchy.hpp"
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 bool G1FullCollector::is_compacting(oop obj) const {
   return _region_attr_table.is_compacting(cast_from_oop<HeapWord *>(obj));
 }
@@ -97,5 +100,8 @@ void G1FullCollector::add_humongous_region(G1HeapRegion* hr) {
 GrowableArrayCHeap<G1HeapRegion*, mtGC>& G1FullCollector::humongous_compaction_regions() {
   return _humongous_compaction_regions;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLCOLLECTOR_INLINE_HPP

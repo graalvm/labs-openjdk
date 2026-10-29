@@ -27,9 +27,18 @@
 #include "utilities/globalCounter.inline.hpp"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 FreeListAllocator::NodeList::NodeList() :
   _head(nullptr), _tail(nullptr), _entry_count(0) {}
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 FreeListAllocator::NodeList::NodeList(FreeNode* head, FreeNode* tail, size_t entry_count) :
   _head(head), _tail(tail), _entry_count(entry_count)
@@ -200,3 +209,6 @@ bool FreeListAllocator::try_transfer_pending() {
   Atomic::release_store(&_transfer_lock, false);
   return true;
 }
+
+} // namespace svm_gc
+

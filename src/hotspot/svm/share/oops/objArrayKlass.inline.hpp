@@ -36,6 +36,9 @@
 #include "utilities/devirtualizer.inline.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 template <typename T, class OopClosureType>
 void ObjArrayKlass::oop_oop_iterate_elements(objArrayOop a, OopClosureType* closure) {
   T* p         = (T*)a->base();
@@ -105,5 +108,8 @@ template <typename OopClosureType>
 void objArrayOopDesc::oop_iterate_range(OopClosureType* blk, int start, int end) {
   ((ObjArrayKlass*)klass())->oop_oop_iterate_range<narrowOop>(this, blk, start, end);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_OBJARRAYKLASS_INLINE_HPP

@@ -27,6 +27,9 @@
 #include "gc/g1/g1SharedClosures.hpp"
 
 // Closures used for standard G1 evacuation.
+
+namespace svm_gc {
+
 class G1EvacuationClosures : public G1EvacuationRootClosures {
   G1SharedClosures<false> _closures;
 
@@ -88,3 +91,6 @@ G1EvacuationRootClosures* G1EvacuationRootClosures::create_root_closures(G1Colle
   }
   return res;
 }
+
+} // namespace svm_gc
+

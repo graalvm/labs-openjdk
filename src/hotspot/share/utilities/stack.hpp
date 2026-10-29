@@ -51,6 +51,9 @@
 // implementation in class Stack assumes that alloc() will terminate the process
 // if the allocation fails.
 
+
+namespace svm_gc {
+
 template <class E, MemTag MT> class StackIterator;
 
 // StackBase holds common data/methods that don't depend on the element type,
@@ -181,5 +184,8 @@ private:
   E*        _cur_seg;
   size_t    _full_seg_size;
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_STACK_HPP

@@ -37,6 +37,9 @@
 // (1) the G1HeapRegion itself can not be moved during this phase of the full gc
 //     (e.g. Humongous regions).
 // (2) the occupancy of the region is too high to be considered eligible for compaction.
+
+namespace svm_gc {
+
 class G1FullGCHeapRegionAttr : public G1BiasedMappedArray<uint8_t> {
   static const uint8_t Compacting = 0;       // Region will be compacted.
   static const uint8_t SkipCompacting = 1;   // Region should not be compacted, but otherwise handled as usual.
@@ -81,5 +84,8 @@ public:
 
   void verify_is_invalid(uint idx) { assert(get_by_index(idx) == Invalid, "invariant"); }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCHEAPREGIONATTR_HPP

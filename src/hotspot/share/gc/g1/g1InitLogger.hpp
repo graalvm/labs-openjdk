@@ -27,6 +27,9 @@
 
 #include "gc/shared/gcInitLogger.hpp"
 
+
+namespace svm_gc {
+
 class G1InitLogger : public GCInitLogger {
  protected:
   void print_heap() override;
@@ -35,5 +38,8 @@ class G1InitLogger : public GCInitLogger {
  public:
   static void print();
 };
+
+
+} // namespace svm_gc
 
 #endif //SHARE_GC_G1_G1INITLOGGER_HPP

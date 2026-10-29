@@ -28,6 +28,9 @@
 #include "gc/shared/collectedHeap.hpp"
 #include "memory/allStatic.hpp"
 
+
+namespace svm_gc {
+
 class GCArguments;
 
 class GCConfig : public AllStatic {
@@ -60,5 +63,8 @@ public:
 
   static GCArguments* arguments();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCCONFIG_HPP

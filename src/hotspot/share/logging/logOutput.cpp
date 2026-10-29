@@ -31,6 +31,9 @@
 #include "runtime/mutexLocker.hpp"
 #include "runtime/os.hpp"
 
+
+namespace svm_gc {
+
 void LogOutput::describe(outputStream *out) {
   out->print("%s ", name());
   out->print_raw(config_string()); // raw printed because length might exceed O_BUFLEN
@@ -363,3 +366,6 @@ bool LogOutput::parse_options(const char* options, outputStream* errstream) {
   return success;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

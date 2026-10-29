@@ -25,6 +25,9 @@
 #include "gc/shared/workerDataArray.inline.hpp"
 #include "utilities/ostream.hpp"
 
+
+namespace svm_gc {
+
 template <>
 size_t WorkerDataArray<size_t>::uninitialized() {
   return SIZE_MAX;
@@ -81,3 +84,6 @@ void WorkerDataArray<size_t>::WDAPrinter::details(const WorkerDataArray<size_t>*
   }
   out->cr();
 }
+
+} // namespace svm_gc
+

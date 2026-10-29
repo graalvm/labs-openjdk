@@ -54,6 +54,9 @@
 #error unsupported platform
 #endif
 
+
+namespace svm_gc {
+
 typedef int64_t ssize_t;
 
 // Non-standard stdlib-like stuff:
@@ -101,5 +104,8 @@ inline int g_isfinite(jdouble f)                 { return _finite(f); }
 #define SSIZE_MIN LLONG_MIN
 #define SSIZE_MAX LLONG_MAX
 #endif // SSIZE_MAX missing
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_GLOBALDEFINITIONS_VISCPP_HPP

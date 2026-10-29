@@ -113,6 +113,9 @@
 #include "svmCodeReferenceMapDecoder.hpp"
 #endif // SVM
 
+
+namespace svm_gc {
+
 CodeInfos JavaThread::_no_code_info_data;
 
 JavaThread::JavaThread(MemTag mem_tag) :
@@ -206,3 +209,6 @@ void JavaThread::verify() {
   // Verify oops in the thread.
   oops_do(&VerifyOopClosure::verify_oop, nullptr);
 }
+
+} // namespace svm_gc
+

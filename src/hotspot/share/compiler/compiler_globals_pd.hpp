@@ -45,6 +45,9 @@
 //#endif
 
 #if defined(SVM) || !defined(COMPILER1) && !defined(COMPILER2) && !INCLUDE_JVMCI
+
+namespace svm_gc {
+
 define_pd_global(bool, BackgroundCompilation,        false);
 define_pd_global(bool, CICompileOSR,                 false);
 define_pd_global(bool, UseTypeProfile,               false);
@@ -80,6 +83,9 @@ define_pd_global(bool, NeverActAsServerClassMachine, false);
 define_pd_global(uint64_t,MaxRAM,                    128ULL*G);
 #endif
 #define CI_COMPILER_COUNT 0
+
+} // namespace svm_gc
+
 #else
 
 #if COMPILER2_OR_JVMCI

@@ -45,6 +45,9 @@
 // the Heap_lock, for which we must always do a safepoint check as that lock can be locked by both the
 // application and the GC (e.g., when doing a slow path allocation).
 
+
+namespace svm_gc {
+
 Monitor* Heap_lock                    = nullptr;
 Monitor* G1StrongCodeRoots_lock       = nullptr;
 Mutex*   NonJavaThreadsList_lock      = nullptr;
@@ -169,3 +172,6 @@ void mutex_init() {
 
 void MutexLockerImpl::post_initialize() {
 }
+
+} // namespace svm_gc
+

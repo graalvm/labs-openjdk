@@ -31,6 +31,9 @@
 #include "svmImageHeap.hpp"
 #include "svmMetaspace.hpp"
 
+
+namespace svm_gc {
+
 // Classifies addresses in the adjacent metaspace and image-heap reservations.
 class SVMHeapAddressSpace : public AllStatic {
 public:
@@ -51,5 +54,8 @@ public:
   }
 
 };
+
+
+} // namespace svm_gc
 
 #endif // SVM_HEAP_ADDRESS_SPACE_HPP

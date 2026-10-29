@@ -28,6 +28,9 @@
 #include "logging/logLevel.hpp"
 #include "memory/allocation.hpp"
 
+
+namespace svm_gc {
+
 class LogMessageBuffer : public StackObj {
   friend class LogMessageTest;
  protected:
@@ -130,5 +133,8 @@ class LogMessageBuffer : public StackObj {
   LOG_LEVEL_LIST
 #undef LOG_LEVEL
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGMESSAGEBUFFER_HPP

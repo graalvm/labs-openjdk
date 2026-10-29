@@ -28,6 +28,9 @@
 
 #include <signal.h>
 
+
+namespace svm_gc {
+
 OSThread::OSThread()
   : _thread_id(0),
     _pthread_id(0),
@@ -48,3 +51,6 @@ OSThread::OSThread()
 OSThread::~OSThread() {
   delete _startThread_lock;
 }
+
+} // namespace svm_gc
+

@@ -27,6 +27,9 @@
 
 #include "gc/shared/concurrentGCThread.hpp"
 
+
+namespace svm_gc {
+
 class G1ConcurrentMark;
 class G1Policy;
 
@@ -112,5 +115,8 @@ class G1ConcurrentMarkThread: public ConcurrentGCThread {
   // Update the perf data counter for concurrent mark.
   void update_threads_cpu_time();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTMARKTHREAD_HPP

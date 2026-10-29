@@ -30,6 +30,9 @@
 #include "runtime/globals.hpp"
 #include "utilities/debug.hpp"
 
+
+namespace svm_gc {
+
 uintptr_t** G1FromCardCache::_cache = nullptr;
 uint        G1FromCardCache::_max_reserved_regions = 0;
 size_t      G1FromCardCache::_static_mem_size = 0;
@@ -91,3 +94,6 @@ void G1FromCardCache::clear(uint region_idx) {
     set(i, region_idx, InvalidCard);
   }
 }
+
+} // namespace svm_gc
+

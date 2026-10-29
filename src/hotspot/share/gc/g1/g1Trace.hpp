@@ -28,6 +28,9 @@
 #include "gc/g1/g1GCPauseType.hpp"
 #include "gc/shared/gcTrace.hpp"
 
+
+namespace svm_gc {
+
 class G1EvacInfo;
 class G1HeapSummary;
 class G1EvacSummary;
@@ -105,5 +108,8 @@ class G1MMUTracer : public AllStatic {
 public:
   static void report_mmu(double time_slice_sec, double gc_time_sec, double max_time_sec);
 };
+
+
+} // namespace svm_gc
 
 #endif

@@ -33,6 +33,9 @@
 // It is used for arrays of {characters, singles, doubles, bytes, shorts, integers, longs}
 #include <limits.h>
 
+
+namespace svm_gc {
+
 namespace TypeToBT {
   template<typename T> BasicType to_basic_type();
   template<> inline BasicType to_basic_type<jboolean>() { return T_BOOLEAN; }
@@ -100,5 +103,8 @@ protected:
 // See similar requirement for oopDesc.
 static_assert(std::is_trivially_default_constructible<typeArrayOopDesc>::value, "required");
 
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_TYPEARRAYOOP_HPP

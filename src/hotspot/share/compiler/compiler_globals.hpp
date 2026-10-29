@@ -399,6 +399,12 @@
                                                                             \
 // end of COMPILER_FLAGS
 
+
+namespace svm_gc {
+
 DECLARE_FLAGS(COMPILER_FLAGS)
+
+
+} // namespace svm_gc
 
 #endif // SHARE_COMPILER_COMPILER_GLOBALS_HPP

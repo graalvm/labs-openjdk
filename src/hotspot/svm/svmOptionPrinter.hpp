@@ -37,6 +37,9 @@
  * so that the runtime values are printed instead, see the comment below.
  */
 
+
+namespace svm_gc {
+
 const int DIAGNOSTIC = 1 << 0;
 const int MANAGEABLE = 1 << 1;
 const int EXPERIMENTAL = 1 << 2;
@@ -123,6 +126,9 @@ OptionPrinter option_printer;
             IGNORE_FLAG,                 \
             IGNORE_RANGE,                \
             IGNORE_CONSTRAINT)
+
+
+} // namespace svm_gc
 
 #endif // !PRODUCT
 #endif // SVM_OPTION_PRINTER

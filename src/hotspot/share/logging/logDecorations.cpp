@@ -30,8 +30,17 @@
 #include "services/management.hpp"
 
 #ifndef SVM
+
+namespace svm_gc {
+
 const char* volatile LogDecorations::_host_name = nullptr;
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+namespace svm_gc {
+
 const int LogDecorations::_pid = os::current_process_id(); // This is safe to call during dynamic initialization.
 
 #ifndef SVM
@@ -146,3 +155,6 @@ void LogDecorations::print_hostname_decoration(outputStream* st) const {
   st->print_raw(host_name());
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

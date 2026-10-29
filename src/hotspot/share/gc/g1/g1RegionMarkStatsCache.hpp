@@ -39,6 +39,9 @@
 //   between tams and top.
 // * the number of incoming references found during marking. This is an approximate
 //   value because we do not mark through all objects.
+
+namespace svm_gc {
+
 struct G1RegionMarkStats {
   size_t _live_words;
   size_t _incoming_refs;
@@ -136,5 +139,8 @@ public:
   size_t hits() const { return _cache_hits; }
   size_t misses() const { return _cache_misses; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1REGIONMARKSTATSCACHE_HPP

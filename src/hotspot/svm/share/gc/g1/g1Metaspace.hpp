@@ -29,6 +29,9 @@
 #include "oops/oop.hpp"
 #include "svmMetaspace.hpp"
 
+
+namespace svm_gc {
+
 class InstanceKlass;
 class Klass;
 
@@ -106,5 +109,8 @@ class G1Metaspace : public SVMMetaspace {
   static size_t allocation_count(AllocationKind allocation_kind) { return _allocation_counts[allocation_kind]; }
   static size_t allocation_size(AllocationKind allocation_kind) { return _allocation_sizes[allocation_kind]; }
 };
+
+
+} // namespace svm_gc
 
 #endif // SVM_SHARE_GC_G1_G1METASPACE_HPP

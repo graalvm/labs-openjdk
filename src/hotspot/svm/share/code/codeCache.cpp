@@ -78,6 +78,9 @@
 #endif
 
 
+
+namespace svm_gc {
+
 void CodeCache::nmethods_do(NMethodClosure* cl) {
   assert(SafepointSynchronize::is_at_safepoint() || SVMIsolateData::_during_teardown, "must be");
   typeArrayOop code_info_table = CodeCache::code_info_table();
@@ -109,3 +112,6 @@ typeArrayOop CodeCache::code_info_table() {
   // As the code info table is a Word (NonmovableArray) and not really an oop, we must not use any of the Access classes (Words are never compressed).
   return *((typeArrayOop*)(((char*)SVMIsolateData::_runtime_code_info_memory) + SVMGlobalData::_offsets._runtime_code_info_memory._table));
 }
+
+} // namespace svm_gc
+

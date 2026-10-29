@@ -30,6 +30,9 @@
 #include "runtime/atomic.hpp"
 #include "runtime/javaThread.hpp"
 
+
+namespace svm_gc {
+
 inline GlobalCounter::CSContext
 GlobalCounter::critical_section_begin(Thread *thread) {
   assert(thread == Thread::current(), "must be current thread");
@@ -82,5 +85,8 @@ class GlobalCounter::CriticalSection {
     GlobalCounter::critical_section_end(_thread, _context);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_GLOBALCOUNTER_INLINE_HPP

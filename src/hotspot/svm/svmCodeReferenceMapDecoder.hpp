@@ -29,9 +29,15 @@
 #include "memory/iterator.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+
+namespace svm_gc {
+
 class SVMCodeReferenceMapDecoder : public AllStatic {
  public:
   static void walk_offsets_from_pointer(u_char *base_address, u_char *encoded_reference_map, jlong reference_map_index, OopClosure *f);
 };
+
+
+} // namespace svm_gc
 
 #endif // SVM_CODE_REFERENCE_MAP_DECODER_HPP

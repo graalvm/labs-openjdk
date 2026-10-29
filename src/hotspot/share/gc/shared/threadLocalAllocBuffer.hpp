@@ -30,6 +30,9 @@
 #include "utilities/align.hpp"
 #include "utilities/sizes.hpp"
 
+
+namespace svm_gc {
+
 class ThreadLocalAllocStats;
 
 #ifdef SVM
@@ -265,5 +268,8 @@ public:
   void reset();
   void publish();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_THREADLOCALALLOCBUFFER_HPP

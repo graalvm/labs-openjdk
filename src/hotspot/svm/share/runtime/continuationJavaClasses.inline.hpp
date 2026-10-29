@@ -33,6 +33,9 @@
 #include "oops/stackChunkOop.inline.hpp"
 #include "runtime/atomic.hpp"
 
+
+namespace svm_gc {
+
 void jdk_internal_vm_StackChunk::set_ip(HeapWord* chunk, address value) {
   // Used by StackChunkAllocator before the Object has been finished.
   *(address*)(((address)chunk) + SVMGlobalData::_offsets._stack_chunk._ip) = value;
@@ -41,5 +44,8 @@ void jdk_internal_vm_StackChunk::set_ip(HeapWord* chunk, address value) {
 address jdk_internal_vm_StackChunk::ip(oop chunk) {
   return *(address*)(((address)chunk) + SVMGlobalData::_offsets._stack_chunk._ip);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_CONTINUATIONJAVACLASSES_INLINE_HPP

@@ -33,6 +33,9 @@
 #include "utilities/align.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+namespace svm_gc {
+
 G1PageBasedVirtualSpace::G1PageBasedVirtualSpace(ReservedSpace rs, size_t used_size, size_t page_size) :
   _low_boundary(nullptr), _high_boundary(nullptr), _tail_size(0), _page_size(0),
   _committed(mtGC), _dirty(mtGC), _special(false) {
@@ -253,3 +256,6 @@ void G1PageBasedVirtualSpace::print() {
 }
 #endif // !SVM
 #endif
+
+} // namespace svm_gc
+

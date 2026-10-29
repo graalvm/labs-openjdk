@@ -26,6 +26,9 @@
 #ifndef SVM_OOP_MAP_HPP
 #define SVM_OOP_MAP_HPP
 
+
+namespace svm_gc {
+
 class OopMapBlock;
 
 constexpr int ReferenceMapCompressedOffsetShift = 2;
@@ -44,5 +47,8 @@ class SVMOopMaps {
     return (SVMOopMap*)((address)this + offset);
   }
 };
+
+
+} // namespace svm_gc
 
 #endif // SVM_OOP_MAP_HPP

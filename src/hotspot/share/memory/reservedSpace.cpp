@@ -30,16 +30,25 @@
 #endif // SVM
 
 #ifdef ASSERT
+
+namespace svm_gc {
+
 void ReservedSpace::sanity_checks() {
   assert(is_aligned(_base, os::vm_allocation_granularity()), "Unaligned base");
   assert(is_aligned(_base, _alignment), "Unaligned base");
   assert(is_aligned(_size, os::vm_page_size()), "Unaligned size");
   assert(os::page_sizes().contains(_page_size), "Invalid pagesize");
 }
+
+} // namespace svm_gc
+
 #endif
 
 #ifdef SVM
 /* NOTE (chaeubl): we adjust the base and heap size according to the null_region_size. */
+
+namespace svm_gc {
+
 ReservedHeapSpace::ReservedHeapSpace(char* base, size_t size, size_t alignment, size_t page_size, size_t null_regions_size) :
   ReservedSpace(base + null_regions_size, size - null_regions_size, alignment, page_size, false, false),
   _noaccess_prefix(null_regions_size)
@@ -49,4 +58,7 @@ ReservedHeapSpace::ReservedHeapSpace(char* base, size_t size, size_t alignment, 
   assert(CompressedOops::begin() == (address)this->base(), "must be");
   assert(CompressedOops::end() == (address)this->end(), "must be");
 }
+
+} // namespace svm_gc
+
 #endif // SVM

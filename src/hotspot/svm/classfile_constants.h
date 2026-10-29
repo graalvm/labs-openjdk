@@ -26,6 +26,9 @@
 #ifndef CLASSFILE_CONSTANTS_H
 #define CLASSFILE_CONSTANTS_H
 
+
+namespace svm_gc {
+
 enum {
     JVM_T_BOOLEAN = 4,
     JVM_T_CHAR    = 5,
@@ -60,5 +63,8 @@ enum {
     JVM_SIGNATURE_VOID          = 'V',
     JVM_SIGNATURE_BOOLEAN       = 'Z'
 };
+
+
+} // namespace svm_gc
 
 #endif /* CLASSFILE_CONSTANTS */

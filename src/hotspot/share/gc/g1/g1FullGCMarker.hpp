@@ -38,6 +38,9 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/stack.hpp"
 
+
+namespace svm_gc {
+
 typedef OverflowTaskQueue<oop, mtGC>                 OopQueue;
 typedef OverflowTaskQueue<ObjArrayTask, mtGC>        ObjArrayTaskQueue;
 
@@ -114,5 +117,8 @@ public:
   // Flush live bytes to regions
   void flush_mark_stats_cache();
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCMARKER_HPP

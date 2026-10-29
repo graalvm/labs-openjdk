@@ -38,6 +38,9 @@
 
 // This metafunction returns either oop or narrowOop depending on whether
 // an access needs to use compressed oops or not.
+
+namespace svm_gc {
+
 template <DecoratorSet decorators>
 struct HeapOopType: AllStatic {
   static const bool needs_oop_compress = HasDecorator<decorators, INTERNAL_CONVERT_COMPRESSED_OOP>::value &&
@@ -1282,5 +1285,8 @@ namespace AccessInternal {
     }
   };
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_ACCESSBACKEND_HPP

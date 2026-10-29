@@ -95,6 +95,9 @@
 #include "jvmci/jvmciJavaClasses.hpp"
 #endif
 
+
+namespace svm_gc {
+
 bool java_lang_String::equals(oop java_string, const char* chars) {
   assert(java_string->klass() == vmClasses::String_klass(),
          "must be java_string");
@@ -165,3 +168,6 @@ jlong java_lang_ref_SoftReference::timestamp(oop ref) {
 void java_lang_ref_SoftReference::set_clock(jlong value) {
   return RawAccess<>::store_at((oop)SVMIsolateData::_static_primitive_fields, (ptrdiff_t)SVMGlobalData::_offsets._soft_reference._static_clock, value);
 }
+
+} // namespace svm_gc
+

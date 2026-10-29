@@ -27,6 +27,9 @@
 
 #include "gc/shared/accessBarrierSupport.hpp"
 
+
+namespace svm_gc {
+
 template <DecoratorSet decorators>
 DecoratorSet AccessBarrierSupport::resolve_possibly_unknown_oop_ref_strength(oop base, ptrdiff_t offset) {
   if (!HasDecorator<decorators, ON_UNKNOWN_OOP_REF>::value) {
@@ -35,5 +38,8 @@ DecoratorSet AccessBarrierSupport::resolve_possibly_unknown_oop_ref_strength(oop
     return resolve_unknown_oop_ref_strength(decorators, base, offset);
   }
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_ACCESSBARRIERSUPPORT_INLINE_HPP

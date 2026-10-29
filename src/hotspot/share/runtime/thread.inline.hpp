@@ -35,6 +35,9 @@
 #include "runtime/os.hpp"
 #endif
 
+
+namespace svm_gc {
+
 inline jlong Thread::cooked_allocated_bytes() {
   jlong allocated_bytes = Atomic::load_acquire(&_allocated_bytes);
   if (UseTLAB) {
@@ -92,5 +95,8 @@ inline WXMode Thread::enable_wx(WXMode new_state) {
 }
 #endif // __APPLE__ && AARCH64
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_THREAD_INLINE_HPP

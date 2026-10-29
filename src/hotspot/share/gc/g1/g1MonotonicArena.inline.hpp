@@ -31,6 +31,9 @@
 #include "runtime/atomic.hpp"
 #include "utilities/globalCounter.inline.hpp"
 
+
+namespace svm_gc {
+
 inline void* G1MonotonicArena::Segment::allocate_slot() {
   if (_next_allocate >= _num_slots) {
     return nullptr;
@@ -53,5 +56,8 @@ inline G1MonotonicArena::Segment* G1MonotonicArena::SegmentFreeList::get() {
   }
   return result;
 }
+
+
+} // namespace svm_gc
 
 #endif //SHARE_GC_G1_G1MONOTONICARENA_INLINE_HPP

@@ -41,6 +41,12 @@
 #include "prims/jvmtiExport.hpp"
 #include "runtime/globals.hpp"
 
+
+namespace svm_gc {
+
 Klass* vmClasses::_string_klass = nullptr;
 Klass* vmClasses::_system_klass = nullptr;
 Klass* vmClasses::_filler_object_klass = nullptr;
+
+} // namespace svm_gc
+

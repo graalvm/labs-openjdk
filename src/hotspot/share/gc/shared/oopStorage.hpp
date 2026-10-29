@@ -31,6 +31,9 @@
 #include "utilities/macros.hpp"
 #include "utilities/singleWriterSynchronizer.hpp"
 
+
+namespace svm_gc {
+
 class Mutex;
 class outputStream;
 
@@ -328,5 +331,8 @@ private:
   template<typename F> class SkipNullFn;
   template<typename F> static SkipNullFn<F> skip_null_fn(F f);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_OOPSTORAGE_HPP

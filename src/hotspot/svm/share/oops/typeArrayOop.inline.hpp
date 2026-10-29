@@ -31,6 +31,9 @@
 #include "oops/oop.inline.hpp"
 #include "oops/arrayOop.hpp"
 
+
+namespace svm_gc {
+
 inline jchar*    typeArrayOopDesc::char_base()   const { return (jchar*)   base(); }
 inline jbyte*    typeArrayOopDesc::byte_base()   const { return (jbyte*)   base(); }
 inline jint*     typeArrayOopDesc::int_base()    const { return (jint*)    base(); }
@@ -87,5 +90,8 @@ inline void typeArrayOopDesc::long_at_put(int which, jlong contents) {
 inline void* typeArrayOopDesc::word_at(int which) const {
   return (void*)long_at(which);
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_TYPEARRAYOOP_INLINE_HPP

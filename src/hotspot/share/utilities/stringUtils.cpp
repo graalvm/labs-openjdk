@@ -31,6 +31,9 @@
 #include <string.h>
 
 #ifndef SVM
+
+namespace svm_gc {
+
 int StringUtils::replace_no_expand(char* string, const char* from, const char* to) {
   int replace_count = 0;
   size_t from_len = strlen(from);
@@ -123,7 +126,13 @@ bool StringUtils::is_star_match(const char* star_pattern, const char* str) {
   }
   return true; // all parts of pattern matched
 }
+
+} // namespace svm_gc
+
 #endif // !SVM
+
+
+namespace svm_gc {
 
 StringUtils::CommaSeparatedStringIterator::~CommaSeparatedStringIterator() {
   FREE_C_HEAP_ARRAY(char, _list);
@@ -146,3 +155,6 @@ ccstrlist StringUtils::CommaSeparatedStringIterator::canonicalize(ccstrlist opti
   return canonicalized_list;
 }
 #endif // !SVM
+
+} // namespace svm_gc
+

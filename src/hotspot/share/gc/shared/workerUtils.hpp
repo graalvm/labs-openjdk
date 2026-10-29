@@ -36,6 +36,9 @@
 // the barrier and must wait until all other workers have entered
 // before any of them may leave.
 
+
+namespace svm_gc {
+
 class WorkerThreadsBarrierSync : public StackObj {
 protected:
   Monitor _monitor;
@@ -144,5 +147,8 @@ public:
   // in the sequence. In this case t is undefined.
   bool try_claim_task(uint& t);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WORKERUTILS_HPP

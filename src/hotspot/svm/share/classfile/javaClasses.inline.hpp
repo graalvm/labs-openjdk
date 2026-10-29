@@ -39,6 +39,9 @@
 #endif // SVM
 
 // java.lang.String
+
+namespace svm_gc {
+
 jbyte* java_lang_String::base(oop string) {
   typeArrayOop value = java_lang_String::value_no_keepalive(string);
   return (jbyte*)value->base();
@@ -174,5 +177,8 @@ bool java_lang_ref_Reference::is_weak(oop ref) {
 bool java_lang_ref_Reference::is_soft(oop ref) {
   return InstanceKlass::cast(ref->klass())->reference_type() == REF_SOFT;
 }
+
+
+} // namespace svm_gc
 
 #endif // SHARE_CLASSFILE_JAVACLASSES_INLINE_HPP

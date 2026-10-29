@@ -31,6 +31,9 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
+
+namespace svm_gc {
+
 class JavaThread;
 #ifndef SVM
 class Metadata;
@@ -180,5 +183,8 @@ public:
   static void free_java_code_infos(CodeInfosPerThread *code_infos);
 #endif // !SVM
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_THREADS_HPP

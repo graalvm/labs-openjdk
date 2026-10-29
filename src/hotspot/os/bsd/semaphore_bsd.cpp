@@ -30,6 +30,9 @@
 
 #ifdef __APPLE__
 // OS X doesn't support unnamed POSIX semaphores, so the implementation in os_posix.cpp can't be used.
+
+namespace svm_gc {
+
 static const char* sem_init_strerror(kern_return_t value) {
   switch (value) {
     case KERN_INVALID_ARGUMENT:  return "Invalid argument";
@@ -101,4 +104,7 @@ bool OSXSemaphore::timedwait(int64_t millis) {
 
   return kr == KERN_SUCCESS;
 }
+
+} // namespace svm_gc
+
 #endif // __APPLE__

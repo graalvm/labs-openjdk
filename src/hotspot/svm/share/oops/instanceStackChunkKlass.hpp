@@ -33,6 +33,9 @@
 // NOTE (chaeubl): StackChunks (StoredContinuations) on Native Image are far simpler than on HotSpot, so there is hardly
 // any HotSpot code left in this area. We inherit from ArrayKlass instead of InstanceKlass because that makes more sense
 // in our case (StoredContinuations are @Hybrid objects).
+
+namespace svm_gc {
+
 class InstanceStackChunkKlass: public ArrayKlass {
 public:
   static const KlassKind Kind = InstanceStackChunkKlassKind;
@@ -62,5 +65,8 @@ private:
 
   void oop_oop_iterate_stack_slow(stackChunkOop chunk, OopClosure* closure, MemRegion mr);
 };
+
+
+} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCESTACKCHUNKKLASS_HPP

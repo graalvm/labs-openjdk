@@ -32,6 +32,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
+namespace svm_gc {
+
 class oopDesc;
 
 // ShowRegistersOnAssert support (for now Linux and Windows only)
@@ -313,5 +316,8 @@ void report_java_out_of_memory(const char* message);
 extern "C" bool dbg_is_safe(const void* p, intptr_t errvalue);
 extern "C" bool dbg_is_good_oop(oopDesc* o);
 #endif // !SVM
+
+
+} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_DEBUG_HPP
