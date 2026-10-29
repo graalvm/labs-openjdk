@@ -28,7 +28,6 @@
 #include "gc/shared/collectedHeap.hpp"
 #include "jvm_io.h"
 #include "jvmci/jvmci.hpp"
-#include "jvmci/jvmciEnv.hpp"
 #include "jvmci/jvmciExceptions.hpp"
 #include "jvmci/jvmciObject.hpp"
 #include "utilities/linkedlist.hpp"
