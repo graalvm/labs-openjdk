@@ -31,9 +31,6 @@
 #include "gc/shared/referenceProcessor.hpp"
 #include "memory/iterator.inline.hpp"
 
-
-namespace svm_gc {
-
 G1FullGCMarkTask::G1FullGCMarkTask(G1FullCollector* collector) :
     G1FullGCTask("G1 Parallel Marking Task", collector),
     _root_processor(G1CollectedHeap::heap(), collector->workers()),
@@ -99,6 +96,3 @@ void G1FullGCMarkCodeCacheTask::work(uint worker_id) {
   log_task("Marking CodeCache task", worker_id, start);
 }
 #endif // SVM
-
-} // namespace svm_gc
-

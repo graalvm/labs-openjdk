@@ -32,9 +32,6 @@
 #include "runtime/globals.hpp"
 #include "utilities/growableArray.hpp"
 
-
-namespace svm_gc {
-
 class G1CollectionSetCandidates;
 class G1CSetCandidateGroupList;
 class G1HeapRegion;
@@ -279,8 +276,5 @@ public:
   template<typename Func>
   void iterate_regions(Func&& f) const;
 };
-
-
-} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1COLLECTIONSETCANDIDATES_HPP */

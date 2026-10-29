@@ -42,9 +42,6 @@
 // offset from the heap base.  Saving the check for null can save instructions
 // in inner GC loops so these are separated.
 
-
-namespace svm_gc {
-
 inline oop CompressedOops::decode_raw_not_null(narrowOop v) {
   assert(!is_null(v), "narrow oop value can never be zero");
   return decode_raw(v);
@@ -123,8 +120,5 @@ inline narrowOop CompressedOops::narrow_oop_cast(T i) {
   return static_cast<narrowOop>(i);
 #endif // SVM_COMPRESSED_REFERENCES
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_COMPRESSEDOOPS_INLINE_HPP

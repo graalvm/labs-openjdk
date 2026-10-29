@@ -28,9 +28,6 @@
 
 #include "gc/shared/gcArguments.hpp"
 
-
-namespace svm_gc {
-
 class CollectedHeap;
 
 class G1Arguments : public GCArguments {
@@ -50,8 +47,5 @@ class G1Arguments : public GCArguments {
 public:
   static size_t heap_reserved_size_bytes();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ARGUMENTS_HPP

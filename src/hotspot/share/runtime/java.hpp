@@ -28,9 +28,6 @@
 #include "runtime/os.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class Handle;
 class JavaThread;
 class Symbol;
@@ -178,8 +175,5 @@ class JDK_Version {
 
 };
 #endif // !SVM
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_JAVA_HPP

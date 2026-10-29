@@ -30,9 +30,6 @@
 // Simple interface for filing out and filing in basic types
 // Used for writing out and reading in debugging information.
 
-
-namespace svm_gc {
-
 class CompressedStream : public ResourceObj {
   friend class VMStructs;
  protected:
@@ -118,8 +115,5 @@ class CompressedReadStream : public CompressedStream {
                                        }
   jlong    read_signed_int();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_CODE_COMPRESSEDSTREAM_HPP

@@ -31,9 +31,6 @@
 #include "utilities/formatBuffer.hpp"
 #include "utilities/ostream.hpp"
 
-
-namespace svm_gc {
-
 G1MonotonicArenaMemoryStats::G1MonotonicArenaMemoryStats() {
   clear();
 }
@@ -190,6 +187,3 @@ void G1MonotonicArenaFreePool::print_on(outputStream* out) const {
     _free_lists[i].print_on(out, fmt);
   }
 }
-
-} // namespace svm_gc
-

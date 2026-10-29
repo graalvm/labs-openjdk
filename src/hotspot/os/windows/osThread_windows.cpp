@@ -25,9 +25,6 @@
 #include "runtime/osThread.hpp"
 
 #include <Windows.h>
-
-namespace svm_gc {
-
 OSThread::OSThread()
   : _thread_id(0),
     _thread_handle(nullptr)
@@ -55,6 +52,3 @@ void OSThread::set_interrupted(bool z) {
   }
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

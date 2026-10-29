@@ -35,24 +35,15 @@
 #ifndef SVM
 // ------------------------------------------------------------------
 // basictype_to_str
-
-namespace svm_gc {
-
 const char* basictype_to_str(BasicType t) {
   const char* str = type2name(t);
   if (str == nullptr) return "illegal";
   return str;
 }
-
-} // namespace svm_gc
-
 #endif // !SVM
 
 // ------------------------------------------------------------------
 // card_table_base
-
-namespace svm_gc {
-
 CardTable::CardValue* ci_card_table_address() {
   BarrierSet* bs = BarrierSet::barrier_set();
   CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
@@ -60,6 +51,3 @@ CardTable::CardValue* ci_card_table_address() {
   assert(!UseShenandoahGC, "Shenandoah byte_map_base is not constant.");
   return ct->byte_map_base();
 }
-
-} // namespace svm_gc
-

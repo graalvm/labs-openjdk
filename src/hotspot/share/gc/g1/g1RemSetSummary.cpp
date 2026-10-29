@@ -36,9 +36,6 @@
 #include "memory/iterator.hpp"
 #include "runtime/javaThread.hpp"
 
-
-namespace svm_gc {
-
 void G1RemSetSummary::update() {
   class CollectData : public ThreadClosure {
     G1RemSetSummary* _summary;
@@ -403,6 +400,3 @@ void G1RemSetSummary::print_on(outputStream* out, bool show_thread_times) {
   blk.do_cset_groups();
   blk.print_summary_on(out);
 }
-
-} // namespace svm_gc
-

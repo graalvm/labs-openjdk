@@ -35,9 +35,6 @@
 // operations, which they are serialized with each other.
 
 // Base class for pause and/or parallel bulk operations.
-
-namespace svm_gc {
-
 template <typename CONFIG, MemTag MT>
 class ConcurrentHashTable<CONFIG, MT>::BucketsOperation {
  protected:
@@ -334,8 +331,5 @@ class ConcurrentHashTable<CONFIG, MT>::ScanTask :
     }
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_CONCURRENTHASHTABLETASKS_INLINE_HPP

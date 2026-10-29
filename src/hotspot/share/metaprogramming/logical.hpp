@@ -30,9 +30,6 @@
 #include <type_traits>
 
 // Stand-in for C++17 std::bool_constant<value>.
-
-namespace svm_gc {
-
 template<bool Value>
 using BoolConstant = std::integral_constant<bool, Value>;
 
@@ -63,8 +60,5 @@ struct Disjunction<T1, T...> :
 // Stand-in for C++17 std::negation<T>.
 template<typename T>
 using Negation = BoolConstant<!bool(T::value)>;
-
-
-} // namespace svm_gc
 
 #endif // SHARE_METAPROGRAMMING_LOGICAL_HPP

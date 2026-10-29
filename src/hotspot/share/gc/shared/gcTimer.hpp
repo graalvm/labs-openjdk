@@ -29,9 +29,6 @@
 #include "utilities/macros.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 class ConcurrentPhase;
 class GCPhase;
 class PausePhase;
@@ -184,8 +181,5 @@ class TimePartitionPhasesIterator {
   virtual bool has_next();
   virtual GCPhase* next();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCTIMER_HPP

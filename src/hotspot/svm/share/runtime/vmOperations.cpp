@@ -55,9 +55,6 @@
 
 #define VM_OP_NAME_INITIALIZE(name) #name,
 
-
-namespace svm_gc {
-
 VM_Operation::VM_Operation() {
   Copy::fill_to_bytes(&_data, sizeof(VM_OperationData), 0);
 }
@@ -70,6 +67,3 @@ void VM_Operation::evaluate() {
   ResourceMark rm;
   doit();
 }
-
-} // namespace svm_gc
-

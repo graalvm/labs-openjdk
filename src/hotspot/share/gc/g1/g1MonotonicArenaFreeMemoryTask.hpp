@@ -33,9 +33,6 @@
 #include "utilities/ticks.hpp"
 
 // Task handling deallocation of free G1MonotonicArena memory.
-
-namespace svm_gc {
-
 class G1MonotonicArenaFreeMemoryTask : public G1ServiceTask {
 
   enum class State : uint {
@@ -95,8 +92,5 @@ public:
   void notify_new_stats(G1MonotonicArenaMemoryStats* young_gen_stats,
                         G1MonotonicArenaMemoryStats* collection_set_candidate_stats);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1MONOTONICARENAFREEMEMORYTASK_HPP

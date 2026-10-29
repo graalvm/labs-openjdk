@@ -31,14 +31,8 @@
 #ifdef SVM
 #define BREAKPOINT
 #else
-
-namespace svm_gc {
-
 extern "C" void breakpoint();
 #define BREAKPOINT ::breakpoint()
-
-} // namespace svm_gc
-
 #endif // !SVM
 #endif
 

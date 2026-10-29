@@ -27,9 +27,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 class GCIdPrinter : public CHeapObj<mtGC> {
 public:
   virtual ~GCIdPrinter() {}
@@ -70,8 +67,5 @@ public:
   GCIdMark(uint gc_id);
   ~GCIdMark();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCID_HPP

@@ -28,9 +28,6 @@
 #include "memory/allocation.hpp"
 
 // Manages statistics of multi nodes.
-
-namespace svm_gc {
-
 class G1NUMAStats : public CHeapObj<mtGC> {
 #ifndef SVM
   struct Stat {
@@ -122,7 +119,4 @@ public:
   void print_statistics();
 #endif // !SVM
 };
-
-} // namespace svm_gc
-
 #endif // SHARE_VM_GC_G1_NODE_TIMES_HPP

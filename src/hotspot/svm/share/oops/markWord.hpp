@@ -44,9 +44,6 @@
 //     - forwarded:      62 bit uncompressed forwarding ptr,        1 self-forwarding bit, 1 mark bit
 //
 // Note that "forwarded" is only used during full GCs. So, the the identity hashcode only needs to be rescued for objects that survive a full GC.
-
-namespace svm_gc {
-
 class markWord {
  private:
   uintptr_t _value;
@@ -202,8 +199,5 @@ struct PrimitiveConversions::Translate<markWord> : public std::true_type {
   static Decayed decay(const Value& x) { return x.value(); }
   static Value recover(Decayed x) { return Value(x); }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_MARKWORD_HPP

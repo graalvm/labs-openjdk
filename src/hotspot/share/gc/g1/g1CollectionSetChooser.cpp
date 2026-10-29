@@ -36,9 +36,6 @@
 // Threads calculate the GC efficiency of the regions they get to process, and
 // put them into some work area without sorting. At the end that array is sorted and
 // moved to the destination.
-
-namespace svm_gc {
-
 class G1BuildCandidateRegionsTask : public WorkerTask {
 
   using CandidateInfo = G1CollectionSetCandidateInfo;
@@ -272,6 +269,3 @@ void G1CollectionSetChooser::build(WorkerThreads* workers, uint max_num_regions,
   cl.sort_and_prune_into(candidates);
   candidates->verify();
 }
-
-} // namespace svm_gc
-

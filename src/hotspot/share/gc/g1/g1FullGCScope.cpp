@@ -25,9 +25,6 @@
 #include "gc/g1/g1FullGCScope.hpp"
 #include "gc/shared/gc_globals.hpp"
 
-
-namespace svm_gc {
-
 G1FullGCJFRTracerMark::G1FullGCJFRTracerMark(STWGCTimer* timer, GCTracer* tracer)
   : G1JFRTracerMark(timer, tracer) {
 
@@ -72,6 +69,3 @@ G1FullGCTracer* G1FullGCScope::tracer() {
 size_t G1FullGCScope::region_compaction_threshold() const {
   return _region_compaction_threshold;
 }
-
-} // namespace svm_gc
-

@@ -36,9 +36,6 @@
 #include "runtime/threadSMR.hpp"
 #include "utilities/copy.hpp"
 
-
-namespace svm_gc {
-
 size_t       ThreadLocalAllocBuffer::_max_size = 0;
 int          ThreadLocalAllocBuffer::_reserve_for_allocation_prefetch = 0;
 unsigned int ThreadLocalAllocBuffer::_target_refills = 0;
@@ -501,6 +498,3 @@ const HeapWord* ThreadLocalAllocBuffer::top_relaxed() const {
   return Atomic::load(&_top);
 #endif // SVM
 }
-
-} // namespace svm_gc
-

@@ -36,9 +36,6 @@
 #include "runtime/mutex.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 class G1CardSet;
 class G1CardSetConfiguration;
 class G1CollectedHeap;
@@ -643,8 +640,5 @@ public:
   // and returned "false" in all cases.
   bool is_complete() { return _is_complete; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGION_HPP

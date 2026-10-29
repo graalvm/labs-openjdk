@@ -37,9 +37,6 @@
 /* Copyright (c) 1992, 2025, Oracle and/or its affiliates, and Stanford University.
    See the LICENSE file for license information. */
 
-
-namespace svm_gc {
-
 AgeTable::AgeTable(bool global) : _use_perf_data(UsePerfData && global) {
 
   clear();
@@ -152,6 +149,3 @@ void AgeTable::print_on(outputStream* st) {
     age++;
   }
 }
-
-} // namespace svm_gc
-

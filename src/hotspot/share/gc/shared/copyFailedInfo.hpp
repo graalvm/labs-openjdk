@@ -29,9 +29,6 @@
 #include "runtime/javaThread.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class CopyFailedInfo : public CHeapObj<mtGC> {
   size_t    _first_size;
   size_t    _smallest_size;
@@ -89,8 +86,5 @@ class PromotionFailedInfo : public CopyFailedInfo {
 };
 
 class EvacuationFailedInfo : public CopyFailedInfo {};
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_COPYFAILEDINFO_HPP

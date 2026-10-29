@@ -27,9 +27,6 @@
 
 #include "gc/shared/workerThread.hpp"
 
-
-namespace svm_gc {
-
 class PretouchTask : public WorkerTask {
   char* volatile _cur_addr;
   char* const _end_addr;
@@ -47,8 +44,5 @@ public:
                        size_t page_size, WorkerThreads* pretouch_workers);
 
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PRETOUCH_HPP

@@ -32,9 +32,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 class outputStream;
 
 // Helper class for splitting the processing of a large objArray into multiple
@@ -105,8 +102,5 @@ public:
 
   TASKQUEUE_STATS_ONLY(PartialArrayTaskStats* stats();)
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PARTIALARRAYSPLITTER_HPP

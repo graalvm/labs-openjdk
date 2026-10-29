@@ -40,9 +40,6 @@
 // effective only when applied to derived-most (leaf) classes.
 
 // When no args are passed to the base ctor.
-
-namespace svm_gc {
-
 template <class T, size_t alignment = DEFAULT_PADDING_SIZE>
 class Padded : public T {
  private:
@@ -121,8 +118,5 @@ class PaddedPrimitiveArray {
   static T* create_unfreeable(size_t length);
   static T* create(size_t length, void** alloc_base);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_MEMORY_PADDED_HPP

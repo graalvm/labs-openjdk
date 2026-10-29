@@ -47,9 +47,6 @@
 // locking is not supported, which matches the expected semantics of the
 // VM Mutex class.
 
-
-namespace svm_gc {
-
 class PlatformMutex : public CHeapObj<mtSynchronizer> {
 #if PLATFORM_MONITOR_IMPL_INDIRECT
   class Mutex : public CHeapObj<mtSynchronizer> {
@@ -140,8 +137,5 @@ class PlatformMonitor : public PlatformMutex {
   void notify();
   void notify_all();
 };
-
-
-} // namespace svm_gc
 
 #endif // OS_POSIX_MUTEX_POSIX_HPP

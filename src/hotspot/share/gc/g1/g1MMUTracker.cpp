@@ -36,9 +36,6 @@
 
 /***** ALL TIMES ARE IN SECS!!!!!!! *****/
 
-
-namespace svm_gc {
-
 G1MMUTracker::G1MMUTracker(double time_slice, double max_gc_time) :
   _time_slice(time_slice),
   _max_gc_time(max_gc_time),
@@ -171,6 +168,3 @@ double G1MMUTracker::when_sec(double current_timestamp, double pause_time) const
   // Not enough gc time spent inside the window, we have a budget surplus.
   return 0;
 }
-
-} // namespace svm_gc
-

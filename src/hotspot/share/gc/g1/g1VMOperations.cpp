@@ -36,9 +36,6 @@
 #include "memory/universe.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 
-
-namespace svm_gc {
-
 bool VM_G1CollectFull::skip_operation() const {
   // There is a race between the periodic collection task's checks for
   // wanting a collection and processing its request.  A collection in that
@@ -182,5 +179,3 @@ void VM_G1PauseCleanup::work() {
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
   g1h->concurrent_mark()->cleanup();
 }
-
-} // namespace svm_gc

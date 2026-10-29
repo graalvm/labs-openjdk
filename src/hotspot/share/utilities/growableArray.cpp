@@ -27,9 +27,6 @@
 #include "runtime/javaThread.hpp"
 #include "utilities/growableArray.hpp"
 
-
-namespace svm_gc {
-
 void* GrowableArrayResourceAllocator::allocate(int max, int elementSize) {
   assert(max >= 0, "integer overflow");
   size_t byte_size = elementSize * (size_t) max;
@@ -112,6 +109,3 @@ void GrowableArrayMetadata::on_arena_alloc_check() const {
 }
 
 #endif // ASSERT
-
-} // namespace svm_gc
-

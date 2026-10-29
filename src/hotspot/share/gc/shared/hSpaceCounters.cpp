@@ -27,9 +27,6 @@
 #include "memory/resourceArea.hpp"
 #include "runtime/perfData.hpp"
 
-
-namespace svm_gc {
-
 HSpaceCounters::HSpaceCounters(SVM_ONLY(int generation_ordinal) NOT_SVM(const char* name_space),
                                const char* name,
                                int ordinal,
@@ -108,6 +105,3 @@ DEBUG_ONLY(
   }
 )
 #endif // !SVM
-
-} // namespace svm_gc
-

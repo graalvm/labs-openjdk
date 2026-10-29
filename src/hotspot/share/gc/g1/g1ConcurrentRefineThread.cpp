@@ -38,9 +38,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 G1ConcurrentRefineThread::G1ConcurrentRefineThread(G1ConcurrentRefine* cr, uint worker_id) :
   ConcurrentGCThread(),
   _vtime_start(0.0),
@@ -237,6 +234,3 @@ G1ConcurrentRefineThread::create(G1ConcurrentRefine* cr, uint worker_id) {
   }
   return crt;
 }
-
-} // namespace svm_gc
-

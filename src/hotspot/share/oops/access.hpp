@@ -89,9 +89,6 @@
 // include the various GC backend .inline.hpp headers. Their implementation resides in
 // access.inline.hpp.
 
-
-namespace svm_gc {
-
 template <DecoratorSet decorators = DECORATORS_NONE>
 class Access: public AllStatic {
   // This function asserts that if an access gets passed in a decorator outside
@@ -367,8 +364,5 @@ void Access<decorators>::verify_decorators() {
     (location_decorators ^ IN_HEAP) == 0
   ));
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_ACCESS_HPP

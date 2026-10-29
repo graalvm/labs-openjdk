@@ -32,9 +32,6 @@
 // Statistics for a monotonic arena. Contains the number of segments and memory
 // used for each. Note that statistics are typically not taken atomically so there
 // can be inconsistencies. The user must be prepared for them.
-
-namespace svm_gc {
-
 class G1MonotonicArenaMemoryStats {
 public:
 
@@ -123,8 +120,5 @@ public:
   // return_to_os() gives back segments to the OS.
   bool return_to_os(jlong deadline);
 };
-
-
-} // namespace svm_gc
 
 #endif //SHARE_GC_G1_G1MONOTONICARENAFREEPOOL_HPP

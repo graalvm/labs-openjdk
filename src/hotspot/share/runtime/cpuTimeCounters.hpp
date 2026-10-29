@@ -33,9 +33,6 @@
 #include "runtime/perfData.hpp"
 #include "runtime/perfDataTypes.hpp"
 
-
-namespace svm_gc {
-
 class CPUTimeGroups : public AllStatic {
 public:
   enum class CPUTimeType {
@@ -123,8 +120,5 @@ class ThreadTotalCPUTimeClosure: public ThreadClosure {
 
   virtual void do_thread(Thread* thread);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_CPUTIMECOUNTERS_HPP

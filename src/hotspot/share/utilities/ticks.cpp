@@ -29,9 +29,6 @@
 #include "rdtsc_x86.hpp"
 #endif
 
-
-namespace svm_gc {
-
 template <typename TimeSource, const int unit>
 inline double conversion(typename TimeSource::Type& value) {
   return (double)value * ((double)unit / (double)TimeSource::frequency());
@@ -138,6 +135,3 @@ uint64_t CompositeElapsedCounterSource::nanoseconds(Type value) {
   return (uint64_t)conversion<ElapsedCounterSource, NANOUNITS>(value.val1);
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

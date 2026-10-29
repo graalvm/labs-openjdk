@@ -35,9 +35,6 @@
 #include "oops/oop.hpp"
 #include "runtime/thread.hpp"
 
-
-namespace svm_gc {
-
 inline void G1BarrierSet::enqueue_preloaded(oop pre_val) {
   // Nulls should have been already filtered.
   assert(oopDesc::is_oop(pre_val, true), "Error");
@@ -156,8 +153,5 @@ oop_atomic_xchg_not_in_heap(T* addr, oop new_value) {
   bs->write_ref_field_pre<decorators>(addr);
   return Raw::oop_atomic_xchg(addr, new_value);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1BARRIERSET_INLINE_HPP

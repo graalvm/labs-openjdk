@@ -51,9 +51,6 @@
 #include "jvmci/jvmci_globals.hpp"
 #endif
 
-
-namespace svm_gc {
-
 static_assert(sizeof(oop) == sizeof(intptr_t), "Derived pointer sanity check");
 
 static inline intptr_t derived_pointer_value(derived_pointer p) {
@@ -973,6 +970,3 @@ void DerivedPointerTable::update_pointers() {
 }
 
 #endif // COMPILER2_OR_JVMCI
-
-} // namespace svm_gc
-

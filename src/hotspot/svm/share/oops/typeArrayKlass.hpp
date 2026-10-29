@@ -30,9 +30,6 @@
 // A TypeArrayKlass is the klass of a typeArray
 // It contains the type and size of the elements
 
-
-namespace svm_gc {
-
 class TypeArrayKlass : public ArrayKlass {
  public:
   static const KlassKind Kind = TypeArrayKlassKind;
@@ -64,8 +61,5 @@ class TypeArrayKlass : public ArrayKlass {
     return static_cast<const TypeArrayKlass*>(k);
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_TYPEARRAYKLASS_HPP

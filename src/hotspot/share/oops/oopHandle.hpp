@@ -30,9 +30,6 @@
 
 #include <type_traits>
 
-
-namespace svm_gc {
-
 class OopStorage;
 
 // Simple classes for wrapping oop and atomically accessed oop pointers
@@ -61,7 +58,7 @@ public:
   }
 
   void swap(OopHandle& copy) {
-    svm_gc::swap(_obj, copy._obj);
+    ::swap(_obj, copy._obj);
   }
 
   inline oop resolve() const;
@@ -78,8 +75,5 @@ public:
 
   oop* ptr_raw() const { return _obj; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_OOPHANDLE_HPP

@@ -30,9 +30,6 @@
 #include "utilities/byteswap.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 class Bytes: AllStatic {
  public:
   // Efficient reading and writing of unaligned unsigned data in platform-specific byte ordering
@@ -100,8 +97,5 @@ class Bytes: AllStatic {
   static inline void put_Java_u4(address p, u4 x)     { put_Java<u4>(p, x); }
   static inline void put_Java_u8(address p, u8 x)     { put_Java<u8>(p, x); }
 };
-
-
-} // namespace svm_gc
 
 #endif // CPU_X86_BYTES_X86_HPP

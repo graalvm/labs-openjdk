@@ -30,9 +30,6 @@
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.hpp"
 
-
-namespace svm_gc {
-
 oop DiscoveredList::head() const {
   return UseCompressedOops ?  CompressedOops::decode(_compressed_head) :
     _oop_head;
@@ -81,8 +78,5 @@ DiscoveredListIterator::DiscoveredListIterator(DiscoveredList&    refs_list,
   _processed(0),
   _removed(0) {
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_REFERENCEPROCESSOR_INLINE_HPP

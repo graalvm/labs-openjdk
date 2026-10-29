@@ -44,9 +44,6 @@
 //   * choice of collection set.
 //   * when to collect.
 
-
-namespace svm_gc {
-
 class G1HeapRegion;
 class G1CollectionSet;
 class G1CollectionSetCandidates;
@@ -434,8 +431,5 @@ public:
 
   void update_survivors_policy();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1POLICY_HPP

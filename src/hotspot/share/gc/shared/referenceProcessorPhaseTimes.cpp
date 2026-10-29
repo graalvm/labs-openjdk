@@ -43,9 +43,6 @@
                                        (phase) < ReferenceProcessor::RefSubPhaseMax, \
                                        "Invariant (%d)", (int)phase);
 
-
-namespace svm_gc {
-
 static const char* SubPhasesParWorkTitle[ReferenceProcessor::RefSubPhaseMax] = {
        "SoftRef (ms):",
        "WeakRef (ms):",
@@ -365,6 +362,3 @@ void ReferenceProcessorPhaseTimes::print_worker_time(LogStream* ls, WorkerDataAr
 #undef ASSERT_SUB_PHASE
 #undef ASSERT_PHASE
 #undef TIME_FORMAT
-
-} // namespace svm_gc
-

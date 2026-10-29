@@ -37,9 +37,6 @@
 #define HIDDEN
 #endif
 
-
-namespace svm_gc {
-
 namespace AccessInternal {
 // These forward copying calls to Copy without exposing the Copy type in headers unnecessarily
 
@@ -188,6 +185,3 @@ namespace AccessInternal {
   }
 #endif
 }
-
-} // namespace svm_gc
-

@@ -27,9 +27,6 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class outputStream;
 
 // List of available logging tags. New tags should be added here, in
@@ -269,8 +266,5 @@ class LogTag : public AllStatic {
 };
 
 typedef LogTag::type LogTagType;
-
-
-} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGTAG_HPP

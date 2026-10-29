@@ -80,9 +80,6 @@
 #define REG_BCP 22
 
 #ifndef SVM
-
-namespace svm_gc {
-
 NOINLINE address os::current_stack_pointer() {
   return (address)__builtin_frame_address(0);
 }
@@ -322,13 +319,7 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
 
   return false; // Mute compiler
 }
-
-} // namespace svm_gc
-
 #endif // !SVM
-
-
-namespace svm_gc {
 
 void os::Linux::init_thread_fpu_state(void) {
 }
@@ -506,6 +497,3 @@ extern "C" {
     memmove(to, from, count * 8);
   }
 };
-
-} // namespace svm_gc
-

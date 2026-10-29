@@ -28,9 +28,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 class CollectedHeap;
 
 extern size_t HeapAlignment;
@@ -65,8 +62,5 @@ public:
 
   static size_t compute_heap_alignment();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCARGUMENTS_HPP

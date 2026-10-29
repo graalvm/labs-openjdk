@@ -29,9 +29,6 @@
 
 // ReferenceType is used to distinguish between java/lang/ref/Reference subclasses
 // NOTE (chaeubl): these integer values must match the SVM-side because the reference type is stored in the DynamicHub.
-
-namespace svm_gc {
-
 enum ReferenceType {
   REF_NONE    = 0,   // Regular class
   REF_SOFT    = 1,   // Subclass of java/lang/ref/SoftReference
@@ -41,8 +38,5 @@ enum ReferenceType {
   REF_FINAL   = 3,
   REF_PHANTOM = 4    // Subclass of java/lang/ref/PhantomReference
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_MEMORY_REFERENCETYPE_HPP

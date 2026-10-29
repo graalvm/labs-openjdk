@@ -30,9 +30,6 @@
 #include "gc/shared/collectedHeap.hpp"
 #include "gc/shared/plab.hpp"
 
-
-namespace svm_gc {
-
 class G1EvacInfo;
 class G1NUMA;
 
@@ -227,8 +224,5 @@ public:
 
   void undo_allocation(G1HeapRegionAttr dest, HeapWord* obj, size_t word_sz, uint node_index);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ALLOCATOR_HPP

@@ -30,9 +30,6 @@
 #include "memory/allStatic.hpp"
 #include "runtime/globals.hpp"
 
-
-namespace svm_gc {
-
 class G1CollectionSetCandidates;
 class WorkerThreads;
 
@@ -54,8 +51,5 @@ public:
   // efficiency.
   static void build(WorkerThreads* workers, uint max_num_regions, G1CollectionSetCandidates* candidates);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COLLECTIONSETCHOOSER_HPP

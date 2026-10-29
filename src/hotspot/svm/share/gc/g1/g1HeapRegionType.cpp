@@ -25,9 +25,6 @@
 #include "gc/g1/g1HeapRegionTraceType.hpp"
 #include "gc/g1/g1HeapRegionType.hpp"
 
-
-namespace svm_gc {
-
 const G1HeapRegionType G1HeapRegionType::Eden      = G1HeapRegionType(EdenTag);
 const G1HeapRegionType G1HeapRegionType::Survivor  = G1HeapRegionType(SurvTag);
 const G1HeapRegionType G1HeapRegionType::Old       = G1HeapRegionType(OldTag);
@@ -128,6 +125,3 @@ G1HeapRegionTraceType::Type G1HeapRegionType::get_trace_type() {
       return G1HeapRegionTraceType::Free; // keep some compilers happy
   }
 }
-
-} // namespace svm_gc
-

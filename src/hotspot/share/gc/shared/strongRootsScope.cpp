@@ -27,9 +27,6 @@
 #include "gc/shared/strongRootsScope.hpp"
 #include "runtime/threads.hpp"
 
-
-namespace svm_gc {
-
 MarkScope::MarkScope() {
   nmethod::oops_do_marking_prologue();
 }
@@ -52,6 +49,3 @@ StrongRootsScope::~StrongRootsScope() {
     Threads::assert_all_threads_claimed();
   }
 }
-
-} // namespace svm_gc
-

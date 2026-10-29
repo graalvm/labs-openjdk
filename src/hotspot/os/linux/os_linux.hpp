@@ -29,9 +29,6 @@
 
 // os::Linux defines the interface to Linux operating systems
 
-
-namespace svm_gc {
-
 class os::Linux {
   friend class os;
 
@@ -519,8 +516,5 @@ class os::Linux {
   static int malloc_info(FILE* stream);
 #endif // GLIBC
 };
-
-
-} // namespace svm_gc
 
 #endif // OS_LINUX_OS_LINUX_HPP

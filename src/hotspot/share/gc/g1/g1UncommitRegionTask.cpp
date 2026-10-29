@@ -28,9 +28,6 @@
 #include "runtime/globals.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 G1UncommitRegionTask* G1UncommitRegionTask::_instance = nullptr;
 
 G1UncommitRegionTask::G1UncommitRegionTask() :
@@ -135,6 +132,3 @@ void G1UncommitRegionTask::execute() {
     clear_summary();
   }
 }
-
-} // namespace svm_gc
-

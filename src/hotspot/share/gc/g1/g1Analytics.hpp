@@ -29,9 +29,6 @@
 #include "memory/allocation.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class TruncatedSeq;
 class G1Predictions;
 
@@ -179,8 +176,5 @@ public:
   void update_recent_gc_times(double end_time_sec, double elapsed_ms);
   void compute_pause_time_ratios(double end_time_sec, double pause_time_ms);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ANALYTICS_HPP

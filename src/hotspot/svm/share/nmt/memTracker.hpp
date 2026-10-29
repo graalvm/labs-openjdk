@@ -41,9 +41,6 @@
 #define CALLER_PC  NativeCallStack::empty_stack()
 
 // NOTE (chaeubl): dummy implementation that doesn't do any tracking.
-
-namespace svm_gc {
-
 class MemTracker : AllStatic {
  public:
   static inline bool enabled() {
@@ -116,8 +113,5 @@ class MemTracker : AllStatic {
     NmtVirtualMemoryLocker(){}
   };
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_NMT_MEMTRACKER_HPP

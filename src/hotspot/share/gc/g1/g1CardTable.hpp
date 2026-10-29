@@ -30,9 +30,6 @@
 #include "oops/oopsHierarchy.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 class G1CardTable;
 class G1RegionToSpaceMapper;
 
@@ -119,8 +116,5 @@ public:
 
   bool is_in_young(const void* p) const override;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CARDTABLE_HPP

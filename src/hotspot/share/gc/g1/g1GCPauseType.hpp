@@ -28,9 +28,6 @@
 #include "utilities/debug.hpp"
 #include "utilities/enumIterator.hpp"
 
-
-namespace svm_gc {
-
 enum class G1GCPauseType : uint {
   YoungGC,
   LastYoungGC,
@@ -88,8 +85,5 @@ public:
     return pause_strings[static_cast<uint>(type)];
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1GCPAUSETYPES_HPP

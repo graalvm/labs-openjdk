@@ -28,9 +28,6 @@
 #include "runtime/timer.hpp"
 #include "utilities/ostream.hpp"
 
-
-namespace svm_gc {
-
 double TimeHelper::counter_to_seconds(jlong counter) {
   double freq  = (double) os::elapsed_frequency();
   return (double)counter / freq;
@@ -119,6 +116,3 @@ jlong TimeStamp::ticks_since_update() const {
   return os::elapsed_counter() - _counter;
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

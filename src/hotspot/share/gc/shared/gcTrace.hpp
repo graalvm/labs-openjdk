@@ -36,9 +36,6 @@
 #include "utilities/macros.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 class GCHeapSummary;
 class MetaspaceChunkFreeListSummary;
 class MetaspaceSummary;
@@ -220,8 +217,5 @@ class DefNewTracer : public YoungGCTracer, public CHeapObj<mtGC> {
   DefNewTracer() : YoungGCTracer(DefNew) {}
 };
 #endif // !SVM
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCTRACE_HPP

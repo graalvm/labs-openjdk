@@ -30,9 +30,6 @@
 
 // Per-region attributes often used during garbage collection to avoid costly
 // lookups for that information all over the place.
-
-namespace svm_gc {
-
 struct G1HeapRegionAttr {
 public:
   typedef int8_t region_type_t;
@@ -186,8 +183,5 @@ class G1HeapRegionAttrBiasedMappedArray : public G1BiasedMappedArray<G1HeapRegio
   void clear() { G1BiasedMappedArray<G1HeapRegionAttr>::clear(); }
   void clear(const G1HeapRegion* hr) { return set_by_index(hr->hrm_index(), G1HeapRegionAttr(G1HeapRegionAttr::NotInCSet)); }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONATTR_HPP

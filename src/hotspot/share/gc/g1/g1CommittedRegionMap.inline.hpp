@@ -29,9 +29,6 @@
 
 #include "utilities/bitMap.inline.hpp"
 
-
-namespace svm_gc {
-
 inline bool G1CommittedRegionMap::active(uint index) const {
   return _active.par_at(index);
 }
@@ -39,8 +36,5 @@ inline bool G1CommittedRegionMap::active(uint index) const {
 inline bool G1CommittedRegionMap::inactive(uint index) const {
   return _inactive.at(index);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COMMITTEDREGIONMAP_INLINE_HPP

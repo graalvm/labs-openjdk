@@ -27,9 +27,6 @@
 
 #include <windows.h>
 #include <errno.h>
-
-namespace svm_gc {
-
 WindowsSemaphore::WindowsSemaphore(uint value) {
   _semaphore = ::CreateSemaphore(nullptr, value, LONG_MAX, nullptr);
 
@@ -59,6 +56,3 @@ bool WindowsSemaphore::trywait() {
   assert(ret != WAIT_FAILED,   "WaitForSingleObject failed with error code: %lu", GetLastError());
   return ret == WAIT_OBJECT_0;
 }
-
-} // namespace svm_gc
-

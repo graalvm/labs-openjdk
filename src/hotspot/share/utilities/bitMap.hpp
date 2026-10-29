@@ -30,9 +30,6 @@
 #include "utilities/globalDefinitions.hpp"
 
 // Forward decl;
-
-namespace svm_gc {
-
 class BitMapClosure;
 
 // Operations for bitmaps represented as arrays of unsigned integers.
@@ -707,8 +704,5 @@ class BitMapClosure {
   // return of false indicates that the bitmap iteration should terminate.
   virtual bool do_bit(BitMap::idx_t index) = 0;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_BITMAP_HPP

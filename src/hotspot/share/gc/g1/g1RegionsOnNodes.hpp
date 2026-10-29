@@ -27,9 +27,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 class G1NUMA;
 class G1HeapRegion;
 
@@ -50,8 +47,5 @@ public:
 
   uint count(uint node_index) const;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_VM_GC_G1_G1REGIONS_HPP

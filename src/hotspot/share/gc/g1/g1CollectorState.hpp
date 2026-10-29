@@ -29,9 +29,6 @@
 #include "utilities/globalDefinitions.hpp"
 
 // State of the G1 collection.
-
-namespace svm_gc {
-
 class G1CollectorState {
   // Indicates whether we are in the phase where we do partial gcs that only contain
   // the young generation. Not set while _in_full_gc is set.
@@ -121,8 +118,5 @@ public:
   // Calculate GC Pause Type from internal state.
   G1GCPauseType young_gc_pause_type(bool concurrent_operation_is_full_mark) const;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COLLECTORSTATE_HPP

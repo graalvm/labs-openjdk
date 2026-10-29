@@ -30,9 +30,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/numberSeq.hpp"
 
-
-namespace svm_gc {
-
 class TableRateStatistics : public CHeapObj<mtStatistics> {
 
   friend class TableStatistics;
@@ -91,8 +88,5 @@ public:
 
   void print(outputStream* st, const char *table_name);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_TABLE_STATISTICS_HPP

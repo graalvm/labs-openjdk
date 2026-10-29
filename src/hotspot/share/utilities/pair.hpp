@@ -27,9 +27,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 template<typename T, typename V,  typename ALLOC_BASE = ResourceObj>
 class Pair : public ALLOC_BASE {
  public:
@@ -40,8 +37,5 @@ class Pair : public ALLOC_BASE {
   Pair(T t, V v) : first(t), second(v) {}
 };
 
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_PAIR_HPP

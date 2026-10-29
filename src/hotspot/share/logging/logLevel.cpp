@@ -25,9 +25,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/stringUtils.hpp"
 
-
-namespace svm_gc {
-
 const char* LogLevel::_name[] = {
   "off",
 #define LOG_LEVEL(name, printname) #printname,
@@ -61,6 +58,3 @@ LogLevelType LogLevel::fuzzy_match(const char *level) {
   return match;
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

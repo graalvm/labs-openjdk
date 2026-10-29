@@ -32,9 +32,6 @@
 #include "runtime/task.hpp"
 #include "runtime/vmOperation.hpp"
 
-
-namespace svm_gc {
-
 class VMThread {
  private:
   void evaluate_operation(VM_Operation* op);;
@@ -43,8 +40,5 @@ class VMThread {
   // Execution of vm operation
   static void execute(VM_Operation* op);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_VMTHREAD_HPP

@@ -32,9 +32,6 @@
 #include "runtime/vm_version.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 void GCInitLogger::print_all() {
   print_version();
   print_cpu();
@@ -138,6 +135,3 @@ const char* GCInitLogger::large_pages_support() {
     return "Disabled";
   }
 }
-
-} // namespace svm_gc
-

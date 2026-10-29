@@ -38,9 +38,6 @@
 //
 // The previous/original value is restored when leaving the scope.
 
-
-namespace svm_gc {
-
 typedef AutoModifyRestore<bool> FlagSetting;
 typedef AutoModifyRestore<uint> UIntFlagSetting;
 typedef AutoModifyRestore<int>  IntFlagSetting;
@@ -49,8 +46,5 @@ typedef AutoModifyRestore<int>  IntFlagSetting;
 // that should be addressed when this file is removed.
 
 #define FLAG_GUARD(f) f ## _guard(f)
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_FLAGSETTING_HPP

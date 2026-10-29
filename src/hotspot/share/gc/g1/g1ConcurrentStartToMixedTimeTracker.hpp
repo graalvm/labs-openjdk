@@ -32,9 +32,6 @@
 // After calling the concurrent start/mixed gc notifications, the result can be
 // obtained in last_marking_time() once, after which the tracking resets.
 // Any pauses recorded by add_pause() will be subtracted from that results.
-
-namespace svm_gc {
-
 class G1ConcurrentStartToMixedTimeTracker {
 private:
   bool _active;
@@ -86,8 +83,5 @@ public:
   // Returns whether we have a result that can be retrieved.
   bool has_result() const { return _mixed_start_time > 0.0 && _concurrent_start_end_time > 0.0; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTSTARTTOMIXEDTIMETRACKER_HPP

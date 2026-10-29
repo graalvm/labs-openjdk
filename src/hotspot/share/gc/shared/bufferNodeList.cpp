@@ -25,9 +25,6 @@
 #include "gc/shared/bufferNodeList.hpp"
 #include "utilities/debug.hpp"
 
-
-namespace svm_gc {
-
 BufferNodeList::BufferNodeList() :
   _head(nullptr), _tail(nullptr), _entry_count(0) {}
 
@@ -39,6 +36,3 @@ BufferNodeList::BufferNodeList(BufferNode* head,
   assert((_head == nullptr) == (_tail == nullptr), "invariant");
   assert((_head == nullptr) == (_entry_count == 0), "invariant");
 }
-
-} // namespace svm_gc
-

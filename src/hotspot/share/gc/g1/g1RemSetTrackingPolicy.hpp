@@ -32,9 +32,6 @@
 // The remembered set tracking policy determines for a given region the state of
 // the remembered set, ie. when it should be tracked, and if/when the remembered
 // set is complete.
-
-namespace svm_gc {
-
 class G1RemSetTrackingPolicy : public CHeapObj<mtGC> {
 public:
   // Update remembered set tracking state at allocation of the region. May be
@@ -53,8 +50,5 @@ public:
   // Update remembered set tracking state when the region is freed.
   void update_at_free(G1HeapRegion* r);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1REMSETTRACKINGPOLICY_HPP

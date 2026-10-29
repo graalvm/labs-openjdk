@@ -29,9 +29,6 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class Mutex;
 class stringStream;
 
@@ -113,8 +110,5 @@ class GCLogPreciousHandle {
     va_end(args);
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCLOGPRECIOUS_HPP

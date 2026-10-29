@@ -37,9 +37,6 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 G1DetermineCompactionQueueClosure::G1DetermineCompactionQueueClosure(G1FullCollector* collector) :
   _g1h(G1CollectedHeap::heap()),
   _collector(collector),
@@ -124,6 +121,3 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_for_compaction(G1H
     hr->apply_to_marked_objects(_bitmap, &prepare_compact);
   }
 }
-
-} // namespace svm_gc
-

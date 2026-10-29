@@ -38,9 +38,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/quickSort.hpp"
 
-
-namespace svm_gc {
-
 G1CollectorState* G1CollectionSet::collector_state() const {
   return _g1h->collector_state();
 }
@@ -748,6 +745,3 @@ void G1CollectionSet::verify_young_cset_indices() const {
   iterate(&cl);
 }
 #endif
-
-} // namespace svm_gc
-

@@ -29,9 +29,6 @@
 #include "runtime/atomic.hpp"
 #include "utilities/growableArray.hpp"
 
-
-namespace svm_gc {
-
 void G1AbstractSubTask::record_work_item(uint worker_id, uint index, size_t count) {
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
   g1h->phase_times()->record_thread_work_item(_tag, worker_id, count, index);
@@ -111,6 +108,3 @@ G1BatchedTask::~G1BatchedTask() {
     delete task;
   }
 }
-
-} // namespace svm_gc
-

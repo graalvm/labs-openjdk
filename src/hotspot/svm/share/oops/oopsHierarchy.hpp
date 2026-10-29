@@ -35,27 +35,12 @@
 // of B, A's representation is a prefix of B's representation.
 
 #ifdef SVM_COMPRESSED_REFERENCES
-
-namespace svm_gc {
-
 enum class narrowOop : uint32_t { null = 0 };
 typedef juint rawMarkWord;
-
-} // namespace svm_gc
-
 #else
-
-namespace svm_gc {
-
 enum class narrowOop : uint64_t { null = 0 };
 typedef julong rawMarkWord;
-
-} // namespace svm_gc
-
 #endif // SVM_COMPRESSED_REFERENCES
-
-
-namespace svm_gc {
 
 typedef void* OopOrNarrowOopStar;
 
@@ -82,8 +67,5 @@ class   InstanceKlass;
 class   ArrayKlass;
 class     ObjArrayKlass;
 class     TypeArrayKlass;
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_OOPSHIERARCHY_HPP

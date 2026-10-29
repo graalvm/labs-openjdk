@@ -28,9 +28,6 @@
 #include "runtime/os.hpp"
 
 // Bsd_OS defines the interface to Bsd operating systems
-
-namespace svm_gc {
-
 class os::Bsd {
   friend class os;
 
@@ -124,7 +121,4 @@ class os::Bsd {
   static void print_uptime_info(outputStream* st);
 #endif // !SVM
 };
-
-} // namespace svm_gc
-
 #endif // OS_BSD_OS_BSD_HPP

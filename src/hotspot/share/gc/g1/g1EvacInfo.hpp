@@ -27,9 +27,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 class G1EvacInfo : public StackObj {
   uint _collection_set_regions;
   uint _allocation_regions;
@@ -81,8 +78,5 @@ public:
   size_t bytes_used()                 { return _bytes_used; }
   uint   regions_freed()              { return _regions_freed; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1EVACINFO_HPP

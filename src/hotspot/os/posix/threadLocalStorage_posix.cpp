@@ -26,9 +26,6 @@
 #include "utilities/debug.hpp"
 #include <pthread.h>
 
-
-namespace svm_gc {
-
 static pthread_key_t _thread_key;
 static bool _initialized = false;
 
@@ -70,6 +67,3 @@ void ThreadLocalStorage::set_thread(Thread* current) {
   int rslt = pthread_setspecific(_thread_key, current);
   assert_status(rslt == 0, rslt, "pthread_setspecific");
 }
-
-} // namespace svm_gc
-

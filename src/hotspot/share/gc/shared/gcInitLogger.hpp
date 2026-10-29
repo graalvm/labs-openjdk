@@ -27,9 +27,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 class GCInitLogger : public StackObj {
  protected:
   const char* large_pages_support();
@@ -46,8 +43,5 @@ class GCInitLogger : public StackObj {
   void print_all();
   static void print();
 };
-
-
-} // namespace svm_gc
 
 #endif //SHARE_GC_SHARED_GCINITLOGGER_HPP

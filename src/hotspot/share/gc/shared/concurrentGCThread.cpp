@@ -29,9 +29,6 @@
 #include "runtime/mutexLocker.hpp"
 #include "runtime/os.hpp"
 
-
-namespace svm_gc {
-
 ConcurrentGCThread::ConcurrentGCThread() :
     _should_terminate(false),
     _has_terminated(false) {}
@@ -78,6 +75,3 @@ bool ConcurrentGCThread::should_terminate() const {
 bool ConcurrentGCThread::has_terminated() const {
   return Atomic::load_acquire(&_has_terminated);
 }
-
-} // namespace svm_gc
-

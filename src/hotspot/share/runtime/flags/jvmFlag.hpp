@@ -31,9 +31,6 @@
 #include "utilities/vmEnums.hpp"
 #include <type_traits>
 
-
-namespace svm_gc {
-
 class outputStream;
 
 enum class JVMFlagOrigin : int {
@@ -353,8 +350,5 @@ public:
 };
 
 #define DECLARE_CONSTRAINT(type, func) JVMFlag::Error func(type value, bool verbose);
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_JVMFLAG_HPP

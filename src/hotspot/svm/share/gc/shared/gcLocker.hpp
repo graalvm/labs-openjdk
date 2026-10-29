@@ -28,9 +28,6 @@
 #include "gc/shared/gcCause.hpp"
 #include "memory/allStatic.hpp"
 #include "runtime/mutex.hpp"
-
-namespace svm_gc {
-
 class GCLocker: public AllStatic {
  public:
   // To query current GCLocker state. Can become outdated if called outside a safepoint.
@@ -40,8 +37,5 @@ class GCLocker: public AllStatic {
   static void block()     { ShouldNotReachHere(); }
   static void unblock()   { ShouldNotReachHere(); }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCLOCKER_HPP

@@ -25,9 +25,6 @@
 #include "gc/g1/g1CollectorState.hpp"
 #include "gc/g1/g1GCPauseType.hpp"
 
-
-namespace svm_gc {
-
 G1GCPauseType G1CollectorState::young_gc_pause_type(bool concurrent_operation_is_full_mark) const {
   assert(!in_full_gc(), "must be");
   if (in_concurrent_start_gc()) {
@@ -47,6 +44,3 @@ G1GCPauseType G1CollectorState::young_gc_pause_type(bool concurrent_operation_is
     return G1GCPauseType::YoungGC;
   }
 }
-
-} // namespace svm_gc
-

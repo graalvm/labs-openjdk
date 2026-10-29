@@ -31,9 +31,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ostream.hpp"
 
-
-namespace svm_gc {
-
 class LogDecorations;
 class LogMessageBuffer;
 class LogSelection;
@@ -105,8 +102,5 @@ class LogOutput : public CHeapObj<mtLogging> {
   virtual int write(const LogDecorations& decorations, const char* msg) = 0;
   virtual int write(LogMessageBuffer::Iterator msg_iterator) = 0;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGOUTPUT_HPP

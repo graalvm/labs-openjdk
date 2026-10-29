@@ -96,12 +96,6 @@
 
 #endif // ASSERT
 
-
-namespace svm_gc {
-
 DECLARE_FLAGS(DEBUG_RUNTIME_FLAGS)
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_DEBUG_GLOBALS_HPP

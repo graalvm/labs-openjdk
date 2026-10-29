@@ -29,9 +29,6 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class Monitor;
 
 class ConcurrentGCBreakpoints : public AllStatic {
@@ -135,8 +132,5 @@ public:
   // precondition: Must be at a safepoint or have the monitor locked.
   static void notify_idle_to_active();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_CONCURRENTGCBREAKPOINTS_HPP

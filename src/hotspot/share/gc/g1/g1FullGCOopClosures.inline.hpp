@@ -42,9 +42,6 @@
 #include "svmHeapAddressSpace.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 template <typename T>
 inline void G1MarkAndPushClosure::do_oop_work(T* p) {
   _marker->mark_and_push(p);
@@ -92,8 +89,5 @@ template<typename T>
 inline void G1FullKeepAliveClosure::do_oop_work(T* p) {
   _marker->mark_and_push(p);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCOOPCLOSURES_INLINE_HPP

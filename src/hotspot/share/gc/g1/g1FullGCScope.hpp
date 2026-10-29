@@ -35,9 +35,6 @@
 #include "memory/resourceArea.hpp"
 #include "services/memoryService.hpp"
 
-
-namespace svm_gc {
-
 class GCMemoryManager;
 
 class G1FullGCJFRTracerMark : public G1JFRTracerMark {
@@ -75,8 +72,5 @@ public:
   G1FullGCTracer* tracer();
   size_t region_compaction_threshold() const;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1FULLGCSCOPE_HPP

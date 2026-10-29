@@ -63,9 +63,6 @@
 //
 // NewSize and MaxNewSize override NewRatio. So, NewRatio is ignored if it is
 // combined with either NewSize or MaxNewSize. (A warning message is printed.)
-
-namespace svm_gc {
-
 class G1YoungGenSizer {
 private:
   enum SizerKind {
@@ -109,8 +106,5 @@ public:
     return _use_adaptive_sizing;
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1YOUNGGENSIZER_HPP

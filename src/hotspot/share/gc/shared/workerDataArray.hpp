@@ -28,9 +28,6 @@
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
 
-
-namespace svm_gc {
-
 class outputStream;
 
 template <class T>
@@ -105,8 +102,5 @@ private:
   void print_summary_on(outputStream* out, bool print_sum = true) const;
   void print_details_on(outputStream* out) const;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WORKERDATAARRAY_HPP

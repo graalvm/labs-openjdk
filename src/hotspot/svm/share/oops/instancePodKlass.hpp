@@ -33,9 +33,6 @@
 
 // NOTE (chaeubl): see SVM class Pod (this file doesn't exist on HotSpot).
 
-
-namespace svm_gc {
-
 class InstancePodKlass: public ArrayKlass {
 public:
   static const KlassKind Kind = InstancePodKlassKind;
@@ -54,8 +51,5 @@ public:
   template <typename T, class OopClosureType>
   inline void oop_oop_iterate_bounded(oop obj, OopClosureType* closure, MemRegion mr);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCEPODKLASS_HPP

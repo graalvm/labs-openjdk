@@ -27,9 +27,6 @@
 
 #include "runtime/osThreadBase.hpp"
 #include "utilities/globalDefinitions.hpp"
-
-namespace svm_gc {
-
 class OSThread : public OSThreadBase {
   friend class VMStructs;
 
@@ -67,7 +64,4 @@ class OSThread : public OSThreadBase {
     return (uintx)_thread_id;
   }
 };
-
-} // namespace svm_gc
-
 #endif // OS_WINDOWS_OSTHREAD_WINDOWS_HPP

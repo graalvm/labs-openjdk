@@ -27,9 +27,6 @@
 #include "svmOopMap.hpp"
 #include "oops/oop.hpp"
 
-
-namespace svm_gc {
-
 int SVMIsolateData::_argc = 0;
 char** SVMIsolateData::_argv = 0;
 size_t SVMIsolateData::_max_heap_address_space_size = 0;
@@ -219,6 +216,3 @@ void SVMGlobalData::verify_offsets(bool use_perf_data) {
     assert(SVMGlobalData::_offsets._perf_string_variable._null_terminated_value > oopDesc::klass_offset_in_bytes(), "must be");
   }
 }
-
-} // namespace svm_gc
-

@@ -28,15 +28,9 @@
 #ifdef ASSERT
 
 // Simply mangle the MemRegion mr.
-
-namespace svm_gc {
-
 void SpaceMangler::mangle_region(MemRegion mr) {
   assert(ZapUnusedHeapArea, "Mangling should not be in use");
   Copy::fill_to_words(mr.start(), mr.word_size(), badHeapWord);
 }
-
-
-} // namespace svm_gc
 
 #endif // ASSERT

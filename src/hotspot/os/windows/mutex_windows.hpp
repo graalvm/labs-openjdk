@@ -33,9 +33,6 @@
 // of the VM Mutex class does not. It is up to the Mutex class to hide this
 // difference in behaviour.
 
-
-namespace svm_gc {
-
 class PlatformMutex : public CHeapObj<mtSynchronizer> {
   NONCOPYABLE(PlatformMutex);
 
@@ -62,7 +59,4 @@ class PlatformMonitor : public PlatformMutex {
   void notify();
   void notify_all();
 };
-
-} // namespace svm_gc
-
 #endif // OS_WINDOWS_MUTEX_WINDOWS_HPP

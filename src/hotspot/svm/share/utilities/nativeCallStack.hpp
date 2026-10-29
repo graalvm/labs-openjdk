@@ -31,9 +31,6 @@
 #include "utilities/resourceHash.hpp"
 
 // An empty NativeCallStack implementation.
-
-namespace svm_gc {
-
 class NativeCallStack : public StackObj {
 private:
   static const NativeCallStack _empty_stack;
@@ -48,8 +45,5 @@ public:
 
   static inline const NativeCallStack& empty_stack() { return _empty_stack; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_NATIVECALLSTACK_HPP

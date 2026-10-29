@@ -64,9 +64,6 @@
 #define MEMORY_TAG_DECLARE_ENUM(mem_tag, human_readable) \
 mem_tag,
 
-
-namespace svm_gc {
-
 enum class MemTag : uint8_t  {
   MEMORY_TAG_DO(MEMORY_TAG_DECLARE_ENUM)
   mt_number_of_tags    // number of memory tags (mtDontTrack
@@ -81,8 +78,5 @@ MEMORY_TAG_DO(MEMORY_TAG_SHORTNAME)
 
 // Make an int version of the sentinel end value.
 constexpr int mt_number_of_tags = static_cast<int>(MemTag::mt_number_of_tags);
-
-
-} // namespace svm_gc
 
 #endif // SHARE_NMT_MEM_TAG_HPP

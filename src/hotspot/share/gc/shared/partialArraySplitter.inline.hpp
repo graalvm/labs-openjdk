@@ -35,9 +35,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 template<typename Queue>
 size_t PartialArraySplitter::start(Queue* queue,
                                    objArrayOop source,
@@ -82,8 +79,5 @@ PartialArraySplitter::claim(PartialArrayState* state, Queue* queue, bool stolen)
   _allocator.release(state);
   return Claim{step._index, step._index + _stepper.chunk_size()};
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PARTIALARRAYSPLITTER_INLINE_HPP

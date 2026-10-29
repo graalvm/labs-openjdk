@@ -30,9 +30,6 @@
 //
 // This can be used to pass a Log instance as a parameter without
 // polluting the surrounding API with template functions.
-
-namespace svm_gc {
-
 class LogHandle {
 private:
   LogTagSet& _tagset;
@@ -106,8 +103,5 @@ public:
     return _tagset.is_level(_level);
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGHANDLE_HPP

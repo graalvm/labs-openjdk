@@ -30,9 +30,6 @@
 #include "logging/logTag.hpp"
 #include "utilities/debug.hpp"
 
-
-namespace svm_gc {
-
 class LogMessageBuffer;
 
 //
@@ -200,8 +197,5 @@ public:
   }
 
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOG_HPP

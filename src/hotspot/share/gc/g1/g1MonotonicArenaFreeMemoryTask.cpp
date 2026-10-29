@@ -33,9 +33,6 @@
 #include "gc/shared/suspendibleThreadSet.hpp"
 #include "runtime/os.hpp"
 
-
-namespace svm_gc {
-
 constexpr const char* G1MonotonicArenaFreeMemoryTask::_state_names[];
 
 const char* G1MonotonicArenaFreeMemoryTask::get_state_name(State value) const {
@@ -207,6 +204,3 @@ void G1MonotonicArenaFreeMemoryTask::notify_new_stats(G1MonotonicArenaMemoryStat
     G1CollectedHeap::heap()->service_thread()->schedule_task(this, 0);
   }
 }
-
-} // namespace svm_gc
-

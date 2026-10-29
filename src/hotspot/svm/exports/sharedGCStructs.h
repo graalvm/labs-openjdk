@@ -29,11 +29,6 @@
 #include <sys/types.h>
 
 // forward declarations
-
-#ifdef __cplusplus
-  namespace svm_gc {
-#endif
-
 typedef struct CodeInfo CodeInfo;
 
 struct MetaspaceStatistics {
@@ -74,10 +69,5 @@ struct CodeInfosPerThread {
   size_t count;
   struct CodeInfos *threads[0]; // variable-sized array
 };
-
-
-#ifdef __cplusplus
-  } // namespace svm_gc
-#endif
 
 #endif // SVM_SHARED_GC_STRUCTS_HPP

@@ -28,9 +28,6 @@
 #include "runtime/orderAccess.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 jint LogOutputList::increase_readers() {
   jint result = Atomic::add(&_active_readers, 1);
   assert(_active_readers > 0, "Ensure we have consistent state");
@@ -156,6 +153,3 @@ void LogOutputList::update_output_level(LogOutputList::LogOutputNode* node, LogL
   wait_until_no_readers();
   remove_output(node);
 }
-
-} // namespace svm_gc
-

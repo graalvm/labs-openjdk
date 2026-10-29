@@ -39,9 +39,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 template <typename T, class OopClosureType, class Contains>
 void InstanceRefKlass::do_referent(oop obj, OopClosureType* closure, Contains& contains) {
   T* referent_addr = (T*)java_lang_ref_Reference::referent_addr_raw(obj);
@@ -192,8 +189,5 @@ void InstanceRefKlass::trace_reference_gc(const char *s, oop obj) {
   }
 }
 #endif
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCEREFKLASS_INLINE_HPP

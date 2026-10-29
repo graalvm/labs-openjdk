@@ -36,9 +36,6 @@
 // the addresses of modified old-generation objects.  This type supports
 // this operation.
 
-
-namespace svm_gc {
-
 class PtrQueueSet;
 class PtrQueue {
   friend class VMStructs;
@@ -167,8 +164,5 @@ public:
     return _allocator->buffer_capacity();
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PTRQUEUE_HPP

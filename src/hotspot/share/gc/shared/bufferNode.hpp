@@ -33,9 +33,6 @@
 
 #include <limits>
 
-
-namespace svm_gc {
-
 class BufferNode {
   using InternalSizeType = LP64_ONLY(uint32_t) NOT_LP64(uint16_t);
   static_assert(sizeof(InternalSizeType) <= sizeof(size_t), "assumption");
@@ -138,8 +135,5 @@ public:
   BufferNode* allocate();
   void release(BufferNode* node);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_BUFFERNODE_HPP

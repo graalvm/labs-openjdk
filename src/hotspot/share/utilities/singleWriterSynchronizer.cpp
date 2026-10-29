@@ -29,9 +29,6 @@
 #include "utilities/singleWriterSynchronizer.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 SingleWriterSynchronizer::SingleWriterSynchronizer() :
   _enter(0),
   _exit(),
@@ -100,6 +97,3 @@ void SingleWriterSynchronizer::synchronize() {
   while (_wakeup.trywait()) {}
   DEBUG_ONLY(Atomic::dec(&_writers);)
 }
-
-} // namespace svm_gc
-

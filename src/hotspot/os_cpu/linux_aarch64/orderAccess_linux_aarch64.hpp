@@ -32,9 +32,6 @@
 
 // Implementation of class OrderAccess.
 
-
-namespace svm_gc {
-
 inline void OrderAccess::loadload()   { acquire(); }
 inline void OrderAccess::storestore() { release(); }
 inline void OrderAccess::loadstore()  { acquire(); }
@@ -61,8 +58,5 @@ inline void OrderAccess::cross_modify_fence_impl() {
   asm volatile("isb" : : : "memory");
 }
 #endif // !SVM
-
-
-} // namespace svm_gc
 
 #endif // OS_CPU_LINUX_AARCH64_ORDERACCESS_LINUX_AARCH64_HPP

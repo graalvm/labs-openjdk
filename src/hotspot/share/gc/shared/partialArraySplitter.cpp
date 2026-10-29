@@ -27,9 +27,6 @@
 #include "gc/shared/partialArrayState.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 PartialArraySplitter::PartialArraySplitter(PartialArrayStateManager* manager,
                                            uint num_workers,
                                            size_t chunk_size)
@@ -43,6 +40,3 @@ PartialArrayTaskStats* PartialArraySplitter::stats() {
   return &_stats;
 }
 #endif // TASKQUEUE_STATS
-
-} // namespace svm_gc
-

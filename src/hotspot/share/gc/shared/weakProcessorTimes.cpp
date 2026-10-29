@@ -33,9 +33,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 const double uninitialized_time = -1.0;
 
 #ifdef ASSERT
@@ -220,6 +217,3 @@ void WeakProcessorTimes::log_total(uint indent) const {
                         "Weak Processing",
                         total_time_sec() * MILLIUNITS);
 }
-
-} // namespace svm_gc
-

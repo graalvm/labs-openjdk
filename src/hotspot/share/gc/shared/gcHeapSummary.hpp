@@ -29,9 +29,6 @@
 #include "memory/metaspaceChunkFreeListSummary.hpp"
 #include "memory/metaspaceStats.hpp"
 
-
-namespace svm_gc {
-
 class VirtualSpaceSummary : public StackObj {
   HeapWord* _start;
   HeapWord* _committed_end;
@@ -228,8 +225,5 @@ public:
   size_t failure_used() const { return _failure_used; }
   size_t failure_waste() const { return _failure_waste; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCHEAPSUMMARY_HPP

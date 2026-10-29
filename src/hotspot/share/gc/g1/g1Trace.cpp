@@ -33,9 +33,6 @@
 #endif
 
 #if INCLUDE_JFR
-
-namespace svm_gc {
-
 class G1HeapRegionTypeConstant : public JfrSerializer {
 public:
   void serialize(JfrCheckpointWriter& writer) {
@@ -69,13 +66,7 @@ static void register_jfr_type_constants() {
                                      new G1YCTypeConstant());
 }
 
-
-} // namespace svm_gc
-
 #endif
-
-
-namespace svm_gc {
 
 void G1NewTracer::initialize() {
   JFR_ONLY(register_jfr_type_constants();)
@@ -280,6 +271,3 @@ void G1MMUTracer::send_g1_mmu_event(double time_slice_ms, double gc_time_ms, dou
     e.commit();
   }
 }
-
-} // namespace svm_gc
-

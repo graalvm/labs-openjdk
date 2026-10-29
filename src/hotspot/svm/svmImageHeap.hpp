@@ -28,9 +28,6 @@
 
 #include "oops/oop.hpp"
 
-
-namespace svm_gc {
-
 class SVMImageHeap : public AllStatic {
 public:
   static inline bool is_image_heap_object(oop object) {
@@ -61,8 +58,5 @@ public:
     return addr >= SVMIsolateData::_open_image_heap_start_addr && addr < SVMIsolateData::_open_image_heap_end_addr;
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SVM_IMAGE_HEAP_HPP

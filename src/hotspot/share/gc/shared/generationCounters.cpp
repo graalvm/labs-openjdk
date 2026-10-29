@@ -28,9 +28,6 @@
 #include "memory/virtualspace.hpp"
 #include "runtime/perfData.hpp"
 
-
-namespace svm_gc {
-
 GenerationCounters::GenerationCounters(const char* name,
                                        int ordinal, int spaces,
                                        size_t min_capacity, size_t max_capacity,
@@ -84,7 +81,4 @@ GenerationCounters::~GenerationCounters() {
 void GenerationCounters::update_all(size_t curr_capacity) {
   _current_size->set_value(curr_capacity);
 }
-
-
-} // namespace svm_gc
 

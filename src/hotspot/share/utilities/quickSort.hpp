@@ -29,9 +29,6 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class QuickSort : AllStatic {
 
  private:
@@ -105,8 +102,5 @@ class QuickSort : AllStatic {
     sort(&array[first_part_length], length - first_part_length, comparator);
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_QUICKSORT_HPP

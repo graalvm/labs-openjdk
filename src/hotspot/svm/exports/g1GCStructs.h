@@ -28,11 +28,6 @@
 
 #include <sys/types.h>
 
-
-#ifdef __cplusplus
-  namespace svm_gc {
-#endif
-
 struct G1HeapOptions {
   size_t max_heap_size;
   size_t heap_address_space_size;
@@ -86,10 +81,5 @@ struct G1InternalState {
   void* block_offset_table_start;
   size_t block_offset_table_size;
 };
-
-
-#ifdef __cplusplus
-  } // namespace svm_gc
-#endif
 
 #endif // SVM_G1_GC_STRUCTS_H

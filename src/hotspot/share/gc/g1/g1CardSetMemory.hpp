@@ -33,9 +33,6 @@
 #include "memory/allocation.hpp"
 #include "utilities/growableArray.hpp"
 
-
-namespace svm_gc {
-
 class G1CardSetConfiguration;
 class outputStream;
 
@@ -121,8 +118,5 @@ public:
 
   G1MonotonicArenaMemoryStats memory_stats() const;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CARDSETMEMORY_HPP

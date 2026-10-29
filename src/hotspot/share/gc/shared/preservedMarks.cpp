@@ -32,9 +32,6 @@
 #include "runtime/atomic.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 void PreservedMarks::restore() {
   while (!_stack.is_empty()) {
     const PreservedMark elem = _stack.pop();
@@ -169,6 +166,3 @@ void PreservedMarksSet::assert_empty() {
   }
 }
 #endif // ndef PRODUCT
-
-} // namespace svm_gc
-

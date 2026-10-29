@@ -29,9 +29,6 @@
 #include "utilities/align.hpp"
 #include <type_traits>
 
-
-namespace svm_gc {
-
 class Klass;
 
 // An objArrayOop is an array containing oops.
@@ -60,8 +57,5 @@ public:
 
 // See similar requirement for oopDesc.
 static_assert(std::is_trivially_default_constructible<objArrayOopDesc>::value, "required");
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_OBJARRAYOOP_HPP

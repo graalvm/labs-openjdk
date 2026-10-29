@@ -27,9 +27,6 @@
 
 #include "gc/g1/g1HeapRegionBounds.hpp"
 
-
-namespace svm_gc {
-
 size_t G1HeapRegionBounds::min_size() {
   return MIN_REGION_SIZE;
 }
@@ -45,8 +42,5 @@ size_t G1HeapRegionBounds::max_size() {
 size_t G1HeapRegionBounds::target_number() {
   return TARGET_REGION_NUMBER;
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONBOUNDS_INLINE_HPP

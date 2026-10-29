@@ -37,9 +37,6 @@
 #include "svmMetaspace.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 inline HeapWord* MarkBitMap::get_next_marked_addr(const HeapWord* const addr,
                                                   HeapWord* const limit) const {
   assert_svm_only(!SVMImageHeap::is_in_image_heap(addr), "image heap regions are never marked");
@@ -82,8 +79,5 @@ inline bool MarkBitMap::is_marked(oop obj) const{
 inline void MarkBitMap::clear(oop obj) {
   clear(cast_from_oop<HeapWord*>(obj));
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MARKBITMAP_INLINE_HPP

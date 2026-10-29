@@ -30,9 +30,6 @@
 #include "memory/iterator.hpp"
 #include "oops/markWord.hpp"
 
-
-namespace svm_gc {
-
 class G1CollectedHeap;
 class G1RemSet;
 class G1ConcurrentMark;
@@ -261,8 +258,5 @@ class G1ConditionalMarkCodeCacheClosure : public NMethodClosure {
   static void unregister_nmethod(nmethod* nm);
 };
 #endif // SVM
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1OOPCLOSURES_HPP

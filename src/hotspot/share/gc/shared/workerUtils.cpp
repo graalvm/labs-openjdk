@@ -28,9 +28,6 @@
 
 // *** WorkerThreadsBarrierSync
 
-
-namespace svm_gc {
-
 WorkerThreadsBarrierSync::WorkerThreadsBarrierSync()
   : _monitor(Mutex::nosafepoint, "WorkerThreadsBarrierSync_lock"),
     _n_workers(0), _n_completed(0), _should_reset(false), _aborted(false) {
@@ -136,6 +133,3 @@ bool SequentialSubTasksDone::try_claim_task(uint& t) {
   }
   return t < _num_tasks;
 }
-
-} // namespace svm_gc
-

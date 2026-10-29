@@ -27,9 +27,6 @@
 
 #include "runtime/thread.hpp"
 
-
-namespace svm_gc {
-
 class NonJavaThread: public Thread {
   friend class VMStructs;
 
@@ -149,8 +146,5 @@ class WatcherThread: public NonJavaThread {
  private:
   int sleep() const;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_NONJAVATHREAD_HPP

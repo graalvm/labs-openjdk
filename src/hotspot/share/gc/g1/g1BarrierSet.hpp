@@ -31,9 +31,6 @@
 #include "gc/shared/cardTable.hpp"
 #include "gc/shared/cardTableBarrierSet.hpp"
 
-
-namespace svm_gc {
-
 class G1CardTable;
 
 // This barrier is specialized to use a logging barrier to support
@@ -130,10 +127,7 @@ struct BarrierSet::GetName<G1BarrierSet> {
 
 template<>
 struct BarrierSet::GetType<BarrierSet::G1BarrierSet> {
-  typedef svm_gc::G1BarrierSet type;
+  typedef ::G1BarrierSet type;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1BARRIERSET_HPP

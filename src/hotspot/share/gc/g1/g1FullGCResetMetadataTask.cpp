@@ -26,9 +26,6 @@
 #include "gc/g1/g1FullGCResetMetadataTask.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 G1FullGCResetMetadataTask::G1ResetMetadataClosure::G1ResetMetadataClosure(G1FullCollector* collector) :
   _g1h(G1CollectedHeap::heap()),
   _collector(collector) { }
@@ -117,6 +114,3 @@ void G1FullGCResetMetadataTask::work(uint worker_id) {
 
   log_task("Reset Metadata task", worker_id, start);
 }
-
-} // namespace svm_gc
-

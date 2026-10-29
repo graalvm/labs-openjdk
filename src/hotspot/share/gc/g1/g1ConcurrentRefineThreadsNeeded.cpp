@@ -30,9 +30,6 @@
 
 #include <math.h>
 
-
-namespace svm_gc {
-
 G1ConcurrentRefineThreadsNeeded::G1ConcurrentRefineThreadsNeeded(G1Policy* policy,
                                                                  double update_period_ms) :
   _policy(policy),
@@ -144,6 +141,3 @@ void G1ConcurrentRefineThreadsNeeded::update(uint active_threads,
 
   _threads_needed = static_cast<uint>(MIN2<size_t>(nthreads, UINT_MAX));
 }
-
-} // namespace svm_gc
-

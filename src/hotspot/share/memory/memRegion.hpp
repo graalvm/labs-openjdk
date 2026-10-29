@@ -40,9 +40,6 @@
 // create MemRegions (in CardTable and G1CMRootMemRegions) on the heap so operator
 // new and operator new [] were added for these special cases.
 
-
-namespace svm_gc {
-
 class MemRegion {
   friend class VMStructs;
 private:
@@ -103,8 +100,5 @@ class MemRegionClosure : public StackObj {
 public:
   virtual void do_MemRegion(MemRegion mr) = 0;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_MEMORY_MEMREGION_HPP

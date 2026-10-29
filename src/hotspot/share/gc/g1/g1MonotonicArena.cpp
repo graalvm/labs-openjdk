@@ -28,9 +28,6 @@
 #include "runtime/vmOperations.hpp"
 #include "utilities/globalCounter.inline.hpp"
 
-
-namespace svm_gc {
-
 G1MonotonicArena::Segment::Segment(uint slot_size, uint num_slots, Segment* next, MemTag mem_tag) :
   _slot_size(slot_size),
   _num_slots(num_slots),
@@ -251,6 +248,3 @@ void G1MonotonicArena::iterate_segments(SegmentClosure& closure) const {
     cur = cur->next();
   }
 }
-
-} // namespace svm_gc
-

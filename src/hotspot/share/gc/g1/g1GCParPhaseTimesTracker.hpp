@@ -29,9 +29,6 @@
 #include "jfr/jfrEvents.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 class G1GCParPhaseTimesTracker : public CHeapObj<mtGC> {
 protected:
   Ticks _start_time;
@@ -55,8 +52,5 @@ public:
   G1EvacPhaseTimesTracker(G1GCPhaseTimes* phase_times, G1ParScanThreadState* pss, G1GCPhaseTimes::GCParPhases phase, uint worker_id);
   virtual ~G1EvacPhaseTimesTracker();
 };
-
-
-} // namespace svm_gc
 
 #endif

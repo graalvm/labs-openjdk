@@ -29,9 +29,6 @@
 #include "oops/access.hpp"
 #include "svmGlobalData.hpp"
 
-
-namespace svm_gc {
-
 class IsolateThread {
  public:
   // must be in sync with SVM
@@ -105,8 +102,5 @@ class IsolateThread {
 
   static IsolateThread* current();
 };
-
-
-} // namespace svm_gc
 
 #endif // SVM_ISOLATE_THREAD_HPP

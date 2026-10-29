@@ -32,9 +32,6 @@
 
 #include <type_traits>
 
-
-namespace svm_gc {
-
 template<typename K, typename V>
 class ResourceHashtableNode : public AnyObj {
 public:
@@ -379,8 +376,5 @@ public:
   ResourceHashtable() : ResourceHashtableBase<FixedResourceHashtableStorage<SIZE, K, V>,
                                               K, V, ALLOC_TYPE, MEM_TAG, HASH, EQUALS>() {}
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_RESOURCEHASH_HPP

@@ -32,9 +32,6 @@
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 inline bool CompressedKlassPointers::is_null(Klass* v) {
   return v == nullptr;
 }
@@ -86,8 +83,5 @@ inline narrowKlass CompressedKlassPointers::encode_not_null(Klass* v) {
 inline narrowKlass CompressedKlassPointers::encode(Klass* v) {
   return is_null(v) ? (narrowKlass)0 : encode_not_null(v);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_COMPRESSEDKLASS_INLINE_HPP

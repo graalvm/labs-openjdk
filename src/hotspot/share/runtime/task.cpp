@@ -31,9 +31,6 @@
 #include "runtime/threads.hpp"
 #include "runtime/timer.hpp"
 
-
-namespace svm_gc {
-
 int PeriodicTask::_num_tasks = 0;
 PeriodicTask* PeriodicTask::_tasks[PeriodicTask::max_tasks];
 
@@ -126,6 +123,3 @@ void PeriodicTask::disenroll() {
     _tasks[index] = _tasks[index+1];
   }
 }
-
-} // namespace svm_gc
-

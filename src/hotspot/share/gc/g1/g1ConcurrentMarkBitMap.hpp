@@ -33,9 +33,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 class G1CMBitMap;
 class G1CMTask;
 class G1ConcurrentMark;
@@ -74,8 +71,5 @@ public:
   // Apply the closure to the addresses that correspond to marked bits in the bitmap.
   inline bool iterate(G1CMBitMapClosure* cl, MemRegion mr);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTMARKBITMAP_HPP

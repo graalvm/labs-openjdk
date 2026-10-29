@@ -28,9 +28,6 @@
 #include "gc/g1/g1Trace.hpp"
 #include "logging/log.hpp"
 
-
-namespace svm_gc {
-
 G1IHOPControl::G1IHOPControl(double initial_ihop_percent,
                              G1OldGenAllocationTracker const* old_gen_alloc_tracker) :
   _initial_ihop_percent(initial_ihop_percent),
@@ -194,6 +191,3 @@ void G1AdaptiveIHOPControl::send_trace_event(G1NewTracer* tracer) {
                                           predict(&_marking_times_s),
                                           have_enough_data_for_prediction());
 }
-
-} // namespace svm_gc
-

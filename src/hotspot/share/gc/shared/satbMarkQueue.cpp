@@ -36,9 +36,6 @@
 #include "runtime/vmThread.hpp"
 #include "utilities/globalCounter.inline.hpp"
 
-
-namespace svm_gc {
-
 SATBMarkQueue::SATBMarkQueue(SATBMarkQueueSet* qset) :
   PtrQueue(qset),
   // SATB queues are only active during marking cycles. We create them
@@ -363,6 +360,3 @@ void SATBMarkQueueSet::abandon_partial_marking() {
   } closure(*this);
   Threads::threads_do(&closure);
 }
-
-} // namespace svm_gc
-

@@ -29,9 +29,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 class outputStream;
 
 // NOTE (chaeubl): extern "C" is needed because this function is defined in assembly
@@ -74,8 +71,5 @@ public:
   // Write information about the wait duration to s.
   void report(outputStream* s) const;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_SPINYIELD_HPP

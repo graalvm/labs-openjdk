@@ -28,9 +28,6 @@
 #include "utilities/debug.hpp"
 
 // Stamps out Count instances of Type using a recursive template.
-
-namespace svm_gc {
-
 template <typename Type, int Count>
 class ValueObjBlock {
   typedef ValueObjBlock<Type, Count - 1> Next;
@@ -73,8 +70,5 @@ struct ValueObjArray {
     return Count;
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_VALUEOBJARRAY_HPP

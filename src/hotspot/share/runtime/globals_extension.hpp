@@ -37,9 +37,6 @@
 
 #define DEFINE_FLAG_MEMBER_ENUM(type, name, ...)  FLAG_MEMBER_ENUM_(name)
 
-
-namespace svm_gc {
-
 enum JVMFlagsEnum : int {
   INVALID_JVMFlagsEnum = -1,
   ALL_FLAGS(DEFINE_FLAG_MEMBER_ENUM,
@@ -110,8 +107,5 @@ ALL_FLAGS(DEFINE_FLAG_MEMBER_SETTER,
       FLAG_SET_ERGO(name, value);             \
     }                                         \
   } while (0)
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_GLOBALS_EXTENSION_HPP

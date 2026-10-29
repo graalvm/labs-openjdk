@@ -36,9 +36,6 @@
 
 // NOTE (chaeubl): see SVM class Pod (this file doesn't exist on HotSpot).
 
-
-namespace svm_gc {
-
 template <typename T, class OopClosureType>
 void InstancePodKlass::oop_oop_iterate(oop obj, OopClosureType* closure) {
   // Use the reference map of the super class to visit the inherited object fields.
@@ -82,8 +79,5 @@ unsigned char* InstancePodKlass::reference_map_end(oop obj) {
   // This method may be called before the object header is fully initialized, therefore the address computation is a bit more complex.
   return  ((address)obj) + base_offset_in_bytes() + ((arrayOop)obj)->length();
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCEPODKLASS_INLINE_HPP

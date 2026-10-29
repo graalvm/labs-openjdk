@@ -43,9 +43,6 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.inline.hpp"
 
-
-namespace svm_gc {
-
 int G1HeapVerifier::_enabled_verification_types = G1HeapVerifier::G1VerifyAll;
 
 class VerifyRootsClosure: public OopClosure {
@@ -723,6 +720,3 @@ bool G1HeapVerifier::check_region_attr_table() {
   return !cl.failures();
 }
 #endif // PRODUCT
-
-} // namespace svm_gc
-

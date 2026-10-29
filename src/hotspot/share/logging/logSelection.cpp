@@ -30,9 +30,6 @@
 #include "utilities/ostream.hpp"
 #include "utilities/quickSort.hpp"
 
-
-namespace svm_gc {
-
 const LogSelection LogSelection::Invalid;
 
 LogSelection::LogSelection() : _ntags(0), _tags(), _wildcard(false), _level(LogLevel::Invalid), _tag_sets_selected(0) {
@@ -355,6 +352,3 @@ void LogSelection::suggest_similar_matching(outputStream* out) const {
   }
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

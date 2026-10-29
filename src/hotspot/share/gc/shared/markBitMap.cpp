@@ -29,9 +29,6 @@
 #include "svmMetaspace.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 void MarkBitMap::print_on(outputStream* st, const char* prefix) const {
   _bm.print_range_on(st, prefix);
 }
@@ -85,6 +82,3 @@ void MarkBitMap::check_mark(HeapWord* addr) {
   assert_svm_only(!SVMMetaspace::is_in_address_space(addr), "metaspace regions are never marked");
 }
 #endif
-
-} // namespace svm_gc
-

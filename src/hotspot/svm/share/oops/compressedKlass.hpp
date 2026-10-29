@@ -46,9 +46,6 @@
 //
 // - Klass* (64 bits):
 //     The uncompressed Klass pointer that can be accessed directly.
-
-namespace svm_gc {
-
 typedef juint narrowKlass;
 
 #ifdef SVM_COMPRESSED_REFERENCES
@@ -78,8 +75,5 @@ public:
 private:
   static inline compressedKlass extract_compressed_klass(narrowKlass v);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_COMPRESSEDKLASS_HPP

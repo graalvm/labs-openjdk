@@ -32,9 +32,6 @@
 #include "oops/oop.inline.hpp"
 #include "oops/typeArrayOop.hpp"
 
-
-namespace svm_gc {
-
 inline void TypeArrayKlass::oop_oop_iterate_impl(oop obj, OopIterateClosure* closure) {
   assert(obj->is_typeArray(),"must be a type array");
   // Performance tweak: We skip processing the klass pointer since all
@@ -55,8 +52,5 @@ template <typename T, typename OopClosureType>
 void TypeArrayKlass::oop_oop_iterate_reverse(oop obj, OopClosureType* closure) {
   oop_oop_iterate_impl(obj, closure);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_TYPEARRAYKLASS_INLINE_HPP

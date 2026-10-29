@@ -34,9 +34,6 @@
 // Implementation of class OrderAccess.
 
 // A compiler barrier, forcing the C++ compiler to invalidate all memory assumptions
-
-namespace svm_gc {
-
 inline void compiler_barrier() {
   _ReadWriteBarrier();
 }
@@ -82,7 +79,4 @@ inline void OrderAccess::cross_modify_fence_impl()
 }
 #endif
 #endif // !SVM
-
-} // namespace svm_gc
-
 #endif // OS_CPU_WINDOWS_X86_ORDERACCESS_WINDOWS_X86_HPP

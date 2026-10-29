@@ -28,9 +28,6 @@
 #include "gc/shared/barrierSet.hpp"
 #include "memory/memRegion.hpp"
 
-
-namespace svm_gc {
-
 class Klass;
 
 class ModRefBarrierSet: public BarrierSet {
@@ -115,8 +112,5 @@ template<>
 struct BarrierSet::GetName<ModRefBarrierSet> {
   static const BarrierSet::Name value = BarrierSet::ModRef;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_MODREFBARRIERSET_HPP

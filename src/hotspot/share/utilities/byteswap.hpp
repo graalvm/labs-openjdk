@@ -33,9 +33,6 @@
 #include <cstdint>
 #include <type_traits>
 
-
-namespace svm_gc {
-
 template <typename T, size_t N = sizeof(T)>
 struct ByteswapImpl;
 
@@ -92,9 +89,6 @@ struct ByteswapFallbackImpl<T, 8> {
 /*****************************************************************************
  * GCC and compatible (including Clang)
  *****************************************************************************/
-
-} // namespace svm_gc
-
 #if defined(TARGET_COMPILER_gcc)
 
 #if defined(__clang__) || defined(ASSERT)
@@ -104,9 +98,6 @@ struct ByteswapFallbackImpl<T, 8> {
 // Clang is able to recognize the fallback implementation as byteswapping, but not on every
 // architecture unlike GCC. This suggests the optimization pass for GCC that recognizes byteswapping
 // is architecture agnostic, while for Clang it is not.
-
-
-namespace svm_gc {
 
 template <typename T>
 struct ByteswapImpl<T, 2> {
@@ -129,9 +120,6 @@ struct ByteswapImpl<T, 8> {
   }
 };
 
-
-} // namespace svm_gc
-
 #else
 
 // We do not use __builtin_bswap and friends for GCC in release builds. Unfortunately on
@@ -143,14 +131,8 @@ struct ByteswapImpl<T, 8> {
 // exact same implementation that underpins its __builtin_bswap in libgcc as there is really only
 // one way to implement it, as we have in fallback.
 
-
-namespace svm_gc {
-
 template <typename T, size_t N>
 struct ByteswapImpl : public ByteswapFallbackImpl<T, N> {};
-
-
-} // namespace svm_gc
 
 #endif
 
@@ -164,9 +146,6 @@ struct ByteswapImpl : public ByteswapFallbackImpl<T, N> {};
 #pragma intrinsic(_byteswap_ushort)
 #pragma intrinsic(_byteswap_ulong)
 #pragma intrinsic(_byteswap_uint64)
-
-
-namespace svm_gc {
 
 template <typename T>
 struct ByteswapImpl<T, 2> {
@@ -192,9 +171,6 @@ struct ByteswapImpl<T, 8> {
 /*****************************************************************************
  * Unknown toolchain
  *****************************************************************************/
-
-} // namespace svm_gc
-
 #else
 
 #error Unknown toolchain.

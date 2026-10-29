@@ -51,9 +51,6 @@
 #include "svmIsolateThread.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 G1RootProcessor::G1RootProcessor(G1CollectedHeap* g1h, uint n_workers) :
     _g1h(g1h),
     _process_strong_tasks(G1RP_PS_NumElements),
@@ -310,5 +307,3 @@ void G1RootProcessor::process_code_cache_roots(NMethodClosure* nmethod_closure,
 uint G1RootProcessor::n_workers() const {
   return _srs.n_threads();
 }
-
-} // namespace svm_gc

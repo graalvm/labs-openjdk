@@ -29,9 +29,6 @@
 // the "time" parameter for most functions
 // has a default value set by Ticks::now()
 
-
-namespace svm_gc {
-
 void GCTimer::register_gc_start(const Ticks& time) {
   _time_partitions.clear();
   _gc_start = time;
@@ -203,6 +200,3 @@ GCPhase* TimePartitionPhasesIterator::next() {
   assert(has_next(), "Must have phases left");
   return _time_partitions->phase_at(_next++);
 }
-
-} // namespace svm_gc
-

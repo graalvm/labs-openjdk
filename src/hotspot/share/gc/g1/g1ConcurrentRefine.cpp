@@ -41,9 +41,6 @@
 
 #include <math.h>
 
-
-namespace svm_gc {
-
 G1ConcurrentRefineThread* G1ConcurrentRefineThreadControl::create_refinement_thread(uint worker_id, bool initializing) {
   G1ConcurrentRefineThread* result = nullptr;
   if (initializing || !InjectGCWorkerCreationFailure) {
@@ -438,6 +435,3 @@ bool G1ConcurrentRefine::try_refinement_step(uint worker_id,
   uint adjusted_id = worker_id + worker_id_offset();
   return _dcqs.refine_completed_buffer_concurrently(adjusted_id, stop_at, stats);
 }
-
-} // namespace svm_gc
-

@@ -30,9 +30,6 @@
 #include "memory/universe.hpp"
 #include "runtime/os.hpp"
 
-
-namespace svm_gc {
-
 void GCTraceTimeLoggerImpl::log_start(Ticks start) {
   _start = start;
 
@@ -107,6 +104,3 @@ GCTraceCPUTime::~GCTraceCPUTime() {
     }
   }
 }
-
-} // namespace svm_gc
-

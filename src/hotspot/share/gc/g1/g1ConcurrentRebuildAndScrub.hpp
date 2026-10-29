@@ -27,9 +27,6 @@
 
 #include "memory/allStatic.hpp"
 
-
-namespace svm_gc {
-
 class G1ConcurrentMark;
 class WorkerThreads;
 
@@ -40,8 +37,5 @@ public:
   static void rebuild_and_scrub(G1ConcurrentMark* cm, bool should_rebuild_remset, WorkerThreads* workers);
 };
 
-
-
-} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1CONCURRENTREBUILDANDSCRUB_HPP */

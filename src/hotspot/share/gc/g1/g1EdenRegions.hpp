@@ -30,9 +30,6 @@
 #include "runtime/globals.hpp"
 #include "utilities/debug.hpp"
 
-
-namespace svm_gc {
-
 class G1EdenRegions {
 private:
   uint    _length;
@@ -65,8 +62,5 @@ public:
     _used_bytes += used_bytes;
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1EDENREGIONS_HPP

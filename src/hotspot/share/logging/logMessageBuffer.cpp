@@ -25,9 +25,6 @@
 #include "memory/allocation.inline.hpp"
 #include "runtime/javaThread.hpp"
 
-
-namespace svm_gc {
-
 template <typename T>
 static void grow(T*& buffer, size_t& capacity, size_t minimum_length = 0) {
   size_t new_size = capacity * 2;
@@ -158,6 +155,3 @@ LogMessageBuffer& LogMessageBuffer::name(const char* fmt, ...) { \
 LOG_LEVEL_LIST
 #undef LOG_LEVEL
 #endif // !SVM
-
-} // namespace svm_gc
-

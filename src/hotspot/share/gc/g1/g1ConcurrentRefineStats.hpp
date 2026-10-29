@@ -32,9 +32,6 @@
 // Collection of statistics for concurrent refinement processing.
 // Used for collecting per-thread statistics and for summaries over a
 // collection of threads.
-
-namespace svm_gc {
-
 class G1ConcurrentRefineStats : public CHeapObj<mtGC> {
   Tickspan _refinement_time;
   size_t _refined_cards;
@@ -80,8 +77,5 @@ public:
 
   void reset();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CONCURRENTREFINESTATS_HPP

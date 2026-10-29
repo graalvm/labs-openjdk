@@ -48,9 +48,6 @@
 // Note: The representation of a tag set being uintx sets an upper
 // bound on the size of a class hierarchy this utility can be used
 // with.
-
-namespace svm_gc {
-
 template<typename T, typename TagType>
 class FakeRttiSupport {
   friend class VMStructs;
@@ -100,8 +97,5 @@ private:
     return tag;
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_FAKERTTISUPPORT_HPP

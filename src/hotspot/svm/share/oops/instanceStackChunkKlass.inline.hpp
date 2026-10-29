@@ -37,9 +37,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 template <typename T, class OopClosureType>
 void InstanceStackChunkKlass::oop_oop_iterate(oop obj, OopClosureType* closure) {
   stackChunkOop chunk = stackChunkOopDesc::cast(obj);
@@ -58,8 +55,5 @@ void InstanceStackChunkKlass::oop_oop_iterate_bounded(oop obj, OopClosureType* c
   oop_oop_iterate_stack_slow(chunk, closure, mr);
 }
 
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCESTACKCHUNKKLASS_INLINE_HPP

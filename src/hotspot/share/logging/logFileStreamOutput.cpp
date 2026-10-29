@@ -31,9 +31,6 @@
 #include "utilities/defaultStream.hpp"
 #include <string.h>
 
-
-namespace svm_gc {
-
 const char* const LogFileStreamOutput::FoldMultilinesOptionKey = "foldmultilines";
 
 bool LogFileStreamOutput::set_option(const char* key, const char* value, outputStream* errstream) {
@@ -208,6 +205,3 @@ void LogFileStreamOutput::describe(outputStream *out) {
 
   out->print("foldmultilines=%s", _fold_multilines ? "true" : "false");
 }
-
-} // namespace svm_gc
-

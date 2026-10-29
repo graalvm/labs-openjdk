@@ -31,9 +31,6 @@
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 size_t MinNewSize = 0;
 
 size_t MinOldSize = 0;
@@ -351,6 +348,3 @@ void GenArguments::assert_size_info() {
 }
 #endif // ASSERT
 #endif // !SVM
-
-} // namespace svm_gc
-

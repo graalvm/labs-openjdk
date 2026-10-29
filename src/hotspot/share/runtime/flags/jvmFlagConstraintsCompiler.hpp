@@ -57,12 +57,6 @@ COMPILER2_PRESENT(                                      \
   f(uintx, LoopStripMiningIterConstraintFunc)           \
 )
 
-
-namespace svm_gc {
-
 COMPILER_CONSTRAINTS(DECLARE_CONSTRAINT)
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_JVMFLAGCONSTRAINTSCOMPILER_HPP

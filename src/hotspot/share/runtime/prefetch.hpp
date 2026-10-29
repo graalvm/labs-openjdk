@@ -33,9 +33,6 @@
 // least, they take up a memory issue slot.  They should be implemented
 // as inline assembly code: doing an actual call isn't worth the cost.
 
-
-namespace svm_gc {
-
 class Prefetch : AllStatic {
  public:
   // Prefetch anticipating read; must not fault, semantically a no-op
@@ -44,8 +41,5 @@ class Prefetch : AllStatic {
   // Prefetch anticipating write; must not fault, semantically a no-op
   static void write(void* loc, intx interval);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_PREFETCH_HPP

@@ -30,9 +30,6 @@
 #include "runtime/globals.hpp"
 
 #ifndef SVM
-
-namespace svm_gc {
-
 LRUCurrentHeapPolicy::LRUCurrentHeapPolicy() {
   setup();
 }
@@ -57,15 +54,9 @@ bool LRUCurrentHeapPolicy::should_clear_reference(oop p,
 
   return true;
 }
-
-} // namespace svm_gc
-
 #endif // !SVM
 
 /////////////////////// MaxHeap //////////////////////
-
-
-namespace svm_gc {
 
 LRUMaxHeapPolicy::LRUMaxHeapPolicy() {
   setup();
@@ -95,6 +86,3 @@ bool LRUMaxHeapPolicy::should_clear_reference(oop p,
 
   return true;
 }
-
-} // namespace svm_gc
-

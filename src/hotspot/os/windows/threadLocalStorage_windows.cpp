@@ -26,9 +26,6 @@
 #include "utilities/debug.hpp"
 #include <windows.h>
 
-
-namespace svm_gc {
-
 static DWORD _thread_key;
 static bool _initialized = false;
 void ThreadLocalStorage::init() {
@@ -62,6 +59,3 @@ void ThreadLocalStorage::set_thread(Thread* current) {
   BOOL res = TlsSetValue(_thread_key, current);
   assert(res, "TlsSetValue failed with error code: %lu", GetLastError());
 }
-
-} // namespace svm_gc
-

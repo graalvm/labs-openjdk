@@ -44,9 +44,6 @@
 //             and whether the access is performed on the heap or outside. Then the
 //             appropriate BarrierSet::AccessBarrier is called to perform the access.
 
-
-namespace svm_gc {
-
 namespace AccessInternal {
   // Step 5.b: Post-runtime dispatch.
   // This class is the last step before calling the BarrierSet::AccessBarrier.
@@ -351,8 +348,5 @@ namespace AccessInternal {
     function(src, dst, size);
   }
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_ACCESS_INLINE_HPP

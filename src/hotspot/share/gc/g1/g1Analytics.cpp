@@ -36,9 +36,6 @@
 // They were chosen by running GCOld and SPECjbb on debris with different
 //   numbers of GC threads and choosing them based on the results
 
-
-namespace svm_gc {
-
 static double cost_per_logged_card_ms_defaults[] = {
   0.01, 0.005, 0.005, 0.003, 0.003, 0.002, 0.002, 0.0015
 };
@@ -320,6 +317,3 @@ void G1Analytics::update_recent_gc_times(double end_time_sec,
 void G1Analytics::report_concurrent_mark_cleanup_times_ms(double ms) {
   _concurrent_mark_cleanup_times_ms.add(ms);
 }
-
-} // namespace svm_gc
-

@@ -30,9 +30,6 @@
 // GCPolicyCounters is a holder class for performance counters
 // that track a generation
 
-
-namespace svm_gc {
-
 class GCPolicyCounters: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -69,8 +66,5 @@ public:
   const char* name_space() const { return _name_space; }
 #endif // !SVM
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCPOLICYCOUNTERS_HPP

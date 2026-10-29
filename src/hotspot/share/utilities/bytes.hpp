@@ -27,9 +27,6 @@
 
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 class Endian : AllStatic {
 public:
   enum Order {
@@ -50,9 +47,6 @@ public:
     return NATIVE != JAVA;
   }
 };
-
-
-} // namespace svm_gc
 
 #include CPU_HEADER(bytes)
 

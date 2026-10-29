@@ -56,9 +56,6 @@
 // The class also manages a few counters for statistics using atomic operations.
 // Their values are only consistent within each other with extra global
 // synchronization.
-
-namespace svm_gc {
-
 class G1MonotonicArena : public FreeListConfig {
 public:
   class AllocOptions;
@@ -255,8 +252,5 @@ public:
 
   MemTag mem_tag() const {return _mem_tag; }
 };
-
-
-} // namespace svm_gc
 
 #endif //SHARE_GC_G1_MONOTONICARENA_HPP

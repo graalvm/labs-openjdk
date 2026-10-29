@@ -30,9 +30,6 @@
 #include "gc/g1/g1HeapRegionAttr.hpp"
 #include "gc/g1/g1NUMA.hpp"
 
-
-namespace svm_gc {
-
 class G1CollectedHeap;
 
 // A class that holds a region that is active in satisfying allocation
@@ -254,8 +251,5 @@ public:
   OldGCAllocRegion(G1EvacStats* stats)
   : G1GCAllocRegion("Old GC Alloc Region", stats, G1HeapRegionAttr::Old) { }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1ALLOCREGION_HPP

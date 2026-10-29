@@ -89,9 +89,6 @@
 #include "svmCodeReferenceMapDecoder.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 void nmethod::oops_do(OopClosure* f) {
   if (will_be_freed()) {
     // Only the object fields are alive as those are needed for the invalidation/freeing. The GC will free
@@ -318,6 +315,3 @@ void nmethod::print(outputStream* st, const nmethod* nm, const char *msg) {
     st->print("   %s", msg);
   }
 }
-
-} // namespace svm_gc
-

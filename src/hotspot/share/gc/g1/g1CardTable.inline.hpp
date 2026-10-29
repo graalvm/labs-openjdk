@@ -29,9 +29,6 @@
 
 #include "gc/g1/g1HeapRegion.hpp"
 
-
-namespace svm_gc {
-
 inline uint G1CardTable::region_idx_for(CardValue* p) {
   size_t const card_idx = pointer_delta(p, _byte_map, sizeof(CardValue));
   return (uint)(card_idx >> G1HeapRegion::LogCardsPerRegion);
@@ -83,8 +80,5 @@ inline void G1CardTable::change_dirty_cards_to(CardValue* start_card, CardValue*
     *i_card = which;
   }
 }
-
-
-} // namespace svm_gc
 
 #endif /* SHARE_GC_G1_G1CARDTABLE_INLINE_HPP */

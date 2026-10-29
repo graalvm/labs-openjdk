@@ -123,9 +123,6 @@
 
 #ifndef SVM
 // Initialization after module runtime initialization
-
-namespace svm_gc {
-
 void universe_post_module_init();  // must happen after call_initPhase2
 
 
@@ -226,13 +223,7 @@ static const char* get_java_version_info(InstanceKlass* ik,
 int         Threads::_number_of_threads = 0;
 int         Threads::_number_of_non_daemon_threads = 0;
 int         Threads::_return_code = 0;
-
-} // namespace svm_gc
-
 #endif // !SVM
-
-namespace svm_gc {
-
 uintx       Threads::_thread_claim_token = 1; // Never zero.
 
 #ifdef ASSERT
@@ -1734,5 +1725,3 @@ void Threads::free_java_code_infos(CodeInfosPerThread *code_infos) {
   }
 }
 #endif // SVM
-
-} // namespace svm_gc

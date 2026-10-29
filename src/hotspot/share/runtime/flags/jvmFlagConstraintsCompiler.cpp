@@ -38,9 +38,6 @@
 /**
  * Validate the minimum number of compiler threads needed to run the JVM.
  */
-
-namespace svm_gc {
-
 JVMFlag::Error CICompilerCountConstraintFunc(intx value, bool verbose) {
 #ifndef SVM
   int min_number_of_compiler_threads = 0;
@@ -458,7 +455,4 @@ JVMFlag::Error ControlIntrinsicConstraintFunc(ccstrlist value, bool verbose) {
 
   return JVMFlag::SUCCESS;
 }
-
-
-} // namespace svm_gc
 

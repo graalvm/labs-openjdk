@@ -37,14 +37,8 @@
 #endif
 
 #ifndef SVM
-
-namespace svm_gc {
-
 class frame;
 class JvmtiAgent;
-
-} // namespace svm_gc
-
 #endif // !SVM
 
 // Rules for using and implementing methods declared in the "os" class
@@ -114,9 +108,6 @@ class JvmtiAgent;
 //
 // (Note: on the POSIX-like platforms, some of the Porting APIs are implemented
 // in os_posix.cpp instead).
-
-
-namespace svm_gc {
 
 class Thread;
 class JavaThread;
@@ -1195,8 +1186,5 @@ class os: AllStatic {
 
 // NOTE (chaeubl): extern "C" is needed because this function is defined in assembly
 extern "C" int SpinPause();
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_OS_HPP

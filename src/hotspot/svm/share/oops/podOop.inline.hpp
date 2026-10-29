@@ -32,9 +32,6 @@
 
 // NOTE (chaeubl): see SVM class Pod (this file doesn't exist on HotSpot).
 
-
-namespace svm_gc {
-
 inline podOop podOopDesc::cast(oop obj) {
   assert(obj == nullptr || obj->is_pod(), "Wrong type");
   return podOop(obj);
@@ -43,8 +40,5 @@ inline podOop podOopDesc::cast(oop obj) {
 inline unsigned char* podOopDesc::reference_map_end() {
   return ((InstancePodKlass*)klass())->reference_map_end(this);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_PODOOP_INLINE_HPP

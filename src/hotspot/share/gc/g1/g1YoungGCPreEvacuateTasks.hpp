@@ -31,9 +31,6 @@
 // - Retire TLAB and Flush Logs (Java threads)
 // - Flush pin count cache (Java threads)
 // - Flush Logs (s) (Non-Java threads)
-
-namespace svm_gc {
-
 class G1PreEvacuateCollectionSetBatchTask : public G1BatchedTask {
   class JavaThreadRetireTLABAndFlushLogs;
   class NonJavaThreadFlushLogs;
@@ -48,8 +45,5 @@ public:
   G1PreEvacuateCollectionSetBatchTask();
   ~G1PreEvacuateCollectionSetBatchTask();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1YOUNGGCPREEVACUATETASKS_HPP

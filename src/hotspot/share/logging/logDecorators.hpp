@@ -27,9 +27,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "logging/logSelection.hpp"
 
-
-namespace svm_gc {
-
 class outputStream;
 
 // The list of available decorators:
@@ -160,8 +157,5 @@ class LogDecorators {
 
   bool parse(const char* decorator_args, outputStream* errstream = nullptr);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGDECORATORS_HPP

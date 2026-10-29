@@ -29,9 +29,6 @@
 #include "logging/log.hpp"
 #include "memory/allStatic.hpp"
 
-
-namespace svm_gc {
-
 class G1FreeRegionList;
 
 class G1HeapRegionPrinter : public AllStatic {
@@ -76,8 +73,5 @@ public:
 
   static void uncommit(G1HeapRegion* hr)                  { print("UNCOMMIT", hr); }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1HEAPREGIONPRINTER_HPP

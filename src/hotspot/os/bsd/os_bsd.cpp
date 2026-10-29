@@ -113,9 +113,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // global variables
-
-namespace svm_gc {
-
 physical_memory_size_type os::Bsd::_physical_memory = 0;
 
 #ifdef __APPLE__
@@ -2648,6 +2645,3 @@ bool os::pd_dll_unload(void* libhandle, char* ebuf, int ebuflen) {
   return res;
 } // end: os::pd_dll_unload()
 #endif // !SVM
-
-} // namespace svm_gc
-

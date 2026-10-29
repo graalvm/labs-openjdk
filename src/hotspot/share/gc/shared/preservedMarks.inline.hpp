@@ -31,9 +31,6 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/stack.inline.hpp"
 
-
-namespace svm_gc {
-
 inline bool PreservedMarks::should_preserve_mark(oop obj, markWord m) const {
   return obj->mark_must_be_preserved(m);
 }
@@ -62,8 +59,5 @@ inline PreservedMarks::PreservedMarks()
 void PreservedMark::set_mark() const {
   _o->set_mark(_m);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PRESERVEDMARKS_INLINE_HPP

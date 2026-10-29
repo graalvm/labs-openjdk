@@ -62,9 +62,6 @@
 // +------+         +---------------+--------------+-----+
 // |unused|   ...   |  card_index1  | card_index0  |SSS00|
 // +------+         +---------------+--------------+-----+
-
-namespace svm_gc {
-
 class G1CardSetInlinePtr : public StackObj {
   friend class G1CardSetContainersTest;
 
@@ -307,8 +304,5 @@ public:
     return header_size_in_bytes() + sizeof(ContainerPtr) * num_arrays;
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1CARDSETCONTAINERS_HPP

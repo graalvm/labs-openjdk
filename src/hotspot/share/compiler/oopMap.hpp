@@ -43,22 +43,13 @@
 //
 // OopMapValue describes a single OopMap entry
 
-
-namespace svm_gc {
-
 enum class DerivedPointerIterationMode;
 class frame;
 class RegisterMap;
 class OopClosure;
 class CodeBlob;
 class ImmutableOopMap;
-
-} // namespace svm_gc
-
 #endif // !SVM
-
-
-namespace svm_gc {
 
 enum class derived_base : intptr_t {};
 enum class derived_pointer : intptr_t {};
@@ -528,8 +519,5 @@ class DerivedPointerTableDeactivate: public StackObj {
   }
 };
 #endif // COMPILER2_OR_JVMCI
-
-
-} // namespace svm_gc
 
 #endif // SHARE_COMPILER_OOPMAP_HPP

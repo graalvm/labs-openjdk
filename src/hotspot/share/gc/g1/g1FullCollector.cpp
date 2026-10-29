@@ -49,9 +49,6 @@
 #include "runtime/threads.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 static void clear_and_activate_derived_pointers() {
 #if COMPILER2_OR_JVMCI
   DerivedPointerTable::clear();
@@ -572,6 +569,3 @@ void G1FullCollector::verify_after_marking() {
   GCTraceTime(Info, gc, verify) tm("Verifying During GC (full)");
   _heap->verify(VerifyOption::G1UseFullMarking);
 }
-
-} // namespace svm_gc
-

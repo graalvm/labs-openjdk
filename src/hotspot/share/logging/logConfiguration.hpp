@@ -29,9 +29,6 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class LogOutput;
 class LogDecorators;
 class LogSelectionList;
@@ -164,8 +161,5 @@ private:
   }
 #endif // SVM
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGCONFIGURATION_HPP

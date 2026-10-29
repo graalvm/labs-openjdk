@@ -30,9 +30,6 @@
 #include "oops/oop.inline.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 void FullGCForwarding::forward_to(oop from, oop to) {
   assert(Universe::heap()->is_in(to), "must be in the heap");
   assert(from->klass()->is_klass(), "must be");
@@ -62,8 +59,5 @@ oop FullGCForwarding::forwardee(oop from) {
 bool FullGCForwarding::is_forwarded(oop obj) {
   return obj->mark().is_forwarded();
 }
-
-
-} // namespace svm_gc
 
 #endif // GC_SHARED_FULLGCFORWARDING_INLINE_HPP

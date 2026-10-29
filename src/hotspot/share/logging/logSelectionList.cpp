@@ -26,9 +26,6 @@
 #include "logging/logTagSet.hpp"
 #include "runtime/os.hpp"
 
-
-namespace svm_gc {
-
 static const char* DefaultExpressionString = "all";
 
 #ifndef SVM
@@ -114,6 +111,3 @@ LogLevelType LogSelectionList::level_for(const LogTagSet& ts) const {
   }
   return level;
 }
-
-} // namespace svm_gc
-

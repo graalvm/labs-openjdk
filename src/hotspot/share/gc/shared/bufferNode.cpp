@@ -28,9 +28,6 @@
 
 #include <new>
 
-
-namespace svm_gc {
-
 BufferNode::AllocatorConfig::AllocatorConfig(size_t size)
   : _buffer_capacity(size)
 {
@@ -72,6 +69,3 @@ void BufferNode::Allocator::release(BufferNode* node) {
   node->~BufferNode();
   _free_list.release(node);
 }
-
-} // namespace svm_gc
-

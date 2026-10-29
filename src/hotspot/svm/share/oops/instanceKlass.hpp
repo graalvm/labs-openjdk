@@ -48,9 +48,6 @@
 #endif // SVM
 
 // Describes where oops are located in instances of this klass.
-
-namespace svm_gc {
-
 class OopMapBlock {
  public:
   // Byte offset of the first oop mapped by this block.
@@ -178,8 +175,5 @@ public:
     }
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_INSTANCEKLASS_HPP

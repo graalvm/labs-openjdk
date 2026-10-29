@@ -30,9 +30,6 @@
 #include "runtime/os.hpp"
 #include "utilities/align.hpp"
 
-
-namespace svm_gc {
-
 PretouchTask::PretouchTask(const char* task_name,
                            char* start_address,
                            char* end_address,
@@ -91,6 +88,3 @@ void PretouchTask::pretouch(const char* task_name, char* start_address, char* en
     task.work(0);
   }
 }
-
-} // namespace svm_gc
-

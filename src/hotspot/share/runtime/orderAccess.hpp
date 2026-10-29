@@ -235,9 +235,6 @@
 // instructions that come after the fence in program order are fetched
 // from the cache or memory after the fence has completed.
 
-
-namespace svm_gc {
-
 class OrderAccess : public AllStatic {
  public:
   // barriers
@@ -279,9 +276,6 @@ private:
   static void cross_modify_fence_verify() PRODUCT_RETURN;
 #endif // !SVM
 };
-
-
-} // namespace svm_gc
 
 #include OS_CPU_HEADER(orderAccess)
 

@@ -33,9 +33,6 @@
 //
 // With constexpr, this table is generated at C++ compile time so there's
 // no set up cost at runtime.
-
-namespace svm_gc {
-
 class JVMFlagLookup {
   static constexpr int NUM_BUCKETS = 277;
   short _buckets[NUM_BUCKETS];
@@ -73,8 +70,5 @@ public:
   constexpr JVMFlagLookup();
   static JVMFlag* find(const char* flag_name, size_t length);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_JVMFLAGLOOKUP_HPP

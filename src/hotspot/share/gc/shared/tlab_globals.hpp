@@ -91,12 +91,6 @@
 
 // end of TLAB_FLAGS
 
-
-namespace svm_gc {
-
 DECLARE_FLAGS(TLAB_FLAGS)
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_TLAB_GLOBALS_HPP

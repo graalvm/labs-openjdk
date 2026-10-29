@@ -31,9 +31,6 @@
 #include "utilities/debug.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 BarrierSet* BarrierSet::_barrier_set = nullptr;
 
 void BarrierSet::set_barrier_set(BarrierSet* barrier_set) {
@@ -114,6 +111,3 @@ void gc_barrier_stubs_init() {
 #endif
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

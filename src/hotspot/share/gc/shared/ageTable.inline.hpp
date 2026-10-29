@@ -30,14 +30,8 @@
 #include "oops/oop.inline.hpp"
 
 // add entry
-
-namespace svm_gc {
-
 void AgeTable::add(oop p, size_t oop_size) {
   add(p->age(), oop_size);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_AGETABLE_INLINE_HPP

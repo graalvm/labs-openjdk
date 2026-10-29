@@ -27,9 +27,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 class Monitor;
 
 // The OSThread class holds OS-specific thread information.  It is equivalent
@@ -114,8 +111,5 @@ class OSThreadContendState : public StackObj {
     _osthread->set_state(_old_state);
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_OSTHREAD_BASE_HPP

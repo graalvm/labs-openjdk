@@ -30,9 +30,6 @@
 #include "nmt/memTag.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class MemoryReserver : AllStatic {
   static ReservedSpace reserve_memory(char* requested_address,
                                       size_t size,
@@ -153,8 +150,5 @@ public:
                                    const char* heap_allocation_directory);
 };
 #endif // !SVM
-
-
-} // namespace svm_gc
 
 #endif // SHARE_MEMORY_MEMORYRESERVER_HPP

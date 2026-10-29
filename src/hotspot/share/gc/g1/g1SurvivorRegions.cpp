@@ -27,9 +27,6 @@
 #include "utilities/debug.hpp"
 #include "utilities/growableArray.hpp"
 
-
-namespace svm_gc {
-
 G1SurvivorRegions::G1SurvivorRegions() :
   _regions(new (mtGC) GrowableArray<G1HeapRegion*>(8, mtGC)),
   _used_bytes(0),
@@ -68,6 +65,3 @@ void G1SurvivorRegions::clear() {
 void G1SurvivorRegions::add_used_bytes(size_t used_bytes) {
   _used_bytes += used_bytes;
 }
-
-} // namespace svm_gc
-

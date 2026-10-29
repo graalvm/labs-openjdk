@@ -52,9 +52,6 @@
 #include "utilities/bitMap.inline.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 class G1PostEvacuateCollectionSetCleanupTask1::MergePssTask : public G1AbstractSubTask {
   G1ParScanThreadStateSet* _per_thread_states;
 
@@ -985,6 +982,3 @@ G1PostEvacuateCollectionSetCleanupTask2::G1PostEvacuateCollectionSetCleanupTask2
                                               per_thread_states->surviving_young_words(),
                                               evac_failure_regions));
 }
-
-} // namespace svm_gc
-

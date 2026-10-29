@@ -33,9 +33,6 @@
 
 #include <new>
 
-
-namespace svm_gc {
-
 class outputStream;
 class Thread;
 class JavaThread;
@@ -594,8 +591,5 @@ class MallocArrayAllocator : public AllStatic {
   static E* reallocate(E* addr, size_t new_length, MemTag mem_tag);
   static void free(E* addr);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_MEMORY_ALLOCATION_HPP

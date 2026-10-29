@@ -27,9 +27,6 @@
 
 #include "utilities/debug.hpp"
 
-
-namespace svm_gc {
-
 enum GCName {
   ParallelOld,
   SerialOld,
@@ -68,8 +65,5 @@ class GCNameHelper {
     }
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCNAME_HPP

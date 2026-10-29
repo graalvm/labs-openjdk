@@ -26,9 +26,6 @@
 #include "utilities/ostream.hpp"
 #include "utilities/spinYield.hpp"
 
-
-namespace svm_gc {
-
 SpinYield::SpinYield(uint spin_limit, uint yield_limit, uint sleep_ns) :
   _sleep_time(),
   _spins(0),
@@ -76,6 +73,3 @@ void SpinYield::report(outputStream* s) const {
   }
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

@@ -32,9 +32,6 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class ThreadClosure;
 class WorkerTaskDispatcher;
 class WorkerThread;
@@ -166,8 +163,5 @@ public:
     _workers->set_active_workers(_prev_active_workers);
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WORKERTHREAD_HPP

@@ -37,9 +37,6 @@
 
 // Arguments parses the command line and recognizes options
 
-
-namespace svm_gc {
-
 class JVMFlag;
 
 #ifndef SVM
@@ -607,8 +604,5 @@ do {                                                     \
   }                                                      \
   FLAG_SET_DEFAULT(opt, value);                          \
 } while(0)
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_ARGUMENTS_HPP

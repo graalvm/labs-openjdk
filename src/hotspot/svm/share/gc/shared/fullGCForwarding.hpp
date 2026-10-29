@@ -30,9 +30,6 @@
 #include "oops/markWord.hpp"
 #include "oops/oopsHierarchy.hpp"
 
-
-namespace svm_gc {
-
 class FullGCForwarding : public AllStatic {
 public:
   static void initialize_flags(size_t max_heap_size);
@@ -41,8 +38,5 @@ public:
   static inline oop forwardee(oop from);
   static inline bool is_forwarded(oop obj);
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_FULLGCFORWARDING_HPP

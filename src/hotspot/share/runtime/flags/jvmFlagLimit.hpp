@@ -27,9 +27,6 @@
 
 #include "runtime/flags/jvmFlag.hpp"
 
-
-namespace svm_gc {
-
 class outputStream;
 template <typename T> class JVMTypedFlagLimit;
 
@@ -185,8 +182,5 @@ const JVMTypedFlagLimit<T>* JVMFlagLimit::cast() const {
   DEBUG_ONLY(JVMFlag::assert_compatible_type<T>(_type_enum));
   return static_cast<const JVMTypedFlagLimit<T>*>(this);
 }
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_FLAGS_JVMFLAGLIMIT_HPP

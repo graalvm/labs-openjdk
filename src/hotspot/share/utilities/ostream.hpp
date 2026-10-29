@@ -30,9 +30,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 DEBUG_ONLY(class ResourceMark;)
 
 // Output streams for printing
@@ -388,8 +385,5 @@ class networkStream : public bufferedStream {
 
 #endif
 #endif // !SVM
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_OSTREAM_HPP

@@ -30,9 +30,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
 
-
-namespace svm_gc {
-
 class Arena;
 class PartialArrayStateAllocator;
 class PartialArrayStateManager;
@@ -203,8 +200,5 @@ public:
   // precondition: all associated allocators have been deleted.
   void reset();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_PARTIALARRAYSTATE_HPP

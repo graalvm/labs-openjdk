@@ -28,9 +28,6 @@
 #include "runtime/osThreadBase.hpp"
 #include "suspendResume_posix.hpp"
 #include "utilities/globalDefinitions.hpp"
-
-namespace svm_gc {
-
 class OSThread : public OSThreadBase {
   friend class VMStructs;
 
@@ -136,7 +133,4 @@ public:
     return (uintx)_thread_id;
   }
 };
-
-} // namespace svm_gc
-
 #endif // OS_BSD_OSTHREAD_BSD_HPP

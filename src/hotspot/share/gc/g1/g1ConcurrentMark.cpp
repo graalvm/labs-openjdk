@@ -78,9 +78,6 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/powerOfTwo.hpp"
 
-
-namespace svm_gc {
-
 G1CMIsAliveClosure::G1CMIsAliveClosure() : _cm(nullptr) { }
 
 G1CMIsAliveClosure::G1CMIsAliveClosure(G1ConcurrentMark* cm) : _cm(cm) {
@@ -3341,6 +3338,3 @@ void G1PrintRegionLivenessInfoClosure::do_cset_groups() {
                             "R");
   }
 }
-
-} // namespace svm_gc
-

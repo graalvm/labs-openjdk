@@ -30,9 +30,6 @@
 #include "utilities/macros.hpp"
 
 // Helper class to define a range [start, end) of regions.
-
-namespace svm_gc {
-
 class G1HeapRegionRange : public StackObj {
   // Inclusive start of the range.
   uint _start;
@@ -123,8 +120,5 @@ protected:
   void verify_active_count(uint start, uint end, uint expected) const NOT_DEBUG_RETURN;
   void verify_inactive_count(uint start, uint end, uint expected) const NOT_DEBUG_RETURN;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1COMMITTEDREGIONMAP_HPP

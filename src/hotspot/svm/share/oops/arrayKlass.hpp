@@ -29,9 +29,6 @@
 
 // ArrayKlass is the abstract baseclass for all array classes
 
-
-namespace svm_gc {
-
 class ArrayKlass: public Klass {
  public:
   // offset of first element, including any padding for the sake of alignment
@@ -52,8 +49,5 @@ class ArrayKlass: public Klass {
     return static_cast<const ArrayKlass*>(k);
   }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_OOPS_ARRAYKLASS_HPP

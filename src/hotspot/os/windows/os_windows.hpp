@@ -28,9 +28,6 @@
 #include "runtime/os.hpp"
 
 // Win32_OS defines the interface to windows operating systems
-
-namespace svm_gc {
-
 class outputStream;
 class Thread;
 
@@ -169,7 +166,4 @@ public:
   static void* user_handler();
 #endif // !SVM
 };
-
-} // namespace svm_gc
-
 #endif // OS_WINDOWS_OS_WINDOWS_HPP

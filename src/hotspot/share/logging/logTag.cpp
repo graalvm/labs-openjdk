@@ -26,9 +26,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ostream.hpp"
 
-
-namespace svm_gc {
-
 const char* const LogTag::_name[] = {
   "", // __NO_TAG
 #define LOG_TAG(name) #name,
@@ -90,6 +87,3 @@ class LogTagTypeChecker {
 
 static LogTagTypeChecker logtagtypechecker; // Assert LogTag tags are set up as expected during static initialization
 #endif // ASSERT
-
-} // namespace svm_gc
-

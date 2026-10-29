@@ -30,9 +30,6 @@
 // CollectorCounters is a holder class for performance counters
 // that track a collector
 
-
-namespace svm_gc {
-
 class CollectorCounters: public CHeapObj<mtGC> {
   friend class VMStructs;
 
@@ -81,8 +78,5 @@ class TraceCollectorStats: public PerfTraceTimedEvent {
 
     ~TraceCollectorStats();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_COLLECTORCOUNTERS_HPP

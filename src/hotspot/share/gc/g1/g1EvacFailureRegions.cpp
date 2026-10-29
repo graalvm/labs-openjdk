@@ -31,9 +31,6 @@
 #include "runtime/atomic.hpp"
 #include "utilities/bitMap.inline.hpp"
 
-
-namespace svm_gc {
-
 G1EvacFailureRegions::G1EvacFailureRegions() :
   _regions_evac_failed(mtGC),
   _regions_pinned(mtGC),
@@ -75,6 +72,3 @@ void G1EvacFailureRegions::par_iterate(G1HeapRegionClosure* closure,
                                                      Atomic::load(&_num_regions_evac_failed),
                                                      worker_id);
 }
-
-} // namespace svm_gc
-

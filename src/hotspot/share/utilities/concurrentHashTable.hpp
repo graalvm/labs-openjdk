@@ -37,9 +37,6 @@
 // type kept inside each Node and CONFIG contains hash and allocation methods.
 // A CALLBACK_FUNC and LOOKUP_FUNC needs to be provided for get and insert.
 
-
-namespace svm_gc {
-
 class Thread;
 class Mutex;
 
@@ -562,8 +559,5 @@ class ConcurrentHashTable : public CHeapObj<MT> {
   class StatisticsTask;
   class ScanTask;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_UTILITIES_CONCURRENTHASHTABLE_HPP

@@ -32,9 +32,6 @@
 #include "memory/allocation.hpp"
 #include "services/memoryUsage.hpp"
 
-
-namespace svm_gc {
-
 class G1HeapRegion;
 class G1HeapRegionClaimer;
 class G1HeapRegionClosure;
@@ -343,7 +340,4 @@ class G1HeapRegionClaimer : public StackObj {
   // Claim the given region, returns true if successfully claimed.
   bool claim_region(uint region_index);
 };
-
-} // namespace svm_gc
-
 #endif // SHARE_GC_G1_G1HEAPREGIONMANAGER_HPP

@@ -32,9 +32,6 @@
 #include "runtime/os.hpp"
 #include "runtime/safepoint.hpp"
 
-
-namespace svm_gc {
-
 WorkerTaskDispatcher::WorkerTaskDispatcher() :
     _task(nullptr),
     _started(0),
@@ -203,6 +200,3 @@ void WorkerThread::run() {
     _dispatcher->worker_run_task();
   }
 }
-
-} // namespace svm_gc
-

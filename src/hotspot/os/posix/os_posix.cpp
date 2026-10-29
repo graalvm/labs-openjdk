@@ -96,9 +96,6 @@
 #endif
 
 /* Input/Output types for mincore(2) */
-
-namespace svm_gc {
-
 typedef LINUX_ONLY(unsigned) char mincore_vec_t;
 
 static jlong initial_time_count = 0;
@@ -2277,6 +2274,3 @@ const void* os::get_saved_assert_context(const void** sigInfo) {
   return nullptr;
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

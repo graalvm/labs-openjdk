@@ -30,9 +30,6 @@
 #include "utilities/globalDefinitions.hpp"
 #include <type_traits>
 
-
-namespace svm_gc {
-
 class PrimitiveConversions : public AllStatic {
 
   // True if types are the same size and either is integral.
@@ -152,8 +149,5 @@ struct PrimitiveConversions::Translate<jfloat> : public std::true_type {
   static Decayed decay(Value x) { return PrimitiveConversions::cast<Decayed>(x); }
   static Value recover(Decayed x) { return PrimitiveConversions::cast<Value>(x); }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_METAPROGRAMMING_PRIMITIVECONVERSIONS_HPP

@@ -27,9 +27,6 @@
 
 #include "memory/allocation.hpp"
 
-
-namespace svm_gc {
-
 class SoftRefPolicy {
  private:
   // Set to true when policy wants soft refs cleared.
@@ -77,8 +74,5 @@ class ClearedAllSoftRefs : public StackObj {
 
   bool should_clear() { return _clear_all_soft_refs; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_SOFTREFPOLICY_HPP

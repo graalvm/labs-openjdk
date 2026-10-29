@@ -32,9 +32,6 @@
 #include "utilities/macros.hpp"
 #include "utilities/ostream.hpp"
 
-
-namespace svm_gc {
-
 template<typename T, typename EVENT>
 static void trace_flag_changed(JVMFlag* flag, const T old_value, const T new_value, const JVMFlagOrigin origin) {
   EVENT e;
@@ -406,6 +403,3 @@ void JVMFlagAccess::print_range(outputStream* st, const JVMFlag* flag) {
   }
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

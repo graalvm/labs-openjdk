@@ -50,9 +50,6 @@
 #include "svmMetaspace.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 uint   G1HeapRegion::LogOfHRGrainBytes = 0;
 uint   G1HeapRegion::LogCardsPerRegion = 0;
 size_t G1HeapRegion::GrainBytes        = 0;
@@ -873,6 +870,3 @@ void G1HeapRegion::fill_range_with_dead_objects(HeapWord* start, HeapWord* end) 
     guarantee(current <= end, "Should never go past end");
   } while (current != end);
 }
-
-} // namespace svm_gc
-

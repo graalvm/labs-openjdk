@@ -35,9 +35,6 @@
 
 #include <new>
 
-
-namespace svm_gc {
-
 PartialArrayState::PartialArrayState(oop src, oop dst,
                                      size_t index, size_t length,
                                      size_t initial_refcount)
@@ -142,6 +139,3 @@ void PartialArrayStateManager::reset() {
   Atomic::store(&_registered_allocators, 0u);
   DEBUG_ONLY(Atomic::store(&_released_allocators, 0u);)
 }
-
-} // namespace svm_gc
-

@@ -50,9 +50,6 @@
   return _result; \
 } while(false)
 
-
-namespace svm_gc {
-
 class os::Posix {
   friend class os;
 
@@ -109,8 +106,5 @@ public:
                                     address* stub);
 #endif // !SVM
 };
-
-
-} // namespace svm_gc
 
 #endif // OS_POSIX_OS_POSIX_HPP

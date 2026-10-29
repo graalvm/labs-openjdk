@@ -31,9 +31,6 @@
 #include "gc/g1/g1GCPhaseTimes.hpp"
 #include "runtime/atomic.hpp"
 
-
-namespace svm_gc {
-
 uint G1EvacFailureRegions::num_regions_evac_failed() const {
   return Atomic::load(&_num_regions_evac_failed);
 }
@@ -87,8 +84,5 @@ bool G1EvacFailureRegions::record(uint worker_id, uint region_idx, bool cause_pi
   }
   return success;
 }
-
-
-} // namespace svm_gc
 
 #endif //SHARE_GC_G1_G1EVACFAILUREREGIONS_INLINE_HPP

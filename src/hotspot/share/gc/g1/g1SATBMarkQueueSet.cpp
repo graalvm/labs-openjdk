@@ -35,9 +35,6 @@
 #include "svmHeapAddressSpace.hpp"
 #endif // SVM
 
-
-namespace svm_gc {
-
 G1SATBMarkQueueSet::G1SATBMarkQueueSet(BufferNode::Allocator* allocator) :
   SATBMarkQueueSet(allocator)
 {}
@@ -130,6 +127,3 @@ public:
 void G1SATBMarkQueueSet::filter(SATBMarkQueue& queue) {
   apply_filter(G1SATBMarkQueueFilterFn(), queue);
 }
-
-} // namespace svm_gc
-

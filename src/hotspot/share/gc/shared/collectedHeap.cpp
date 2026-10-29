@@ -64,17 +64,8 @@
 #endif // SVM
 
 #ifndef SVM
-
-namespace svm_gc {
-
 class ClassLoaderData;
-
-} // namespace svm_gc
-
 #endif // !SVM
-
-
-namespace svm_gc {
 
 size_t CollectedHeap::_lab_alignment_reserve = SIZE_MAX;
 Klass* CollectedHeap::_filler_object_klass = nullptr;
@@ -698,6 +689,3 @@ void CollectedHeap::update_capacity_and_used_at_gc() {
   _used_at_last_gc     = used();
   SVM_ONLY(SVMMetaspace::metaspace()->update_used_at_last_gc();)
 }
-
-} // namespace svm_gc
-

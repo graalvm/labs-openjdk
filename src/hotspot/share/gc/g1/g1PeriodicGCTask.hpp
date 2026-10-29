@@ -27,9 +27,6 @@
 
 #include "gc/g1/g1ServiceThread.hpp"
 
-
-namespace svm_gc {
-
 class G1CollectedHeap;
 class G1GCCounters;
 
@@ -43,8 +40,5 @@ public:
   G1PeriodicGCTask(const char* name);
   virtual void execute();
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_G1_G1PERIODICGCTASK_HPP

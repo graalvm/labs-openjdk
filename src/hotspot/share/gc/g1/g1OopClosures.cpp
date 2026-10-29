@@ -28,9 +28,6 @@
 #include "memory/iterator.inline.hpp"
 #include "utilities/stack.inline.hpp"
 
-
-namespace svm_gc {
-
 G1ParCopyHelper::G1ParCopyHelper(G1CollectedHeap* g1h,  G1ParScanThreadState* par_scan_state) :
   _g1h(g1h),
   _par_scan_state(par_scan_state),
@@ -120,6 +117,3 @@ void G1ConditionalMarkCodeCacheClosure::unregister_nmethod(nmethod* nm) {
   G1CollectedHeap::heap()->unregister_nmethod(nm);
 }
 #endif // SVM
-
-} // namespace svm_gc
-

@@ -36,19 +36,10 @@
 
 // Aix does not have NUMA support but need these for compilation.
 #ifndef SVM
-
-namespace svm_gc {
-
 inline bool os::numa_has_group_homing()     { AIX_ONLY(ShouldNotReachHere();) return false;  }
-
-} // namespace svm_gc
-
 #endif // !SVM
 
 // Platform Mutex/Monitor implementation
-
-
-namespace svm_gc {
 
 inline void PlatformMutex::lock() {
   int status = pthread_mutex_lock(mutex());
@@ -75,8 +66,5 @@ inline void PlatformMonitor::notify_all() {
   int status = pthread_cond_broadcast(cond());
   assert_status(status == 0, status, "cond_broadcast");
 }
-
-
-} // namespace svm_gc
 
 #endif // OS_POSIX_OS_POSIX_INLINE_HPP

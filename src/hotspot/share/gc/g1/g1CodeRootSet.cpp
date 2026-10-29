@@ -32,9 +32,6 @@
 #include "utilities/concurrentHashTable.inline.hpp"
 #include "utilities/concurrentHashTableTasks.inline.hpp"
 
-
-namespace svm_gc {
-
 class G1CodeRootSetHashTableConfig : public StackObj {
 public:
   using Value = nmethod*;
@@ -340,6 +337,3 @@ void G1CodeRootSet::clean(G1HeapRegion* owner) {
   CleanCallback eval(owner);
   _table->clean(eval);
 }
-
-} // namespace svm_gc
-

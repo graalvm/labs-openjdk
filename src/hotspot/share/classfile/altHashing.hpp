@@ -33,9 +33,6 @@
  * Implementation of alternate more secure hashing.
  */
 
-
-namespace svm_gc {
-
 class AltHashing : AllStatic {
   friend class AltHashingTest;
 
@@ -51,7 +48,4 @@ class AltHashing : AllStatic {
   // For Strings
   static uint32_t halfsiphash_32(uint64_t seed, const uint16_t* data, int len);
 };
-
-} // namespace svm_gc
-
 #endif // SHARE_CLASSFILE_ALTHASHING_HPP

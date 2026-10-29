@@ -29,9 +29,6 @@
 #include "runtime/atomic.hpp"
 #include "utilities/ostream.hpp"
 
-
-namespace svm_gc {
-
 G1CardSetAllocator::G1CardSetAllocator(const char* name,
                                        const G1CardSetAllocOptions* alloc_options,
                                        SegmentFreeList* segment_free_list) :
@@ -133,6 +130,3 @@ G1MonotonicArenaMemoryStats G1CardSetMemoryManager::memory_stats() const {
   }
   return result;
 }
-
-} // namespace svm_gc
-

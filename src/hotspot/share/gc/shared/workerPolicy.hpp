@@ -28,9 +28,6 @@
 #include "memory/allStatic.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
-namespace svm_gc {
-
 class WorkerPolicy : public AllStatic {
   static const uint GCWorkersPerJavaThread = 2;
 
@@ -76,8 +73,5 @@ public:
                                        uintx application_workers);
 
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_WORKERPOLICY_HPP

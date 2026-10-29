@@ -36,9 +36,6 @@
 //   ...
 //   pf.disenroll();
 
-
-namespace svm_gc {
-
 class PeriodicTask: public CHeapObj<mtInternal> {
  public:
   // Useful constants.
@@ -102,8 +99,5 @@ class PeriodicTask: public CHeapObj<mtInternal> {
   // The task to perform at each period
   virtual void task() = 0;
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_RUNTIME_TASK_HPP

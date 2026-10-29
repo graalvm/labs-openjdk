@@ -42,9 +42,6 @@
 #define CONSTRAINT_ENUM_(type, func)  CONSTRAINT_ENUM(func),
 #define CONSTRAINT_FUNC(type, func)   (void*)&func,
 
-
-namespace svm_gc {
-
 enum JVMFlagConstraintsEnum : int {
   ALL_CONSTRAINTS(CONSTRAINT_ENUM_)
   NUM_JVMFlagConstraintsEnum
@@ -207,6 +204,3 @@ void JVMFlagLimit::print_range(outputStream* st, const JVMFlag* flag) const {
   JVMFlagAccess::print_range(st, flag, this);
 }
 #endif // !SVM
-
-} // namespace svm_gc
-

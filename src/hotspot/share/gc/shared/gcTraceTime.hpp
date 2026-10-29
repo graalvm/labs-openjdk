@@ -32,9 +32,6 @@
 #include "memory/allocation.hpp"
 #include "utilities/ticks.hpp"
 
-
-namespace svm_gc {
-
 class GCTracer;
 
 class GCTraceCPUTime : public StackObj {
@@ -172,8 +169,5 @@ class GCTraceConcTimeImpl : public StackObj {
   ~GCTraceConcTimeImpl();
   jlong start_time() { return _start_time; }
 };
-
-
-} // namespace svm_gc
 
 #endif // SHARE_GC_SHARED_GCTRACETIME_HPP

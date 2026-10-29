@@ -50,9 +50,6 @@
   LOG_LEVEL(Warning, warning) \
   LOG_LEVEL(Error, error)
 
-
-namespace svm_gc {
-
 class LogLevel : public AllStatic {
  public:
   enum type {
@@ -82,8 +79,5 @@ class LogLevel : public AllStatic {
 };
 
 typedef LogLevel::type LogLevelType;
-
-
-} // namespace svm_gc
 
 #endif // SHARE_LOGGING_LOGLEVEL_HPP
