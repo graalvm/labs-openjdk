@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,5 +73,8 @@ public class CodeInvalidationReasonTest extends CodeInstallationTest {
 
         nmethod.invalidate(true, config.NMETHOD_INVALIDATION_REASON_JVMCI_INVALIDATE);
         Asserts.assertEquals(config.NMETHOD_INVALIDATION_REASON_JVMCI_INVALIDATE, nmethod.getInvalidationReason());
+
+        String description = nmethod.getInvalidationReasonDescription();
+        Asserts.assertEquals(description, "JVMCI invalidate");
     }
 }
