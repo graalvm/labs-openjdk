@@ -1221,7 +1221,6 @@ C2V_END
 
 C2V_VMENTRY_0(jobject, getInvalidationReasonDescription, (JNIEnv *env, jobject, jint invalidation_reason))
   HandleMark hm(THREAD);
-  JNIHandleMark jni_hm(thread);
   nmethod::InvalidationReason reason = static_cast<nmethod::InvalidationReason>(invalidation_reason);
   JVMCIObject desc = JVMCIENV->create_string(nmethod::invalidation_reason_to_string(reason), JVMCI_CHECK_NULL);
   return JVMCIENV->get_jobject(desc);
