@@ -43,6 +43,8 @@ struct MetaspaceStatistics {
   size_t byte_array_size;
   size_t int_array_count;
   size_t int_array_size;
+  size_t long_array_count;
+  size_t long_array_size;
   size_t object_count;
   size_t object_size;
 };

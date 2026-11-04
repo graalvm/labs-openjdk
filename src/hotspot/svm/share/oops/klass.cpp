@@ -60,10 +60,34 @@
 #ifdef SVM
 #include "svmImageHeap.hpp"
 #include "svmMetaspace.hpp"
+#ifdef AMD64
+#include <immintrin.h>
+#endif
 #endif // SVM
 
 
 namespace svm_gc {
+
+// The image selects this format only when BMI2 belongs to its required CPU baseline.
+// Keep BMI2 local to this function: the G1 library also serves images without BMI2.
+#ifdef AMD64
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((target("bmi2")))
+#endif
+static uint32_t compress_interface_hash(uint32_t interface_id, uint32_t mask) {
+  return _pext_u32(interface_id, mask);
+}
+#endif
+
+static uint32_t compute_interface_hash(uint32_t interface_id, uint32_t hash_param) {
+#ifdef AMD64
+  if (SVMGlobalData::_use_pext_interface_hashing) {
+    return compress_interface_hash(interface_id, hash_param);
+  }
+#endif
+  int shift = hash_param >> DynamicHubHashingShiftOffset;
+  return (interface_id >> shift) & hash_param;
+}
 
 bool Klass::is_klass() const {
   return (SVMImageHeap::is_closed_image_heap_object((oop)this) || SVMMetaspace::metaspace()->is_in_allocated_memory(this)) &&
@@ -114,13 +138,10 @@ bool Klass::is_subtype_of(const Klass* other) const {
       if (SVMGlobalData::_use_interface_hashing && interface_id <= SVMGlobalData::_interface_hashing_max_id) {
         // perform interface hashing check
         uint32_t hash_param = static_cast<uint32_t>(load_jint(other, SVMGlobalData::_offsets._dynamicHub._open_type_world_interface_hash_param));
-        int shift = hash_param >> DynamicHubHashingShiftOffset;
-
         typeArrayOop hash_table = (typeArrayOop)load_oop(other, SVMGlobalData::_offsets._dynamicHub._open_type_world_interface_hash_table);
-        int hash = (interface_id >> shift) & hash_param;
-
-        jint hash_table_entry = hash_table->int_at(hash);
-        return (hash_table_entry & DynamicHubHashingInterfaceMask) == interface_id;
+        int hash = compute_interface_hash(interface_id, hash_param);
+        jlong hash_table_entry = hash_table->long_at(hash);
+        return static_cast<uint32_t>(hash_table_entry) == interface_id;
       } else {
         // perform iterative interface check
         jshort checked_num_iterable_interface_types = load_jshort(other, SVMGlobalData::_offsets._dynamicHub._open_type_world_num_iterable_interface_types);

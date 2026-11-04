@@ -46,7 +46,6 @@
 
 namespace svm_gc {
 
-constexpr int DynamicHubHashingInterfaceMask = 0xffff;
 constexpr int DynamicHubHashingShiftOffset = 24;
 
 class Klass {

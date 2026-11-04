@@ -76,8 +76,9 @@ class G1Metaspace : public SVMMetaspace {
     DynamicHubAllocation = 0,
     ByteArrayAllocation = 1,
     IntArrayAllocation = 2,
-    ObjectAllocation = 3,
-    AllocationKindCount = 4
+    LongArrayAllocation = 3,
+    ObjectAllocation = 4,
+    AllocationKindCount = 5
   };
 
  private:

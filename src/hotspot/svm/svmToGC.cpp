@@ -104,7 +104,7 @@ EXPORT_FOR_SVM void svm_g1gc_parse_options(int actual_native_image_version, int 
     size_t max_heap_address_space_size, size_t heap_base_alignment, size_t null_regions_size, size_t metaspace_size, size_t image_heap_size,
     int compressed_reference_shift, bool is_containerized, jlong container_memory_limit_in_bytes, int container_active_processor_count, G1HeapOptions *result) {
   // verify invariants
-  int expected_native_image_version = 250501;
+  int expected_native_image_version = 250502;
   guarantee(actual_native_image_version >= expected_native_image_version, "incompatible GC version: the native-image tries to use a GC that is too new");
   guarantee(actual_native_image_version <= expected_native_image_version, "incompatible GC version: the native-image tries to use a GC that is too old");
 #ifdef SVM_COMPRESSED_REFERENCES
@@ -160,7 +160,7 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
     objArrayOop static_object_fields, typeArrayOop static_primitive_fields, oop vm_operation_thread, oop safepoint, oop runtime_code_info_memory,
     int reference_map_compressed_offset_shift, SVMOopMap *thread_locals_reference_map,
     objArrayOop klasses_assumed_reachable_for_code_unloading, oop performance_data, bool closed_type_world,
-    bool use_interface_hashing, int interface_hashing_max_id, int dynamic_hub_hashing_interface_mask, int dynamic_hub_hashing_shift_offset,
+    bool use_interface_hashing, bool use_pext_interface_hashing, int interface_hashing_max_id, int dynamic_hub_hashing_shift_offset,
     char *offsets, int offsets_length,
     queueVmOperationFunc collect_for_allocation_op, queueVmOperationFunc execute_pause_remark_op, queueVmOperationFunc execute_pause_cleanup_op,
     queueVmOperationFunc collect_full_op, queueVmOperationFunc verify_heap_op, queueVmOperationFunc try_initiate_conc_mark_op,
@@ -219,7 +219,6 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
   guarantee(transition_vm_to_native != nullptr, "must be");
   guarantee(fast_transition_native_to_vm != nullptr, "must be");
   guarantee(slow_transition_native_to_vm != nullptr, "must be");
-  guarantee(dynamic_hub_hashing_interface_mask == DynamicHubHashingInterfaceMask, "must be");
   guarantee(dynamic_hub_hashing_shift_offset == DynamicHubHashingShiftOffset, "must be");
 
   // validate invariants
@@ -250,6 +249,10 @@ EXPORT_FOR_SVM G1InitState* svm_g1gc_create(IsolateThread *isolate_thread, char 
   SVMGlobalData::_thread_locals_reference_map = thread_locals_reference_map;
   SVMGlobalData::_closed_type_world = closed_type_world;
   SVMGlobalData::_use_interface_hashing = use_interface_hashing;
+  SVMGlobalData::_use_pext_interface_hashing = use_pext_interface_hashing;
+#ifndef AMD64
+  guarantee(!use_pext_interface_hashing, "PEXT interface hashing requires AMD64");
+#endif
   SVMGlobalData::_interface_hashing_max_id = interface_hashing_max_id;
   SVMGlobalData::_collect_for_allocation_op = collect_for_allocation_op;
   SVMGlobalData::_execute_pause_remark_op = execute_pause_remark_op;
@@ -474,7 +477,7 @@ EXPORT_FOR_SVM oop svm_g1gc_allocate_metaspace_instance(InstanceKlass *k) {
 // TO_VM - May be called by any Java thread. Uses oops. May block.
 EXPORT_FOR_SVM oop svm_g1gc_allocate_metaspace_array(Klass *k, int length, int allocation_kind) {
   assert(IsolateThread::current()->has_status_vm(), "unexpected thread state");
-  guarantee(allocation_kind >= G1Metaspace::DynamicHubAllocation && allocation_kind <= G1Metaspace::IntArrayAllocation, "invalid allocation kind");
+  guarantee(allocation_kind >= G1Metaspace::DynamicHubAllocation && allocation_kind < G1Metaspace::ObjectAllocation, "invalid allocation kind");
   return G1Metaspace::allocate_array(k, length, static_cast<G1Metaspace::AllocationKind>(allocation_kind));
 }
 
@@ -744,6 +747,8 @@ EXPORT_FOR_SVM void svm_g1gc_get_metaspace_statistics(MetaspaceStatistics *stati
   statistics->byte_array_size = G1Metaspace::allocation_size(G1Metaspace::ByteArrayAllocation);
   statistics->int_array_count = G1Metaspace::allocation_count(G1Metaspace::IntArrayAllocation);
   statistics->int_array_size = G1Metaspace::allocation_size(G1Metaspace::IntArrayAllocation);
+  statistics->long_array_count = G1Metaspace::allocation_count(G1Metaspace::LongArrayAllocation);
+  statistics->long_array_size = G1Metaspace::allocation_size(G1Metaspace::LongArrayAllocation);
   statistics->object_count = G1Metaspace::allocation_count(G1Metaspace::ObjectAllocation);
   statistics->object_size = G1Metaspace::allocation_size(G1Metaspace::ObjectAllocation);
 }
