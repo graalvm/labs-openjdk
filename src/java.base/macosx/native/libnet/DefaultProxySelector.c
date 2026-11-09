@@ -26,7 +26,7 @@
 
 #include <string.h>
 #include <CoreFoundation/CoreFoundation.h>
-#include <CoreServices/CoreServices.h>
+#include <CFNetwork/CFNetwork.h>
 
 #include "jni.h"
 #include "jni_util.h"

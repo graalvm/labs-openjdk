@@ -61,8 +61,10 @@ ifeq ($(INCLUDE_JVMCI), false)
   MODULES_FILTER += jdk.graal.compiler.management
 endif
 
-# jpackage is only on windows, macosx, and linux
+# jpackage is only on desktop windows, macosx, and linux
 ifeq ($(call isTargetOs, windows macosx linux), false)
+  MODULES_FILTER += jdk.jpackage
+else ifneq ($(filter bionic, $(OPENJDK_TARGET_LIBC))$(filter iphoneos iphonesimulator, $(SDK_NAME)), )
   MODULES_FILTER += jdk.jpackage
 endif
 
