@@ -52,8 +52,9 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
   fi
 
   # Check if fontconfig is needed
-  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx; then
-    # No fontconfig support on windows or macosx
+  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx ||
+     test "x$OPENJDK_TARGET_LIBC" = xbionic; then
+    # No fontconfig support on windows, macosx or android
     NEEDS_LIB_FONTCONFIG=false
   else
     # All other instances need fontconfig, even if building headless only,
@@ -65,6 +66,10 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
   if test "x$OPENJDK_TARGET_OS" = xwindows; then
     # Windows have a separate print system
     NEEDS_LIB_CUPS=false
+  elif test "x$OPENJDK_TARGET_LIBC" = xbionic || test "x$SDK_NAME" = xiphoneos ||
+       test "x$SDK_NAME" = xiphonesimulator; then
+    # Android and iOS have no print system
+    NEEDS_LIB_CUPS=false
   else
     NEEDS_LIB_CUPS=true
   fi
@@ -75,7 +80,7 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
   fi
 
   # Check if alsa is needed
-  if test "x$OPENJDK_TARGET_OS" = xlinux; then
+  if test "x$OPENJDK_TARGET_OS" = xlinux && test "x$OPENJDK_TARGET_LIBC" != xbionic; then
     NEEDS_LIB_ALSA=true
   else
     NEEDS_LIB_ALSA=false

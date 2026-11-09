@@ -138,6 +138,17 @@ AC_DEFUN([FLAGS_SETUP_MACOSX_VERSION],
 
     AC_SUBST(MACOSX_VERSION_MIN)
 
+    # The SDK decides which Apple platform the binaries are built for. On iOS,
+    # IPHONEOS_VERSION_MIN takes the role of MACOSX_VERSION_MIN.
+    IPHONEOS_VERSION_MIN=15.0
+    if test "x$SDK_NAME" = xiphoneos; then
+      MACOSX_VERSION_MIN_FLAG="-miphoneos-version-min=$IPHONEOS_VERSION_MIN"
+    elif test "x$SDK_NAME" = xiphonesimulator; then
+      MACOSX_VERSION_MIN_FLAG="-mios-simulator-version-min=$IPHONEOS_VERSION_MIN"
+    else
+      MACOSX_VERSION_MIN_FLAG="-mmacosx-version-min=$MACOSX_VERSION_MIN"
+    fi
+
     # Setting --with-macosx-version-max=<version> makes it an error to build or
     # link to macosx APIs that are newer than the given OS version.
     AC_ARG_WITH([macosx-version-max], [AS_HELP_STRING([--with-macosx-version-max],
