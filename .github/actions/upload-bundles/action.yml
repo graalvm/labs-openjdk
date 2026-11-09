@@ -54,6 +54,7 @@ runs:
         symbols_bundle="$(ls build/*/bundles/jdk-*_bin${{ inputs.debug-suffix }}-symbols.tar.gz 2> /dev/null || true)"
         tests_bundle="$(ls build/*/bundles/jdk-*_bin-tests${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
         static_libs_bundle="$(ls build/*/bundles/jdk-*_bin-static-libs${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
+        static_libs_graal_bundle="$(ls build/*/bundles/jdk-*_bin-static-libs-graal${{ inputs.debug-suffix }}.tar.gz 2> /dev/null || true)"
 
         mkdir bundles
 
@@ -78,8 +79,11 @@ runs:
         if [[ "$static_libs_bundle" != "" ]]; then
           mv "$static_libs_bundle" "bundles/static-libs-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
         fi
+        if [[ "$static_libs_graal_bundle" != "" ]]; then
+          mv "$static_libs_graal_bundle" "bundles/static-libs-graal-${{ inputs.platform }}${{ inputs.debug-suffix }}.tar.gz"
+        fi
 
-        if [[ "$jdk_bundle_zip$jdk_bundle_tar_gz$static_jdk_bundle_zip$static_jdk_bundle_tar_gz$symbols_bundle$tests_bundle$static_libs_bundle" != "" ]]; then
+        if [[ "$jdk_bundle_zip$jdk_bundle_tar_gz$static_jdk_bundle_zip$static_jdk_bundle_tar_gz$symbols_bundle$tests_bundle$static_libs_bundle$static_libs_graal_bundle" != "" ]]; then
           echo 'bundles-found=true' >> $GITHUB_OUTPUT
         else
           echo 'bundles-found=false' >> $GITHUB_OUTPUT
