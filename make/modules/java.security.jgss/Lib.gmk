@@ -93,7 +93,10 @@ ifneq ($(BUILD_CRYPTO), false)
             -framework SystemConfiguration, \
     ))
 
-    TARGETS += $(BUILD_LIBOSXKRB5)
+    # Kerberos is macOS only
+    ifeq ($(filter iphoneos iphonesimulator, $(SDK_NAME)), )
+      TARGETS += $(BUILD_LIBOSXKRB5)
+    endif
   endif
 endif
 

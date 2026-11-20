@@ -34,7 +34,7 @@ on:
       platforms:
         description: 'Platform(s) to execute on (comma separated, e.g. "linux-x64, macos, aarch64")'
         required: true
-        default: 'linux-x64, linux-x64-variants, linux-cross-compile, alpine-linux-x64, macos-x64, macos-aarch64, windows-x64, windows-aarch64, docs'
+        default: 'linux-x64, linux-x64-variants, linux-cross-compile, alpine-linux-x64, macos-x64, macos-aarch64, windows-x64, windows-aarch64, android-aarch64, ios-aarch64, docs'
       configure-arguments:
         description: 'Additional configure arguments'
         required: false
@@ -70,6 +70,8 @@ jobs:
       macos-aarch64: ${{ steps.include.outputs.macos-aarch64 }}
       windows-x64: ${{ steps.include.outputs.windows-x64 }}
       windows-aarch64: ${{ steps.include.outputs.windows-aarch64 }}
+      android-aarch64: ${{ steps.include.outputs.android-aarch64 }}
+      ios-aarch64: ${{ steps.include.outputs.ios-aarch64 }}
       docs: ${{ steps.include.outputs.docs }}
       dry-run: ${{ steps.include.outputs.dry-run }}
 
@@ -182,6 +184,8 @@ jobs:
           echo "macos-aarch64=$(check_platform macos-aarch64 macos aarch64)" >> $GITHUB_OUTPUT
           echo "windows-x64=$(check_platform windows-x64 windows x64)" >> $GITHUB_OUTPUT
           echo "windows-aarch64=$(check_platform windows-aarch64 windows aarch64)" >> $GITHUB_OUTPUT
+          echo "android-aarch64=$(check_platform android-aarch64 android aarch64)" >> $GITHUB_OUTPUT
+          echo "ios-aarch64=$(check_platform ios-aarch64 ios aarch64)" >> $GITHUB_OUTPUT
           echo "docs=$(check_platform docs)" >> $GITHUB_OUTPUT
           echo "dry-run=$(check_dry_run)" >> $GITHUB_OUTPUT
 
@@ -347,6 +351,46 @@ jobs:
       dry-run: ${{ needs.prepare.outputs.dry-run == 'true' }}
     if: needs.prepare.outputs.macos-aarch64 == 'true'
 
+  build-android-aarch64:
+    name: android-aarch64
+    needs: prepare
+    uses: ./.github/workflows/build-android.yml
+    with:
+      platform: android-aarch64
+      ndk-version: 'r29'
+      api-level: '28'
+      configure-arguments: ${{ github.event.inputs.configure-arguments }}
+      make-arguments: ${{ github.event.inputs.make-arguments }}
+      dry-run: ${{ needs.prepare.outputs.dry-run == 'true' }}
+    if: needs.prepare.outputs.android-aarch64 == 'true'
+
+  build-ios-aarch64:
+    name: ios-aarch64
+    needs: prepare
+    uses: ./.github/workflows/build-ios.yml
+    with:
+      platform: ios-aarch64
+      runs-on: 'macos-15'
+      sdk-name: iphoneos
+      xcode-toolset-version: '16.4'
+      configure-arguments: ${{ github.event.inputs.configure-arguments }}
+      make-arguments: ${{ github.event.inputs.make-arguments }}
+      dry-run: ${{ needs.prepare.outputs.dry-run == 'true' }}
+    if: needs.prepare.outputs.ios-aarch64 == 'true'
+
+  build-ios-aarch64-simulator:
+    name: ios-aarch64-simulator
+    needs: prepare
+    uses: ./.github/workflows/build-ios.yml
+    with:
+      platform: ios-aarch64-simulator
+      runs-on: 'macos-15'
+      sdk-name: iphonesimulator
+      xcode-toolset-version: '16.4'
+      configure-arguments: ${{ github.event.inputs.configure-arguments }}
+      make-arguments: ${{ github.event.inputs.make-arguments }}
+      dry-run: ${{ needs.prepare.outputs.dry-run == 'true' }}
+    if: needs.prepare.outputs.ios-aarch64 == 'true'
 
   build-docs:
     name: docs

@@ -199,6 +199,7 @@ AC_DEFUN([BASIC_SETUP_XCODE_SYSROOT],
     SDK_NAME=macosx
   fi
   AC_MSG_RESULT([$SDK_NAME])
+  AC_SUBST(SDK_NAME)
 
   if test "x$DEVKIT_ROOT" != x; then
     # We need to use xcodebuild from the devkit, if provided

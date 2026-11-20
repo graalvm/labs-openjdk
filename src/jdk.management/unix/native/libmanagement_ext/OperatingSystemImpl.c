@@ -38,8 +38,11 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <mach/mach.h>
+#include <TargetConditionals.h>
+#if !TARGET_OS_IPHONE
 #include <sys/proc_info.h>
 #include <libproc.h>
+#endif
 #endif
 #elif !defined(_AIX)
 #include <sys/swap.h>
@@ -270,7 +273,7 @@ JNIEXPORT jlong JNICALL
 Java_com_sun_management_internal_OperatingSystemImpl_getOpenFileDescriptorCount0
   (JNIEnv *env, jobject mbean)
 {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !TARGET_OS_IPHONE
     // This code is influenced by the darwin lsof source
     pid_t my_pid;
     struct proc_bsdinfo bsdinfo;
