@@ -199,6 +199,11 @@ AC_DEFUN_ONCE([JDKOPT_SETUP_JDK_OPTIONS],
   if test "x$OPENJDK_TARGET_CPU" = xs390x ; then
     INCLUDE_SA=false
   fi
+  # Android and iOS run no HotSpot for the agent to attach to
+  if test "x$OPENJDK_TARGET_LIBC" = xbionic || test "x$SDK_NAME" = xiphoneos ||
+     test "x$SDK_NAME" = xiphonesimulator; then
+    INCLUDE_SA=false
+  fi
   AC_SUBST(INCLUDE_SA)
 
   # Setup default CDS alignment. On platforms where one build may run on machines with different

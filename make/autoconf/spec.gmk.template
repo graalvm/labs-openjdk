@@ -475,6 +475,8 @@ X_LIBS := @X_LIBS@
 MACOSX_VERSION_MIN := @MACOSX_VERSION_MIN@
 # The highest allowed version of macosx
 MACOSX_VERSION_MAX := @MACOSX_VERSION_MAX@
+# The Xcode SDK on macosx: macosx, or iphoneos and iphonesimulator for iOS
+SDK_NAME := @SDK_NAME@
 
 # The macosx code signing configuration
 MACOSX_CODESIGN_MODE := @MACOSX_CODESIGN_MODE@

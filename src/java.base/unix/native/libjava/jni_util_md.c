@@ -34,7 +34,12 @@
 #if defined(LINUX) && (defined(_GNU_SOURCE) || \
          (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE < 200112L \
              && defined(_XOPEN_SOURCE) && _XOPEN_SOURCE < 600))
+#ifdef __BIONIC__
+/* bionic exports the XSI-compliant strerror_r under its plain name */
+extern int __xpg_strerror_r(int, char *, size_t) __asm__("strerror_r");
+#else
 extern int __xpg_strerror_r(int, char *, size_t);
+#endif
 #define strerror_r(a, b, c) __xpg_strerror_r((a), (b), (c))
 #endif
 

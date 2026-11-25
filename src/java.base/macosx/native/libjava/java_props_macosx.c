@@ -27,7 +27,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <objc/objc-runtime.h>
+#include <objc/message.h>
+#include <objc/runtime.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <SystemConfiguration/SystemConfiguration.h>
@@ -288,6 +289,7 @@ void setOSNameAndVersion(java_props_t *sprops) {
 }
 
 
+#if !TARGET_OS_IPHONE
 static Boolean getProxyInfoForProtocol(CFDictionaryRef inDict, CFStringRef inEnabledKey,
                                        CFStringRef inHostKey, CFStringRef inPortKey,
                                        CFStringRef *outProxyHost, int *ioProxyPort) {
@@ -330,6 +332,7 @@ static Boolean getProxyInfoForProtocol(CFDictionaryRef inDict, CFStringRef inEna
 
     return true;
 }
+#endif
 
 static char *createUTF8CString(const CFStringRef theString) {
     if (theString == NULL) return NULL;
@@ -346,6 +349,7 @@ static char *createUTF8CString(const CFStringRef theString) {
     return NULL;
 }
 
+#if !TARGET_OS_IPHONE
 // Return TRUE if str is a syntactically valid IP address.
 // Using inet_pton() instead of inet_aton() for IPv6 support.
 // len is only a hint; cstr must still be nul-terminated
@@ -401,6 +405,7 @@ static char * createConvertedException(CFStringRef cf_original) {
     c_exception[c_len+3+c_len] = '\0';
     return c_exception;
 }
+#endif
 
 /*
  * Method for fetching the user.home path and storing it in the property list.
@@ -418,6 +423,7 @@ void setUserHome(java_props_t *sprops) {
  * Method for fetching proxy info and storing it in the property list.
  */
 void setProxyProperties(java_props_t *sProps) {
+#if !TARGET_OS_IPHONE // System Configuration has no proxy settings on iOS
     if (sProps == NULL) return;
 
     char buf[16];    /* Used for %d of an int - 16 is plenty */
@@ -490,4 +496,5 @@ void setProxyProperties(java_props_t *sProps) {
 #undef CHECK_PROXY
 
     CFRelease(dict);
+#endif
 }

@@ -131,4 +131,9 @@ ifeq ($(call isTargetOs, macosx), true)
   TARGETS += $(BUILD_LIBOSX)
 endif
 
+# Android and iOS have no AWT, Java 2D or sound
+ifneq ($(filter bionic, $(OPENJDK_TARGET_LIBC))$(filter iphoneos iphonesimulator, $(SDK_NAME)), )
+  TARGETS :=
+endif
+
 ################################################################################

@@ -229,6 +229,9 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_LIBC],
     *linux*-musl)
       VAR_LIBC=musl
       ;;
+    *linux*-android*)
+      VAR_LIBC=bionic
+      ;;
     *linux*-gnu)
       VAR_LIBC=gnu
       ;;
