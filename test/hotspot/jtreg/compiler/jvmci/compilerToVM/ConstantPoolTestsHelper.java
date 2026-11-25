@@ -107,8 +107,6 @@ public class ConstantPoolTestsHelper {
      * @param cpType Constant type from the Constant pool
      * @return a bytecode that's suitable for passing to the following functions for the given cpType:
      *     - CompilerToVMHelper.lookupNameAndTypeRefIndexInPool()
-     *     - CompilerToVMHelper.lookupNameInPool()
-     *     - CompilerToVMHelper.lookupSignatureInPool()
      *     - CompilerToVMHelper.lookupKlassRefIndexInPool()
      */
     public static int getDummyOpcode(ConstantTypes cpType) {

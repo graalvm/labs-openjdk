@@ -106,14 +106,6 @@ public class CompilerToVMHelper {
         return CTVM.lookupNameAndTypeRefIndexInPool((HotSpotConstantPool) constantPool, rawIndex, opcode);
     }
 
-    public static String lookupNameInPool(ConstantPool constantPool, int rawIndex, int opcode) {
-        return CTVM.lookupNameInPool((HotSpotConstantPool) constantPool, rawIndex, opcode);
-    }
-
-    public static String lookupSignatureInPool(ConstantPool constantPool, int rawIndex, int opcode) {
-        return CTVM.lookupSignatureInPool((HotSpotConstantPool) constantPool, rawIndex, opcode);
-    }
-
     public static int lookupKlassRefIndexInPool(ConstantPool constantPool, int rawIndex, int opcode) {
         return CTVM.lookupKlassRefIndexInPool((HotSpotConstantPool) constantPool, rawIndex, opcode);
     }
